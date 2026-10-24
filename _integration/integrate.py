@@ -1360,7 +1360,7 @@ edit(dest/'src/main/java/com/andrerinas/openheadunit/connection/LocalHotspotCred
     ('"DiAuto-${UUID.randomUUID().toString().take(6)}"','"Di-Connect-${UUID.randomUUID().toString().take(6)}"'))
 
 # Android Auto-only luxury cluster skin. Preserve the donor CarPlay renderer byte-for-byte.
-skin = root/'_integration/GwmAndroidAutoClusterView.kt'
+skin = Path('target/_integration/GwmAndroidAutoClusterView.kt')
 require(skin.is_file(), 'Missing Android Auto cluster skin')
 (root/'common/src/main/java/com/shilapi/xcertplay/GwmAndroidAutoClusterView.kt').write_text(skin.read_text())
 edit(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt',
@@ -1370,15 +1370,15 @@ edit(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt',
 # Actual renderer regression tests and AA-only HUD, retained across donor regeneration.
 for name, folder in [('GwmAndroidAutoClusterRenderTest.kt', 'common/src/test/java/com/shilapi/xcertplay'),
                      ('GwmAndroidAutoHeadUpView.kt', 'common/src/main/java/com/shilapi/xcertplay')]:
-    source = root/'_integration'/name
+    source = Path('target/_integration')/name
     require(source.is_file(), 'Missing '+name)
     (root/folder/name).write_text(source.read_text())
-for patch in json.loads((root/'_integration/android-auto-hud-patches.json').read_text()):
+for patch in json.loads(Path('target/_integration/android-auto-hud-patches.json').read_text()):
     edit(root/patch['path'], (patch['old'], patch['new'], patch['count']))
 # The app is renamed Di-Connect; the consent test must expect its actual user-facing name.
 edit(root/'common/src/test/java/com/shilapi/xcertplay/CarPlayVpnConsentTest.kt',
     ('message.contains("Return to DiPlay")', 'message.contains("Return to Di-Connect")'))
 
 # Route metadata and HUD aperture regression coverage.
-(root/'common/src/test/java/com/shilapi/xcertplay/GwmAndroidAutoHudRenderTest.kt').write_text((root/'_integration/GwmAndroidAutoHudRenderTest.kt').read_text())
-(root/'android-auto/src/test/java/com/andrerinas/openheadunit/hud/BydNavigationMapperTest.kt').write_text((root/'_integration/BydNavigationMapperTest.kt').read_text())
+(root/'common/src/test/java/com/shilapi/xcertplay/GwmAndroidAutoHudRenderTest.kt').write_text(Path('target/_integration/GwmAndroidAutoHudRenderTest.kt').read_text())
+(root/'android-auto/src/test/java/com/andrerinas/openheadunit/hud/BydNavigationMapperTest.kt').write_text(Path('target/_integration/BydNavigationMapperTest.kt').read_text())
