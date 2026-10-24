@@ -1,5 +1,5 @@
 <resources>
-    <string name="aa_app_name">DiAuto</string>
+    <string name="aa_app_name">Di-Connect</string>
     <string name="aa_menu">Menú</string>
     <string name="aa_settings">Configuración</string>
 
@@ -12,7 +12,7 @@
     <string name="aa_video">Android Auto</string>
     <string name="aa_self_mode">Modo Autónomo</string>
     <string name="aa_to_android_auto">Ir a Android Auto</string>
-    <string name="aa_title">DiAuto</string>
+    <string name="aa_title">Di-Connect</string>
     <string name="aa_remove">Eliminar</string>
     <string name="aa_usb">USB</string>
     <string name="aa_wifi">Wi-Fi</string>
@@ -904,7 +904,7 @@
     <string name="aa_setup_wi_fi_direct">Wi-Fi Direct</string>
     <string name="aa_setup_wifi_direct_hint">Alternativa · Requiere activar el Wi-Fi del coche. Una conexión de 2,4 GHz puede entrecortarse.</string>
     <string name="aa_setup_configure_hotspot">2 · Configura el punto de acceso del coche</string>
-    <string name="aa_setup_hotspot_instructions">Activa el punto de acceso en los ajustes del coche y selecciona 5 GHz si es posible. Copia exactamente el nombre y la contraseña. Déjalo encendido al conectar. No necesitas conectarte manualmente desde el teléfono: DiAuto envía los datos por Bluetooth al pulsar Conectar teléfono.</string>
+    <string name="aa_setup_hotspot_instructions">Activa el punto de acceso en los ajustes del coche y selecciona 5 GHz si es posible. Copia exactamente el nombre y la contraseña. Déjalo encendido al conectar. No necesitas conectarte manualmente desde el teléfono: Di-Connect envía los datos por Bluetooth al pulsar Conectar teléfono.</string>
     <string name="aa_setup_hotspot_on">El punto de acceso está encendido · Comprueba que está seleccionado 5 GHz.</string>
     <string name="aa_setup_hotspot_off">El punto de acceso está apagado · Enciéndelo antes de conectar.</string>
     <string name="aa_setup_hotspot_unknown">Estado del punto de acceso no disponible · Compruébalo en los ajustes del coche.</string>
@@ -921,12 +921,12 @@
     <string name="aa_setup_prepare_car">2 · Prepara el coche</string>
     <string name="aa_setup_wifi_direct_instructions">Activa el Wi-Fi del coche. Permite Ubicación y Dispositivos cercanos cuando se solicite, y activa la ubicación si Android lo pide. Si hay cortes, prueba el punto de acceso del coche a 5 GHz.</string>
     <string name="aa_setup_pair_and_connect">3 · Empareja y conecta</string>
-    <string name="aa_setup_pair_instructions">Mantén Bluetooth y Wi-Fi activados en tu teléfono Android. Empareja el teléfono con el Bluetooth del coche. Vuelve a DiAuto, pulsa Conectar teléfono y selecciónalo. Acepta los avisos de Android Auto en el teléfono. No necesitas un plan de internet para el coche; los datos móviles dependen de los ajustes del teléfono.</string>
+    <string name="aa_setup_pair_instructions">Mantén Bluetooth y Wi-Fi activados en tu teléfono Android. Empareja el teléfono con el Bluetooth del coche. Vuelve a Di-Connect, pulsa Conectar teléfono y selecciónalo. Acepta los avisos de Android Auto en el teléfono. No necesitas un plan de internet para el coche; los datos móviles dependen de los ajustes del teléfono.</string>
     <string name="aa_setup_open_bluetooth_settings">Abrir ajustes de Bluetooth</string>
     <string name="aa_setup_review_app_permissions">Revisar permisos de la aplicación</string>
-    <string name="aa_setup_done_return_to_diauto">Listo · Volver a DiAuto</string>
+    <string name="aa_setup_done_return_to_diauto">Listo · Volver a Di-Connect</string>
     <string name="aa_setup_prefer_a_cable">¿Prefieres un cable?</string>
-    <string name="aa_setup_usb_instructions">Usa un cable USB de datos y el puerto USB de datos del coche. Desbloquea el teléfono y pulsa Conectar por USB en la pantalla principal de DiAuto. No necesitas configurar un punto de acceso.</string>
+    <string name="aa_setup_usb_instructions">Usa un cable USB de datos y el puerto USB de datos del coche. Desbloquea el teléfono y pulsa Conectar por USB en la pantalla principal de Di-Connect. No necesitas configurar un punto de acceso.</string>
     <string name="aa_setup_hotspot_copy_hint">Copia el nombre y la contraseña de los ajustes del punto de acceso del coche. Guardarlos aquí no modifica el punto de acceso.</string>
     <string name="aa_setup_hotspot_name">Nombre del punto de acceso</string>
     <string name="aa_setup_hotspot_password">Contraseña del punto de acceso</string>
@@ -968,7 +968,7 @@
     <string name="aa_cluster_marker_vertical">Marcador: arriba / abajo</string>
     <string name="aa_cluster_marker_centre">Centro</string>
     <string name="aa_cluster_map_hint">Pon el tablero en navegación pequeña o a pantalla completa con el menú del volante. El mapa se mantiene mientras Android Auto esté conectado, también detrás de la cámara u otras apps. Waze y Google Maps admiten el mapa del tablero; la tarjeta de giro depende de la app.</string>
-    <string name="aa_cluster_map_overlay_hint">Si el mapa del tablero se cierra al abrir la cámara u otra app, permite que DiAuto se muestre sobre otras apps. Opcional: muchas unidades lo mantienen sin esto.</string>
+    <string name="aa_cluster_map_overlay_hint">Si el mapa del tablero se cierra al abrir la cámara u otra app, permite que Di-Connect se muestre sobre otras apps. Opcional: muchas unidades lo mantienen sin esto.</string>
     <string name="aa_cluster_map_overlay_grant">Permitir mostrar sobre otras apps</string>
     <string name="aa_cluster_map_overlay_unavailable">Esta unidad no tiene pantalla para este permiso.</string>
     <string name="aa_byd_left_hand_traffic_title">Circulación por la izquierda</string>
@@ -983,7 +983,7 @@
     <string name="aa_native_local_hotspot_wifi_settings">Abrir ajustes de Wi-Fi del coche</string>
     <string name="aa_native_local_hotspot_wifi_settings_unavailable">Abre Wi-Fi desde los ajustes del coche.</string>
     <string name="aa_native_ap_transport_local_hotspot">Punto de acceso local</string>
-    <string name="aa_native_ap_transport_local_hotspot_hint">Experimental. DiAuto usa un punto de acceso local separado para Android Auto; no requiere un plan de internet del coche. Las versiones antiguas de Android deben permitir verificar los 5 GHz mediante el controlador Wi-Fi. Si los mapas o la música se entrecortan en DiLink 5.1, prueba a desactivar el Wi-Fi en los ajustes del coche. Mantén Bluetooth y el Wi-Fi del teléfono activados. La compatibilidad depende del coche.</string>
+    <string name="aa_native_ap_transport_local_hotspot_hint">Experimental. Di-Connect usa un punto de acceso local separado para Android Auto; no requiere un plan de internet del coche. Las versiones antiguas de Android deben permitir verificar los 5 GHz mediante el controlador Wi-Fi. Si los mapas o la música se entrecortan en DiLink 5.1, prueba a desactivar el Wi-Fi en los ajustes del coche. Mantén Bluetooth y el Wi-Fi del teléfono activados. La compatibilidad depende del coche.</string>
     <string name="aa_audio_queue_unbounded">Sin límite (heredado)</string>
     <string name="aa_audio_queue_chunks">Bloques: %1$d</string>
     <string name="aa_audio_queue_low">10 bloques (baja latencia)</string>
@@ -1006,6 +1006,6 @@
     <string name="aa_turn_card_info_duration_hm">%1$dh %2$dmin</string>
     <string name="aa_turn_card_info_duration_m">%1$dmin</string>
     <string name="aa_turn_card_info_km">%1$.1f km</string>
-    <string name="aa_cluster_usage_access_hint">En el modo Escenario el mapa lateral aparece en todas las tarjetas del cuadro. Permite a DiAuto el «Acceso a datos de uso» para que solo aparezca en la tarjeta del mapa. Si el botón no abre nada, se puede conceder por ADB: appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
+    <string name="aa_cluster_usage_access_hint">En el modo Escenario el mapa lateral aparece en todas las tarjetas del cuadro. Permite a Di-Connect el «Acceso a datos de uso» para que solo aparezca en la tarjeta del mapa. Si el botón no abre nada, se puede conceder por ADB: appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
     <string name="aa_cluster_usage_access_grant">Permitir acceso a datos de uso</string>
 </resources>

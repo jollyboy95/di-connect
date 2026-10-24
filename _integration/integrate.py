@@ -193,8 +193,8 @@ edit(root/'common/build.gradle.kts',('    api(project(":shared"))','    api(proj
 edit(root/'mobile/build.gradle.kts',
     ('applicationId = "com.shihab.diplay"','applicationId = "com.jollyboy95.diconnect"'),
     ('applicationIdSuffix = ".hudtest"','applicationIdSuffix = ".debug"'))
-edit(root/'common/src/main/AndroidManifest.xml',('<application>','<application android:name="com.andrerinas.openheadunit.App">'))
-edit(root/'mobile/src/main/AndroidManifest.xml',('<application','<application\n        android:name="com.andrerinas.openheadunit.App"\n        tools:replace="android:label,android:icon,android:theme,android:localeConfig"'))
+edit(root/'common/src/main/AndroidManifest.xml',('<application>','<application android:name="com.andrerinas.openheadunit.App" tools:ignore="MissingClass">'))
+edit(root/'mobile/src/main/AndroidManifest.xml',('<application','<application\n        android:name="com.andrerinas.openheadunit.App"\n        tools:ignore="MissingClass"\n        tools:replace="android:label,android:icon,android:theme,android:localeConfig"'))
 # Backend lifetime: CarPlay waits for full Android Auto service cleanup, bounded by a timeout.
 AAP=dest/'src/main/java/com/andrerinas/openheadunit/aap/AapService.kt'
 edit(AAP,
@@ -1003,3 +1003,358 @@ require(sorted(LOCALE_ORDER)==sorted(p.parent.name for p in STRINGS),'D-Play loc
 for p in STRINGS:
     i=LOCALE_ORDER.index(p.parent.name)
     edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in AA_STRINGS.items())+'</resources>'))
+
+# D-Play's look in Android Auto: the GWM cluster layer and HUD are D-Play's own views, as in CarPlay.
+# DiAuto-GWM keeps its working window and map-video plumbing; only the drawn layers change. The views
+# are created by D-Play's side through DiConnectViews, so the Android Auto library does not depend on
+# D-Play's code. DiAuto's cluster codes are the AMap broadcast codes D-Play's views draw.
+(dest/'src/main/java/com/andrerinas/openheadunit/DiConnectViews.kt').write_text('''package com.andrerinas.openheadunit
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.view.View
+import com.andrerinas.openheadunit.gwm.GwmMusicState
+import com.andrerinas.openheadunit.hud.BydGuidance
+
+/** Lets Di-Connect's D-Play side draw Android Auto's GWM cluster layer and HUD with its own views. */
+object DiConnectViews {
+    /** Next turn in the AMap broadcast codes D-Play's views draw (DiAuto's cluster codes). */
+    data class Guidance(
+        val icon: Int,
+        val roundaboutExit: Int,
+        val distanceMeters: Int,
+        val road: String,
+        val remainingMeters: Int,
+        val remainingSeconds: Int,
+    )
+
+    data class Music(
+        val title: String?,
+        val artist: String?,
+        val album: String?,
+        val artwork: Bitmap?,
+        val durationMillis: Long?,
+        val positionMillis: Long?,
+        val playing: Boolean,
+    )
+
+    interface Layer {
+        val view: View
+        fun setGuidance(guidance: Guidance?)
+        fun release()
+    }
+
+    /** Set by Di-Connect's D-Play side at start-up; while null, DiAuto's own views are used. */
+    @Volatile var cluster: ((Context) -> Layer)? = null
+    /** [anchor]: 0 left, 1 centre, 2 right, as both apps store it. */
+    @Volatile var hud: ((Context, Int) -> Layer)? = null
+
+    fun observeMusic(observer: (Music) -> Unit): () -> Unit = GwmMusicState.observe { s ->
+        observer(Music(s.title, s.artist, s.album, s.artwork, s.durationMillis, s.positionNow(), s.playing))
+    }
+
+    internal fun from(guidance: BydGuidance?): Guidance? = guidance?.let {
+        Guidance(it.clusterIcon, it.roundaboutExit, it.distanceMeters, it.road, it.remainingMeters, it.remainingSeconds)
+    }
+}
+''')
+O=dest/'src/main/java/com/andrerinas/openheadunit/gwm/GwmOutputs.kt'
+V_='com.andrerinas.openheadunit.DiConnectViews'
+edit(O,
+    ('''    private var layer: GwmClusterLayerView? = null
+''','''    private var layer: GwmClusterLayerView? = null
+    // Di-Connect: D-Play's cluster layer and HUD, used instead of DiAuto's when D-Play provides them.
+    private var dplayLayer: com.andrerinas.openheadunit.DiConnectViews.Layer? = null
+    private var dplayLayerNavCard = false
+    private var dplayHud: com.andrerinas.openheadunit.DiConnectViews.Layer? = null
+'''),
+    ('''            layer?.setGuidance(next)
+            hudView?.setGuidance(next)
+''',f'''            layer?.setGuidance(next)
+            hudView?.setGuidance(next)
+            val mapped = {V_}.from(next)
+            // Google Maps draws its own card into the cluster video; Di-Connect's is opt-in in Android Auto.
+            dplayLayer?.setGuidance(if (dplayLayerNavCard) mapped else null)
+            dplayHud?.setGuidance(mapped)
+'''),
+    ('''        if (clusterRoot != null || hudView != null) handler.post(guidanceTick)
+    }
+''','''        if (clusterRoot != null || hudView != null || dplayHud != null) handler.post(guidanceTick)
+    }
+'''),
+    ('''        if (gwm.styledLayer) {
+            val view = GwmClusterLayerView(displayContext, gwm)
+            root.addView(view, FrameLayout.LayoutParams(-1, -1))
+            layer = view
+        }''',f'''        if (gwm.styledLayer) {{
+            val dplay = {V_}.cluster?.invoke(displayContext)
+            if (dplay != null) {{
+                root.addView(dplay.view, FrameLayout.LayoutParams(-1, -1))
+                dplayLayer = dplay
+                dplayLayerNavCard = gwm.navCard
+            }} else {{
+                val view = GwmClusterLayerView(displayContext, gwm)
+                root.addView(view, FrameLayout.LayoutParams(-1, -1))
+                layer = view
+            }}
+        }}'''),
+    ('''        } catch (error: RuntimeException) {
+            layer = null
+            clusterStatus =''','''        } catch (error: RuntimeException) {
+            layer = null
+            dplayLayer?.release()
+            dplayLayer = null
+            clusterStatus ='''),
+    ('        if (gwm.styledLayer && gwm.vehicleStrip) GwmVehicleData.addListener(app, vehicleListener)',
+     "        // D-Play's layer reads the car's values itself.\n        if (layer != null && gwm.vehicleStrip) GwmVehicleData.addListener(app, vehicleListener)"),
+    ('''        clusterManager = null
+        layer = null
+''','''        clusterManager = null
+        layer = null
+        dplayLayer?.release()
+        dplayLayer = null
+'''),
+    ('        if (hudView != null && hudDisplayId == target) {','        if ((hudView != null || dplayHud != null) && hudDisplayId == target) {'),
+    ('''        val view = GwmHeadUpView(displayContext).apply { setAnchor(anchor); setArea(gwm.hudArea) }
+        try {
+            windows.addView(view, overlayParams(opaque = false))
+        } catch (error: RuntimeException) {''',f'''        val dplay = {V_}.hud?.invoke(displayContext, gwm.hudAnchor)
+        val view: android.view.View = dplay?.view
+            ?: GwmHeadUpView(displayContext).apply {{ setAnchor(anchor); setArea(gwm.hudArea) }}
+        try {{
+            windows.addView(view, overlayParams(opaque = false))
+        }} catch (error: RuntimeException) {{
+            dplay?.release()'''),
+    ('''        hudManager = windows
+        hudView = view
+''','''        hudManager = windows
+        if (dplay != null) dplayHud = dplay else hudView = view as GwmHeadUpView
+'''),
+    ('''        val view = hudView
+        val windows = hudManager
+        hudView = null
+''','''        val view: android.view.View? = hudView ?: dplayHud?.view
+        val windows = hudManager
+        hudView = null
+        dplayHud?.release()
+        dplayHud = null
+'''))
+(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt').write_text('''package com.shilapi.xcertplay
+
+import android.content.ContentProvider
+import android.content.ContentValues
+import android.content.Context
+import android.database.Cursor
+import android.net.Uri
+import android.view.View
+import com.andrerinas.openheadunit.DiConnectViews
+import com.shilapi.xcertplay.hud.ClusterTurnGuidance
+import com.shilapi.xcertplay.media.CarPlayNowPlaying
+
+/**
+ * Di-Connect: Android Auto's GWM cluster layer and HUD are D-Play's own views, fed by D-Play's car
+ * values and Android Auto's turn guidance and now playing, so they look and behave as in CarPlay.
+ */
+internal object DiConnectPlayViews {
+    fun install(app: Context) {
+        DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }
+        DiConnectViews.hud = { displayContext, anchor -> HudLayer(displayContext, anchor) }
+    }
+
+    fun guidance(next: DiConnectViews.Guidance?): ClusterTurnGuidance? = next?.takeIf { it.icon != 0 }?.let {
+        ClusterTurnGuidance(
+            icon = it.icon,
+            roundaboutExit = it.roundaboutExit,
+            distanceMeters = it.distanceMeters,
+            road = it.road,
+            arrivalEpochSeconds = it.remainingSeconds.takeIf { s -> s >= 0 }
+                ?.let { s -> System.currentTimeMillis() / 1000 + s },
+            remainingSeconds = it.remainingSeconds.takeIf { s -> s >= 0 }?.toLong(),
+            remainingMeters = it.remainingMeters.takeIf { m -> m >= 0 }?.toLong(),
+        )
+    }
+
+    private class ClusterLayer(displayContext: Context, private val app: Context) : DiConnectViews.Layer {
+        private val hud = GwmClusterHudView(displayContext)
+        private val vehicle: (GwmVehicleData.Snapshot?) -> Unit = { snapshot -> hud.post { hud.setSnapshot(snapshot) } }
+        private val stopMusic = DiConnectViews.observeMusic { music ->
+            ClusterMusicState.publish(CarPlayNowPlaying(
+                title = music.title, album = music.album, artist = music.artist,
+                durationMillis = music.durationMillis, elapsedMillis = music.positionMillis, playing = music.playing,
+            ), music.artwork)
+        }
+        override val view: View get() = hud
+
+        init { GwmVehicleData.addListener(app, vehicle) }
+
+        override fun setGuidance(guidance: DiConnectViews.Guidance?) = hud.setGuidance(guidance(guidance))
+
+        override fun release() {
+            GwmVehicleData.removeListener(vehicle)
+            stopMusic()
+            ClusterMusicState.publish(CarPlayNowPlaying(), null)
+        }
+    }
+
+    private class HudLayer(displayContext: Context, anchor: Int) : DiConnectViews.Layer {
+        private val hud = GwmHeadUpView(displayContext).apply {
+            setAnchor(GwmHeadUpView.Anchor.entries.getOrElse(anchor) { GwmHeadUpView.Anchor.CENTRE })
+        }
+        override val view: View get() = hud
+        override fun setGuidance(guidance: DiConnectViews.Guidance?) = hud.setGuidance(guidance(guidance))
+        override fun release() = Unit
+    }
+}
+
+/** Registers [DiConnectPlayViews] when the app process starts, before any Android Auto session. */
+internal class DiConnectViewsProvider : ContentProvider() {
+    override fun onCreate(): Boolean {
+        context?.applicationContext?.let(DiConnectPlayViews::install)
+        return true
+    }
+    override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor? = null
+    override fun getType(uri: Uri): String? = null
+    override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+    override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int = 0
+    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = 0
+}
+''')
+edit(root/'common/src/main/AndroidManifest.xml',('    </application>','''        <!-- Di-Connect: D-Play's cluster layer and HUD for Android Auto (DiConnectPlayViews). -->
+        <provider
+            android:name="com.shilapi.xcertplay.DiConnectViewsProvider"
+            android:authorities="${applicationId}.di-connect-views"
+            android:exported="false" />
+    </application>'''))
+
+# D-Play's launch test covers CarPlay's transport on auto-connect; Di-Connect opens with Android Auto
+# unless CarPlay is chosen, so the test chooses CarPlay first. Its CarPlay assertions are unchanged.
+edit(root/'common/src/test/java/com/shilapi/xcertplay/DefaultConnectionModeTest.kt',
+    ('''        DiPlayPreferences.saveAutoConnect(app, true)
+        DiPlayPreferences.savePhone(app, "00:11:22:33:44:55", "Test iPhone")''','''        DiPlayPreferences.saveAutoConnect(app, true)
+        com.andrerinas.openheadunit.DiConnectAndroidAuto.saveOpensWithCarPlay(app, true)
+        DiPlayPreferences.savePhone(app, "00:11:22:33:44:55", "Test iPhone")'''))
+
+# CarPlay's settings swipe in Android Auto: D-Play's finger count (three by default) swiped down opens
+# Di-Connect's settings while Android Auto stays connected, as it does over CarPlay. DiAuto's
+# two-finger edge swipes are unchanged. The Di-Connect icon then returns to Android Auto.
+require('const val SETTINGS_SWIPE_DISTANCE_DP = 72' in (root/'common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt').read_text()
+    and 'KEY_SETTINGS_GESTURE_FINGERS = "settings_gesture_fingers"' in persist,'D-Play settings swipe constants changed')
+(dest/'src/main/java/com/andrerinas/openheadunit/DiConnectSettingsSwipe.kt').write_text('''package com.andrerinas.openheadunit
+
+import android.app.Activity
+import android.content.Intent
+import android.view.MotionEvent
+import kotlin.math.abs
+
+/**
+ * D-Play's CarPlay settings swipe, for Android Auto: the chosen number of fingers (D-Play's setting,
+ * three by default, 0 = off) swiped down opens Di-Connect's settings while Android Auto stays
+ * connected. Same distance and direction rule as D-Play's CarPlay screen.
+ */
+class DiConnectSettingsSwipe(private val activity: Activity) {
+    enum class Result { PASS, STARTED, CONSUMED }
+
+    private var sequence = false
+    private var tracking = false
+    private var startX = 0f
+    private var startY = 0f
+
+    fun onTouch(event: MotionEvent): Result {
+        val fingers = DiConnectSettings.int(activity, SETTINGS_GESTURE_FINGERS, 3).let { if (it == 0) 0 else it.coerceIn(2, 4) }
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { sequence = false; tracking = false }
+            MotionEvent.ACTION_POINTER_DOWN -> if (fingers > 0 && event.pointerCount == fingers && !sequence) {
+                sequence = true
+                tracking = true
+                startX = centroid(event, horizontal = true)
+                startY = centroid(event, horizontal = false)
+                return Result.STARTED
+            }
+        }
+        if (!sequence) return Result.PASS
+        when {
+            event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL -> {
+                sequence = false; tracking = false
+            }
+            event.actionMasked == MotionEvent.ACTION_POINTER_UP || event.pointerCount != fingers -> tracking = false
+            tracking && event.actionMasked == MotionEvent.ACTION_MOVE -> {
+                val dx = abs(centroid(event, horizontal = true) - startX)
+                val dy = centroid(event, horizontal = false) - startY
+                val distance = SWIPE_DISTANCE_DP * activity.resources.displayMetrics.density
+                if (abs(dy) >= distance && abs(dy) >= dx * SWIPE_DIRECTION_RATIO) {
+                    tracking = false
+                    if (dy > 0) openSettings()
+                }
+            }
+        }
+        return Result.CONSUMED
+    }
+
+    private fun openSettings() {
+        activity.startActivity(Intent().setClassName(activity, DI_CONNECT_HOME)
+            .putExtra("page", "settings").addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+    }
+
+    private fun centroid(event: MotionEvent, horizontal: Boolean): Float {
+        var total = 0f
+        for (i in 0 until event.pointerCount) total += if (horizontal) event.getX(i) else event.getY(i)
+        return total / event.pointerCount
+    }
+
+    private companion object {
+        const val SETTINGS_GESTURE_FINGERS = "settings_gesture_fingers"
+        const val SWIPE_DISTANCE_DP = 72
+        const val SWIPE_DIRECTION_RATIO = 1.15f
+        const val DI_CONNECT_HOME = "com.shilapi.xcertplay.DiPlayActivity"
+    }
+}
+''')
+edit(dest/'src/main/java/com/andrerinas/openheadunit/aap/AapProjectionActivity.kt',
+    ('''    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+''','''    // Di-Connect: CarPlay's settings swipe opens Di-Connect's settings without leaving Android Auto.
+    private val diConnectSettingsSwipe by lazy { com.andrerinas.openheadunit.DiConnectSettingsSwipe(this) }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (diConnectSettingsSwipe.onTouch(ev)) {
+            com.andrerinas.openheadunit.DiConnectSettingsSwipe.Result.STARTED -> {
+                // Release what the first fingers pressed in Android Auto, as D-Play does for CarPlay.
+                val cancel = MotionEvent.obtain(ev).apply { action = MotionEvent.ACTION_CANCEL }
+                super.dispatchTouchEvent(cancel)
+                cancel.recycle()
+                return true
+            }
+            com.andrerinas.openheadunit.DiConnectSettingsSwipe.Result.CONSUMED -> return true
+            com.andrerinas.openheadunit.DiConnectSettingsSwipe.Result.PASS -> Unit
+        }
+'''))
+edit(D,('''        if (isLauncherIntent(intent) && CarPlayBackgroundSession.hasSession()) {
+            page = "home"; render(); openProjection(); return
+        }''',f'''        if (isLauncherIntent(intent) && CarPlayBackgroundSession.hasSession()) {{
+            page = "home"; render(); openProjection(); return
+        }}
+        // Di-Connect: the icon returns to a connected Android Auto the same way.
+        if (isLauncherIntent(intent) && {AA_}.isConnected(this)) {{
+            page = "home"; render(); {AA_}.connect(this); return
+        }}'''))
+
+# One name: Di-Connect, in D-Play's and Android Auto's text, the car name the phone shows and Android
+# Auto's local hotspot. Credits, licence notes and the "Import from a DiPlay APK" option keep the
+# real names, and URLs are untouched.
+KEEP_NAMES={'receiver_based_on_xcertplay_licensed_under_gpl_3_0_diplay','settings_auth_import_apk','settings_auth_import_description'}
+def rename(folder,old,keep=()):
+    total=0
+    for f in sorted(folder.glob('values*/strings.xml')):
+        text=f.read_text(); count=[0]
+        def element(m):
+            if m[2] in keep or 'translatable="false"' in m[1]: return m[0]
+            body,n=re.subn(rf'(?<![/\w]){old}(?![/\w])','Di-Connect',m[3]); count[0]+=n
+            return m[1]+body+m[4]
+        f.write_text(re.sub(r'(<string name="([^"]+)"[^>]*>)(.*?)(</string>)',element,text,flags=re.S)); total+=count[0]
+    return total
+require(rename(root/'common/src/main/res','DiPlay',KEEP_NAMES)>50,'Expected D-Play text naming DiPlay to rename')
+require(rename(dest/'src/main/res','DiAuto')>10,'Expected Android Auto text naming DiAuto to rename')
+require('DiPlay APK' in (root/'common/src/main/res/values/strings.xml').read_text(),'The DiPlay APK import text must keep its name')
+edit(dest/'src/main/java/com/andrerinas/openheadunit/utils/Settings.kt',
+    ('prefs.getString("vehicle-display-name", "DiAuto")!!','prefs.getString("vehicle-display-name", "Di-Connect")!!'))
+edit(dest/'src/main/java/com/andrerinas/openheadunit/connection/LocalHotspotCredentialsProvider.kt',
+    ('"DiAuto-${UUID.randomUUID().toString().take(6)}"','"Di-Connect-${UUID.randomUUID().toString().take(6)}"'))

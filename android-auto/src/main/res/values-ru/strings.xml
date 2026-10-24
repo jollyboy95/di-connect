@@ -1,5 +1,5 @@
 <resources>
-    <string name="aa_app_name">DiAuto</string>
+    <string name="aa_app_name">Di-Connect</string>
     <string name="aa_menu">Меню</string>
     <string name="aa_settings">Настройки</string>
 
@@ -12,7 +12,7 @@
     <string name="aa_video">Android Auto</string>
     <string name="aa_self_mode">Автономный режим</string>
     <string name="aa_to_android_auto">В Android Auto</string>
-    <string name="aa_title">DiAuto</string>
+    <string name="aa_title">Di-Connect</string>
     <string name="aa_remove">Удалить</string>
     <string name="aa_usb">USB</string>
     <string name="aa_wifi">Wi‑Fi</string>
@@ -895,7 +895,7 @@
     <string name="aa_setup_wi_fi_direct">Wi-Fi Direct</string>
     <string name="aa_setup_wifi_direct_hint">Другой вариант · Включите Wi-Fi автомобиля. На частоте 2,4 ГГц возможны прерывания.</string>
     <string name="aa_setup_configure_hotspot">2 · Настройте точку доступа автомобиля</string>
-    <string name="aa_setup_hotspot_instructions">Включите точку доступа в настройках автомобиля и по возможности выберите 5 ГГц. Точно скопируйте имя и пароль. Не выключайте точку доступа при подключении. Подключать телефон к ней вручную не нужно: DiAuto передаст данные по Bluetooth после нажатия «Подключить телефон».</string>
+    <string name="aa_setup_hotspot_instructions">Включите точку доступа в настройках автомобиля и по возможности выберите 5 ГГц. Точно скопируйте имя и пароль. Не выключайте точку доступа при подключении. Подключать телефон к ней вручную не нужно: Di-Connect передаст данные по Bluetooth после нажатия «Подключить телефон».</string>
     <string name="aa_setup_hotspot_on">Точка доступа включена · Проверьте, что выбрано 5 ГГц.</string>
     <string name="aa_setup_hotspot_off">Точка доступа выключена · Включите её перед подключением.</string>
     <string name="aa_setup_hotspot_unknown">Состояние точки доступа недоступно · Проверьте настройки автомобиля.</string>
@@ -912,12 +912,12 @@
     <string name="aa_setup_prepare_car">2 · Подготовьте автомобиль</string>
     <string name="aa_setup_wifi_direct_instructions">Включите Wi-Fi автомобиля. Разрешите доступ к местоположению и устройствам поблизости и включите геолокацию по запросу Android. При прерываниях попробуйте точку доступа автомобиля на 5 ГГц.</string>
     <string name="aa_setup_pair_and_connect">3 · Выполните сопряжение и подключитесь</string>
-    <string name="aa_setup_pair_instructions">Оставьте Bluetooth и Wi-Fi телефона включёнными. Выполните сопряжение с автомобилем. Вернитесь в DiAuto, нажмите «Подключить телефон» и выберите телефон. Примите запросы Android Auto на телефоне. Интернет-тариф для автомобиля не нужен; мобильные данные зависят от сетевых настроек телефона.</string>
+    <string name="aa_setup_pair_instructions">Оставьте Bluetooth и Wi-Fi телефона включёнными. Выполните сопряжение с автомобилем. Вернитесь в Di-Connect, нажмите «Подключить телефон» и выберите телефон. Примите запросы Android Auto на телефоне. Интернет-тариф для автомобиля не нужен; мобильные данные зависят от сетевых настроек телефона.</string>
     <string name="aa_setup_open_bluetooth_settings">Открыть настройки Bluetooth</string>
     <string name="aa_setup_review_app_permissions">Проверить разрешения приложения</string>
-    <string name="aa_setup_done_return_to_diauto">Готово · Вернуться в DiAuto</string>
+    <string name="aa_setup_done_return_to_diauto">Готово · Вернуться в Di-Connect</string>
     <string name="aa_setup_prefer_a_cable">Предпочитаете кабель?</string>
-    <string name="aa_setup_usb_instructions">Используйте USB-кабель и USB-порт автомобиля с передачей данных. Разблокируйте телефон и нажмите «Подключить по USB» на главном экране DiAuto. Настраивать точку доступа не нужно.</string>
+    <string name="aa_setup_usb_instructions">Используйте USB-кабель и USB-порт автомобиля с передачей данных. Разблокируйте телефон и нажмите «Подключить по USB» на главном экране Di-Connect. Настраивать точку доступа не нужно.</string>
     <string name="aa_setup_hotspot_copy_hint">Скопируйте имя и пароль из настроек точки доступа автомобиля. Сохранение здесь не меняет её настройки.</string>
     <string name="aa_setup_hotspot_name">Имя точки доступа</string>
     <string name="aa_setup_hotspot_password">Пароль точки доступа</string>
@@ -959,7 +959,7 @@
     <string name="aa_cluster_marker_vertical">Метка автомобиля: вверх / вниз</string>
     <string name="aa_cluster_marker_centre">По центру</string>
     <string name="aa_cluster_map_hint">Включите на приборной панели малый или полноэкранный режим навигации через меню на руле. Карта остаётся, пока подключён Android Auto, в том числе под камерой и другими приложениями. Waze и Google Карты поддерживают карту на панели; карточка поворота зависит от приложения.</string>
-    <string name="aa_cluster_map_overlay_hint">Если карта на приборной панели закрывается при открытии камеры или другого приложения, разрешите DiAuto показ поверх других приложений. Необязательно: многие головные устройства сохраняют её и без этого.</string>
+    <string name="aa_cluster_map_overlay_hint">Если карта на приборной панели закрывается при открытии камеры или другого приложения, разрешите Di-Connect показ поверх других приложений. Необязательно: многие головные устройства сохраняют её и без этого.</string>
     <string name="aa_cluster_map_overlay_grant">Разрешить показ поверх других приложений</string>
     <string name="aa_cluster_map_overlay_unavailable">На этом устройстве нет экрана для этого разрешения.</string>
     <string name="aa_byd_left_hand_traffic_title">Левостороннее движение</string>
@@ -974,7 +974,7 @@
     <string name="aa_native_local_hotspot_wifi_settings">Открыть настройки Wi-Fi автомобиля</string>
     <string name="aa_native_local_hotspot_wifi_settings_unavailable">Откройте Wi-Fi в настройках автомобиля.</string>
     <string name="aa_native_ap_transport_local_hotspot">Локальная точка доступа</string>
-    <string name="aa_native_ap_transport_local_hotspot_hint">Экспериментально. DiAuto использует отдельную локальную точку доступа для Android Auto; интернет-тариф автомобиля не нужен. Старые версии Android должны позволять приложению проверять частоту 5 ГГц через драйвер Wi-Fi. Если карты или музыка прерываются на DiLink 5.1, попробуйте выключить Wi-Fi в настройках автомобиля. Оставьте Bluetooth и Wi-Fi телефона включёнными. Совместимость зависит от автомобиля.</string>
+    <string name="aa_native_ap_transport_local_hotspot_hint">Экспериментально. Di-Connect использует отдельную локальную точку доступа для Android Auto; интернет-тариф автомобиля не нужен. Старые версии Android должны позволять приложению проверять частоту 5 ГГц через драйвер Wi-Fi. Если карты или музыка прерываются на DiLink 5.1, попробуйте выключить Wi-Fi в настройках автомобиля. Оставьте Bluetooth и Wi-Fi телефона включёнными. Совместимость зависит от автомобиля.</string>
     <string name="aa_audio_queue_unbounded">Без ограничения (старый режим)</string>
     <string name="aa_audio_queue_chunks">Аудиоблоков: %1$d</string>
     <string name="aa_audio_queue_low">10 блоков (малая задержка)</string>
@@ -997,6 +997,6 @@
     <string name="aa_turn_card_info_duration_hm">%1$dч %2$dмин</string>
     <string name="aa_turn_card_info_duration_m">%1$dмин</string>
     <string name="aa_turn_card_info_km">%1$.1f км</string>
-    <string name="aa_cluster_usage_access_hint">В режиме «Сценарий» боковая карта видна на всех карточках приборной панели. Разрешите DiAuto «Доступ к истории использования», чтобы она показывалась только на карточке карты. Если кнопка ничего не открывает, разрешение можно выдать через ADB: appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
+    <string name="aa_cluster_usage_access_hint">В режиме «Сценарий» боковая карта видна на всех карточках приборной панели. Разрешите Di-Connect «Доступ к истории использования», чтобы она показывалась только на карточке карты. Если кнопка ничего не открывает, разрешение можно выдать через ADB: appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
     <string name="aa_cluster_usage_access_grant">Разрешить доступ к истории использования</string>
 </resources>

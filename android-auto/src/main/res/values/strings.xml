@@ -1,5 +1,5 @@
 <resources>
-    <string name="aa_app_name">DiAuto</string>
+    <string name="aa_app_name">Di-Connect</string>
     <string name="aa_menu">Menu</string>
     <string name="aa_settings">Settings</string>
 
@@ -19,7 +19,7 @@
     <string name="aa_onb_next">Next</string>
     <string name="aa_onb_skip">Skip</string>
     <string name="aa_onb_ready_finish">Finish</string>
-    <string name="aa_onb_welcome_title">Welcome to DiAuto</string>
+    <string name="aa_onb_welcome_title">Welcome to Di-Connect</string>
     <string name="aa_onb_welcome_body">Connect your Android phone wirelessly to your car. First, review the essentials and enable permissions. You can tune your display and sound later in Settings.</string>
     <string name="aa_onb_safety_title">Safety first</string>
     <string name="aa_onb_safety_accept">I have read and accept the terms</string>
@@ -183,7 +183,7 @@
     <string name="aa_video">Android Auto</string>
     <string name="aa_self_mode">Self Mode</string>
     <string name="aa_to_android_auto">To Android Auto</string>
-    <string name="aa_title">DiAuto</string>
+    <string name="aa_title">Di-Connect</string>
     <string name="aa_remove">Remove</string>
     <string name="aa_usb">USB</string>
     <string name="aa_wifi">WiFi</string>
@@ -848,7 +848,7 @@
     <string name="aa_native_local_hotspot_wifi_settings">Open car Wi-Fi settings</string>
     <string name="aa_native_local_hotspot_wifi_settings_unavailable">Open Wi-Fi from the car’s Settings app.</string>
     <string name="aa_native_ap_transport_local_hotspot">Local hotspot</string>
-    <string name="aa_native_ap_transport_local_hotspot_hint">Experimental. DiAuto uses a separate local hotspot for Android Auto; no car internet plan is needed. Older Android versions must let the app verify a 5 GHz hotspot from the Wi-Fi driver. If maps or music stutter on DiLink 5.1, try turning off the car’s Wi-Fi switch in car settings. Keep Bluetooth and your phone’s Wi-Fi on. Compatibility depends on the car.</string>
+    <string name="aa_native_ap_transport_local_hotspot_hint">Experimental. Di-Connect uses a separate local hotspot for Android Auto; no car internet plan is needed. Older Android versions must let the app verify a 5 GHz hotspot from the Wi-Fi driver. If maps or music stutter on DiLink 5.1, try turning off the car’s Wi-Fi switch in car settings. Keep Bluetooth and your phone’s Wi-Fi on. Compatibility depends on the car.</string>
     <string name="aa_native_ap_transport_hint">Experimental. The phone joins this device\'s own hotspot instead of a WiFi Direct group. Switch the hotspot on yourself before connecting, and set it to 5 GHz if you can - over 2.4 GHz the phone connects and then drops the session repeatedly without any picture, unless you lower the resolution and frame rate. If the network name cannot be read automatically, enter it below.</string>
     <string name="aa_hotspot_interface_override">Hotspot network interface</string>
     <string name="aa_hotspot_interface_override_message">Leave blank to work it out automatically. Set this if the log says more than one interface could be the access point, or picks the wrong one. The name is the one the log reports after &quot;Providing credentials from&quot;, or the entry holding your hotspot\'s address in &quot;ip -brief addr&quot; from a shell. Common names: ap0, wlan0, wlan1, wlan2, softap0, ra0.</string>
@@ -962,7 +962,7 @@
     <string name="aa_cluster_marker_vertical">Car marker: up / down</string>
     <string name="aa_cluster_marker_centre">Centre</string>
     <string name="aa_cluster_map_hint">Set the dashboard to Small or Full screen navi with the steering-wheel menu. The map stays up while Android Auto is connected, also behind the camera or other apps. Waze and Google Maps support the cluster map; the turn card depends on the app.</string>
-    <string name="aa_cluster_map_overlay_hint">If the dashboard map closes when the camera or another app opens, allow DiAuto to display over other apps. Optional: many head units keep it up without this.</string>
+    <string name="aa_cluster_map_overlay_hint">If the dashboard map closes when the camera or another app opens, allow Di-Connect to display over other apps. Optional: many head units keep it up without this.</string>
     <string name="aa_cluster_map_overlay_grant">Allow display over other apps</string>
     <string name="aa_cluster_map_overlay_unavailable">This head unit has no screen for this permission.</string>
     <string name="aa_byd_left_hand_traffic_title">Traffic drives on the left</string>
@@ -984,7 +984,7 @@
     <string name="aa_setup_wi_fi_direct">Wi-Fi Direct</string>
     <string name="aa_setup_wifi_direct_hint">Alternative setup · Requires the car’s Wi-Fi switch on. A 2.4 GHz link may stutter.</string>
     <string name="aa_setup_configure_hotspot">2 · Set up the car hotspot</string>
-    <string name="aa_setup_hotspot_instructions">Turn on the hotspot in the car settings and select 5 GHz if available. Copy its name and password exactly. Leave the hotspot on when connecting. You do not need to join it manually on your phone; DiAuto sends the details over Bluetooth after you tap Connect phone.</string>
+    <string name="aa_setup_hotspot_instructions">Turn on the hotspot in the car settings and select 5 GHz if available. Copy its name and password exactly. Leave the hotspot on when connecting. You do not need to join it manually on your phone; Di-Connect sends the details over Bluetooth after you tap Connect phone.</string>
     <string name="aa_setup_hotspot_on">Car hotspot is on · Check that 5 GHz is selected in car settings.</string>
     <string name="aa_setup_hotspot_off">Car hotspot is off · Turn it on before connecting.</string>
     <string name="aa_setup_hotspot_unknown">Hotspot status unavailable · Check it in car settings.</string>
@@ -1001,12 +1001,12 @@
     <string name="aa_setup_prepare_car">2 · Prepare the car</string>
     <string name="aa_setup_wifi_direct_instructions">Turn the car’s Wi-Fi switch on. Allow Location / Nearby devices when requested and enable Location when Android asks. If playback stutters, try the built-in car hotspot at 5 GHz.</string>
     <string name="aa_setup_pair_and_connect">3 · Pair and connect</string>
-    <string name="aa_setup_pair_instructions">Keep Bluetooth and Wi-Fi on your Android phone. Pair with the car’s Bluetooth. Return to DiAuto, tap Connect phone and select your phone. Accept the Android Auto prompts on the phone. A car internet plan is not required; mobile data depends on your phone’s network settings.</string>
+    <string name="aa_setup_pair_instructions">Keep Bluetooth and Wi-Fi on your Android phone. Pair with the car’s Bluetooth. Return to Di-Connect, tap Connect phone and select your phone. Accept the Android Auto prompts on the phone. A car internet plan is not required; mobile data depends on your phone’s network settings.</string>
     <string name="aa_setup_open_bluetooth_settings">Open Bluetooth settings</string>
     <string name="aa_setup_review_app_permissions">Review app permissions</string>
-    <string name="aa_setup_done_return_to_diauto">Done · Return to DiAuto</string>
+    <string name="aa_setup_done_return_to_diauto">Done · Return to Di-Connect</string>
     <string name="aa_setup_prefer_a_cable">Prefer a cable?</string>
-    <string name="aa_setup_usb_instructions">Use a USB data cable and the car’s USB data port. Unlock your phone and tap Connect with USB on DiAuto’s home screen. No hotspot setup is needed.</string>
+    <string name="aa_setup_usb_instructions">Use a USB data cable and the car’s USB data port. Unlock your phone and tap Connect with USB on Di-Connect’s home screen. No hotspot setup is needed.</string>
     <string name="aa_setup_hotspot_copy_hint">Copy the name and password from the car’s hotspot settings. Saving here does not change the car’s hotspot.</string>
     <string name="aa_setup_hotspot_name">Hotspot name</string>
     <string name="aa_setup_hotspot_password">Hotspot password</string>
@@ -1050,6 +1050,6 @@
     <string name="aa_turn_card_info_duration_hm">%1$dh %2$dmin</string>
     <string name="aa_turn_card_info_duration_m">%1$dmin</string>
     <string name="aa_turn_card_info_km">%1$.1f km</string>
-    <string name="aa_cluster_usage_access_hint">In Scenario the side map shows on every cluster card. Allow Usage access for DiAuto so it shows only on the map card. If the button opens nothing, it can be granted over ADB: appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
+    <string name="aa_cluster_usage_access_hint">In Scenario the side map shows on every cluster card. Allow Usage access for Di-Connect so it shows only on the map card. If the button opens nothing, it can be granted over ADB: appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
     <string name="aa_cluster_usage_access_grant">Allow Usage access</string>
 </resources>

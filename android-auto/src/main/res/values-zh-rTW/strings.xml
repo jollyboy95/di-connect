@@ -1,5 +1,5 @@
 <resources>
-    <string name="aa_app_name">DiAuto</string>
+    <string name="aa_app_name">Di-Connect</string>
     <string name="aa_menu">選單</string>
     <string name="aa_settings">設定</string>
     <string name="aa_title_activity_settings">設定行為</string>
@@ -11,7 +11,7 @@
     <string name="aa_video">Android Auto</string>
     <string name="aa_self_mode">自我模式</string>
     <string name="aa_to_android_auto">到 Android Auto</string>
-    <string name="aa_title">DiAuto</string>
+    <string name="aa_title">Di-Connect</string>
     <string name="aa_remove">移除</string>
     <string name="aa_usb">USB</string>
     <string name="aa_wifi">WiFi</string>

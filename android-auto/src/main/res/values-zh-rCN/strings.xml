@@ -1,5 +1,5 @@
 <resources>
-    <string name="aa_app_name">DiAuto</string>
+    <string name="aa_app_name">Di-Connect</string>
     <string name="aa_menu">菜单</string>
     <string name="aa_settings">设置</string>
     <string name="aa_title_activity_settings">设置行为</string>
@@ -11,7 +11,7 @@
     <string name="aa_video">Android Auto</string>
     <string name="aa_self_mode">自我模式</string>
     <string name="aa_to_android_auto">到 Android Auto</string>
-    <string name="aa_title">DiAuto</string>
+    <string name="aa_title">Di-Connect</string>
     <string name="aa_remove">移除</string>
     <string name="aa_usb">USB</string>
     <string name="aa_wifi">WiFi</string>
@@ -895,7 +895,7 @@
     <string name="aa_setup_wi_fi_direct">Wi-Fi Direct</string>
     <string name="aa_setup_wifi_direct_hint">备选方式 · 需要打开车辆 Wi-Fi 开关。2.4 GHz 连接可能卡顿。</string>
     <string name="aa_setup_configure_hotspot">2 · 设置车载热点</string>
-    <string name="aa_setup_hotspot_instructions">在车辆设置中打开热点，如支持则选择 5 GHz。准确复制名称和密码，连接时保持热点开启。无需在手机上手动加入热点；点击连接手机后，DiAuto 会通过蓝牙发送连接信息。</string>
+    <string name="aa_setup_hotspot_instructions">在车辆设置中打开热点，如支持则选择 5 GHz。准确复制名称和密码，连接时保持热点开启。无需在手机上手动加入热点；点击连接手机后，Di-Connect 会通过蓝牙发送连接信息。</string>
     <string name="aa_setup_hotspot_on">车载热点已开启 · 请确认车辆设置中已选择 5 GHz。</string>
     <string name="aa_setup_hotspot_off">车载热点已关闭 · 请在连接前开启。</string>
     <string name="aa_setup_hotspot_unknown">无法获取热点状态 · 请在车辆设置中检查。</string>
@@ -912,12 +912,12 @@
     <string name="aa_setup_prepare_car">2 · 准备车辆</string>
     <string name="aa_setup_wifi_direct_instructions">打开车辆 Wi-Fi 开关。按提示允许位置信息和附近设备权限，并在 Android 要求时开启定位。如播放卡顿，请尝试 5 GHz 车载热点。</string>
     <string name="aa_setup_pair_and_connect">3 · 配对并连接</string>
-    <string name="aa_setup_pair_instructions">保持 Android 手机的蓝牙和 Wi-Fi 开启，与车辆蓝牙配对。返回 DiAuto，点击连接手机并选择手机。在手机上接受 Android Auto 提示。不需要车辆流量套餐；移动数据取决于手机的网络设置。</string>
+    <string name="aa_setup_pair_instructions">保持 Android 手机的蓝牙和 Wi-Fi 开启，与车辆蓝牙配对。返回 Di-Connect，点击连接手机并选择手机。在手机上接受 Android Auto 提示。不需要车辆流量套餐；移动数据取决于手机的网络设置。</string>
     <string name="aa_setup_open_bluetooth_settings">打开蓝牙设置</string>
     <string name="aa_setup_review_app_permissions">检查应用权限</string>
-    <string name="aa_setup_done_return_to_diauto">完成 · 返回 DiAuto</string>
+    <string name="aa_setup_done_return_to_diauto">完成 · 返回 Di-Connect</string>
     <string name="aa_setup_prefer_a_cable">更喜欢有线连接？</string>
-    <string name="aa_setup_usb_instructions">使用 USB 数据线和车辆的数据 USB 接口。解锁手机，在 DiAuto 主屏幕点击通过 USB 连接。无需设置热点。</string>
+    <string name="aa_setup_usb_instructions">使用 USB 数据线和车辆的数据 USB 接口。解锁手机，在 Di-Connect 主屏幕点击通过 USB 连接。无需设置热点。</string>
     <string name="aa_setup_hotspot_copy_hint">从车辆热点设置中复制名称和密码。在此保存不会更改车载热点设置。</string>
     <string name="aa_setup_hotspot_name">热点名称</string>
     <string name="aa_setup_hotspot_password">热点密码</string>
@@ -959,7 +959,7 @@
     <string name="aa_cluster_marker_vertical">车辆标记：上 / 下</string>
     <string name="aa_cluster_marker_centre">居中</string>
     <string name="aa_cluster_map_hint">通过方向盘菜单将仪表盘设为小屏或全屏导航。只要 Android Auto 保持连接，地图就会一直显示，即使摄像头或其他应用在前台。Waze 和 Google 地图支持仪表盘地图；转向卡片取决于应用。</string>
-    <string name="aa_cluster_map_overlay_hint">如果打开摄像头或其他应用时仪表盘地图消失，请允许 DiAuto 显示在其他应用上层。可选：许多车机无需此权限也能保持显示。</string>
+    <string name="aa_cluster_map_overlay_hint">如果打开摄像头或其他应用时仪表盘地图消失，请允许 Di-Connect 显示在其他应用上层。可选：许多车机无需此权限也能保持显示。</string>
     <string name="aa_cluster_map_overlay_grant">允许显示在其他应用上层</string>
     <string name="aa_cluster_map_overlay_unavailable">此车机没有该权限的设置页面。</string>
     <string name="aa_byd_left_hand_traffic_title">靠左行驶</string>
@@ -974,7 +974,7 @@
     <string name="aa_native_local_hotspot_wifi_settings">打开车辆 Wi-Fi 设置</string>
     <string name="aa_native_local_hotspot_wifi_settings_unavailable">请从车辆设置应用打开 Wi-Fi。</string>
     <string name="aa_native_ap_transport_local_hotspot">本地热点</string>
-    <string name="aa_native_ap_transport_local_hotspot_hint">实验功能。DiAuto 使用独立的本地热点连接 Android Auto，无需车辆流量套餐。较旧的 Android 版本必须允许应用通过 Wi-Fi 驱动验证热点是否使用 5 GHz。如 DiLink 5.1 上地图或音乐卡顿，请尝试在车辆设置中关闭 Wi-Fi 开关。保持蓝牙和手机 Wi-Fi 开启。兼容性取决于车辆。</string>
+    <string name="aa_native_ap_transport_local_hotspot_hint">实验功能。Di-Connect 使用独立的本地热点连接 Android Auto，无需车辆流量套餐。较旧的 Android 版本必须允许应用通过 Wi-Fi 驱动验证热点是否使用 5 GHz。如 DiLink 5.1 上地图或音乐卡顿，请尝试在车辆设置中关闭 Wi-Fi 开关。保持蓝牙和手机 Wi-Fi 开启。兼容性取决于车辆。</string>
     <string name="aa_audio_queue_unbounded">无限制（旧模式）</string>
     <string name="aa_audio_queue_chunks">音频块数：%1$d</string>
     <string name="aa_audio_queue_low">10 个音频块（低延迟）</string>
@@ -997,6 +997,6 @@
     <string name="aa_turn_card_info_duration_hm">%1$d小时%2$d分</string>
     <string name="aa_turn_card_info_duration_m">%1$d分</string>
     <string name="aa_turn_card_info_km">%1$.1f公里</string>
-    <string name="aa_cluster_usage_access_hint">在“场景”主题下，侧边小地图会出现在仪表的每个卡片上。为 DiAuto 开启“使用情况访问权限”后，地图只在地图卡片上显示。如果按钮无法打开设置，可通过 ADB 授权：appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
+    <string name="aa_cluster_usage_access_hint">在“场景”主题下，侧边小地图会出现在仪表的每个卡片上。为 Di-Connect 开启“使用情况访问权限”后，地图只在地图卡片上显示。如果按钮无法打开设置，可通过 ADB 授权：appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
     <string name="aa_cluster_usage_access_grant">开启使用情况访问权限</string>
 </resources>

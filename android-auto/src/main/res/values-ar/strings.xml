@@ -1,5 +1,5 @@
 <resources>
-    <string name="aa_app_name">DiAuto</string>
+    <string name="aa_app_name">Di-Connect</string>
     <string name="aa_menu">القائمة</string>
     <string name="aa_settings">الإعدادات</string>
 
@@ -12,7 +12,7 @@
     <string name="aa_video">Android Auto</string>
     <string name="aa_self_mode">الوضع الذاتي</string>
     <string name="aa_to_android_auto">إلى Android Auto</string>
-    <string name="aa_title">DiAuto</string>
+    <string name="aa_title">Di-Connect</string>
     <string name="aa_remove">إزالة</string>
     <string name="aa_usb">USB</string>
     <string name="aa_wifi">واي فاي</string>
@@ -894,7 +894,7 @@
     <string name="aa_setup_wi_fi_direct">Wi-Fi Direct</string>
     <string name="aa_setup_wifi_direct_hint">خيار بديل · يتطلب تشغيل Wi-Fi في السيارة. قد يتقطع الاتصال بتردد 2.4 غيغاهرتز.</string>
     <string name="aa_setup_configure_hotspot">2 · إعداد نقطة اتصال السيارة</string>
-    <string name="aa_setup_hotspot_instructions">شغّل نقطة الاتصال في إعدادات السيارة واختر 5 غيغاهرتز إن توفر. انسخ الاسم وكلمة المرور بدقة واترك نقطة الاتصال قيد التشغيل أثناء الاتصال. لا يلزم الانضمام إليها يدوياً من الهاتف؛ يرسل DiAuto البيانات عبر Bluetooth بعد الضغط على توصيل الهاتف.</string>
+    <string name="aa_setup_hotspot_instructions">شغّل نقطة الاتصال في إعدادات السيارة واختر 5 غيغاهرتز إن توفر. انسخ الاسم وكلمة المرور بدقة واترك نقطة الاتصال قيد التشغيل أثناء الاتصال. لا يلزم الانضمام إليها يدوياً من الهاتف؛ يرسل Di-Connect البيانات عبر Bluetooth بعد الضغط على توصيل الهاتف.</string>
     <string name="aa_setup_hotspot_on">نقطة اتصال السيارة تعمل · تأكد من اختيار 5 غيغاهرتز في إعداداتها.</string>
     <string name="aa_setup_hotspot_off">نقطة اتصال السيارة متوقفة · شغّلها قبل الاتصال.</string>
     <string name="aa_setup_hotspot_unknown">حالة نقطة الاتصال غير متاحة · تحقق منها في إعدادات السيارة.</string>
@@ -911,12 +911,12 @@
     <string name="aa_setup_prepare_car">2 · تجهيز السيارة</string>
     <string name="aa_setup_wifi_direct_instructions">شغّل Wi-Fi في السيارة. اسمح بالموقع والأجهزة القريبة عند الطلب، وفعّل الموقع عندما يطلب Android ذلك. إذا تقطع التشغيل، جرّب نقطة اتصال السيارة بتردد 5 غيغاهرتز.</string>
     <string name="aa_setup_pair_and_connect">3 · الاقتران والاتصال</string>
-    <string name="aa_setup_pair_instructions">أبقِ Bluetooth وWi-Fi مفعّلين على هاتف Android واقترن ببلوتوث السيارة. ارجع إلى DiAuto واضغط توصيل الهاتف واختر هاتفك. وافق على مطالبات Android Auto على الهاتف. لا تحتاج إلى اشتراك إنترنت للسيارة؛ تعتمد بيانات الهاتف على إعدادات شبكته.</string>
+    <string name="aa_setup_pair_instructions">أبقِ Bluetooth وWi-Fi مفعّلين على هاتف Android واقترن ببلوتوث السيارة. ارجع إلى Di-Connect واضغط توصيل الهاتف واختر هاتفك. وافق على مطالبات Android Auto على الهاتف. لا تحتاج إلى اشتراك إنترنت للسيارة؛ تعتمد بيانات الهاتف على إعدادات شبكته.</string>
     <string name="aa_setup_open_bluetooth_settings">فتح إعدادات Bluetooth</string>
     <string name="aa_setup_review_app_permissions">مراجعة أذونات التطبيق</string>
-    <string name="aa_setup_done_return_to_diauto">تم · العودة إلى DiAuto</string>
+    <string name="aa_setup_done_return_to_diauto">تم · العودة إلى Di-Connect</string>
     <string name="aa_setup_prefer_a_cable">تفضل الاتصال بسلك؟</string>
-    <string name="aa_setup_usb_instructions">استخدم كابل USB لنقل البيانات ومنفذ بيانات USB في السيارة. افتح قفل هاتفك واضغط الاتصال عبر USB في شاشة DiAuto الرئيسية. لا يلزم إعداد نقطة اتصال.</string>
+    <string name="aa_setup_usb_instructions">استخدم كابل USB لنقل البيانات ومنفذ بيانات USB في السيارة. افتح قفل هاتفك واضغط الاتصال عبر USB في شاشة Di-Connect الرئيسية. لا يلزم إعداد نقطة اتصال.</string>
     <string name="aa_setup_hotspot_copy_hint">انسخ الاسم وكلمة المرور من إعدادات نقطة اتصال السيارة. الحفظ هنا لا يغير نقطة اتصال السيارة.</string>
     <string name="aa_setup_hotspot_name">اسم نقطة الاتصال</string>
     <string name="aa_setup_hotspot_password">كلمة مرور نقطة الاتصال</string>
@@ -958,7 +958,7 @@
     <string name="aa_cluster_marker_vertical">علامة السيارة: أعلى / أسفل</string>
     <string name="aa_cluster_marker_centre">الوسط</string>
     <string name="aa_cluster_map_hint">اضبط لوحة العدادات على وضع الملاحة الصغير أو الكامل من قائمة المقود. تبقى الخريطة ظاهرة ما دام Android Auto متصلاً، حتى خلف الكاميرا أو التطبيقات الأخرى. يدعم Waze وخرائط Google خريطة لوحة العدادات؛ أما بطاقة الانعطاف فتعتمد على التطبيق.</string>
-    <string name="aa_cluster_map_overlay_hint">إذا اختفت الخريطة من لوحة العدادات عند فتح الكاميرا أو تطبيق آخر، اسمح لـ DiAuto بالظهور فوق التطبيقات الأخرى. اختياري: كثير من الشاشات تبقيها ظاهرة بدونه.</string>
+    <string name="aa_cluster_map_overlay_hint">إذا اختفت الخريطة من لوحة العدادات عند فتح الكاميرا أو تطبيق آخر، اسمح لـ Di-Connect بالظهور فوق التطبيقات الأخرى. اختياري: كثير من الشاشات تبقيها ظاهرة بدونه.</string>
     <string name="aa_cluster_map_overlay_grant">السماح بالظهور فوق التطبيقات الأخرى</string>
     <string name="aa_cluster_map_overlay_unavailable">لا توجد في هذه الشاشة صفحة لهذا الإذن.</string>
     <string name="aa_byd_left_hand_traffic_title">القيادة على اليسار</string>
@@ -973,7 +973,7 @@
     <string name="aa_native_local_hotspot_wifi_settings">فتح إعدادات Wi-Fi في السيارة</string>
     <string name="aa_native_local_hotspot_wifi_settings_unavailable">افتح Wi-Fi من تطبيق إعدادات السيارة.</string>
     <string name="aa_native_ap_transport_local_hotspot">نقطة اتصال محلية</string>
-    <string name="aa_native_ap_transport_local_hotspot_hint">تجريبي. يستخدم DiAuto نقطة اتصال محلية منفصلة لـ Android Auto؛ لا يلزم اشتراك إنترنت للسيارة. يجب أن تسمح إصدارات Android القديمة للتطبيق بالتحقق من تردد 5 غيغاهرتز عبر برنامج تشغيل Wi-Fi. إذا تقطعت الخرائط أو الموسيقى في DiLink 5.1، جرّب إيقاف Wi-Fi من إعدادات السيارة. أبقِ Bluetooth وWi-Fi الهاتف مفعّلين. التوافق يعتمد على السيارة.</string>
+    <string name="aa_native_ap_transport_local_hotspot_hint">تجريبي. يستخدم Di-Connect نقطة اتصال محلية منفصلة لـ Android Auto؛ لا يلزم اشتراك إنترنت للسيارة. يجب أن تسمح إصدارات Android القديمة للتطبيق بالتحقق من تردد 5 غيغاهرتز عبر برنامج تشغيل Wi-Fi. إذا تقطعت الخرائط أو الموسيقى في DiLink 5.1، جرّب إيقاف Wi-Fi من إعدادات السيارة. أبقِ Bluetooth وWi-Fi الهاتف مفعّلين. التوافق يعتمد على السيارة.</string>
     <string name="aa_audio_queue_unbounded">بلا حد (قديم)</string>
     <string name="aa_audio_queue_chunks">مقاطع الصوت: %1$d</string>
     <string name="aa_audio_queue_low">10 مقاطع (تأخير منخفض)</string>
@@ -996,6 +996,6 @@
     <string name="aa_turn_card_info_duration_hm">%1$dس %2$dد</string>
     <string name="aa_turn_card_info_duration_m">%1$dد</string>
     <string name="aa_turn_card_info_km">%1$.1f كم</string>
-    <string name="aa_cluster_usage_access_hint">في وضع «المشهد» تظهر الخريطة الجانبية في كل بطاقات لوحة العدادات. اسمح بـ«الوصول إلى بيانات الاستخدام» لـ DiAuto لتظهر فقط في بطاقة الخريطة. إذا لم يفتح الزر شيئًا، يمكن منح الإذن عبر ADB: appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
+    <string name="aa_cluster_usage_access_hint">في وضع «المشهد» تظهر الخريطة الجانبية في كل بطاقات لوحة العدادات. اسمح بـ«الوصول إلى بيانات الاستخدام» لـ Di-Connect لتظهر فقط في بطاقة الخريطة. إذا لم يفتح الزر شيئًا، يمكن منح الإذن عبر ADB: appops set com.andrerinas.headunitrevived GET_USAGE_STATS allow</string>
     <string name="aa_cluster_usage_access_grant">السماح بالوصول إلى بيانات الاستخدام</string>
 </resources>
