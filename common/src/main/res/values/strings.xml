@@ -1082,4 +1082,17 @@
     <string name="di_connect_android_auto">Android Auto</string>
     <string name="settings_di_connect_aa_nav_card">Directions card in Android Auto</string>
     <string name="settings_di_connect_aa_nav_card_description">Google Maps already shows its own directions card on the cluster. Turn on to add Di-Connect\'s card as well. CarPlay always shows it. Applies the next time Android Auto connects.</string>
+    <string name="di_connect_home_title">ANDROID AUTO · CARPLAY</string>
+    <string name="di_connect_connect_android_auto">Connect Android Auto</string>
+    <string name="di_connect_open_android_auto">Open Android Auto</string>
+    <string name="di_connect_aa_connecting">Connecting Android Auto…</string>
+    <string name="di_connect_aa_connected">Android Auto connected</string>
+    <string name="di_connect_choose_android_phone">Choose your Android phone</string>
+    <string name="di_connect_pair_android_phone">Turn on the car\'s Bluetooth and pair your Android phone first, then choose it here.</string>
+    <string name="settings_di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_android_auto_description">Connect Android Auto from the home screen. A phone plugged in by USB connects by cable; otherwise the chosen phone connects wirelessly.</string>
+    <string name="settings_di_connect_aa_phone">Wireless phone</string>
+    <string name="settings_di_connect_aa_phone_none">Not chosen</string>
+    <string name="settings_di_connect_aa_advanced">Advanced Android Auto settings</string>
+    <string name="settings_di_connect_open_with">Connect on open with</string>
 </resources>

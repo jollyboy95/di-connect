@@ -418,18 +418,12 @@ edit(D,('    private fun connect(wireless: Boolean) {','''    private fun connec
             return
         }'''))
 needle='        card.addView(connectButton, matchButton(height = if (compact) 54 else 68))'
-edit(D,(needle,needle+'''
-        card.addView(homeButton(getString(R.string.di_connect_android_auto), false) {
-            CarPlayBackgroundSession.stop {
-                runOnUiThread {
-                    if (!isFinishing && !isDestroyed) {
-                        com.andrerinas.openheadunit.DiConnectEngine.open(this)
-                        finish()
-                    }
-                }
-            }
-        }, matchButton(CONTROL_GAP_DP, if (compact) 54 else 68))
-'''))
+# Android Auto is the main protocol: its button comes first and is primary; CarPlay is the backup.
+edit(D,(needle,'''        androidAutoButton = homeButton(getString(R.string.di_connect_connect_android_auto), true) { connectAndroidAuto() }
+        card.addView(androidAutoButton, matchButton(height = if (compact) 54 else 68))
+        card.addView(connectButton, matchButton(CONTROL_GAP_DP, if (compact) 54 else 68))'''),
+    ('        connectButton = homeButton(getString(R.string.connect_phone), true) {','        connectButton = homeButton(getString(R.string.connect_phone), false) {'),
+    ('        homeCardTitle = label(getString(R.string.wireless_carplay), 12, ACCENT, true)','        homeCardTitle = label(getString(R.string.di_connect_home_title), 12, ACCENT, true)'))
 # Reuse existing D-Play button geometry and keep connection copy localised.
 STRINGS=sorted((root/'common/src/main/res').glob('values*/strings.xml'))
 require(root/'common/src/main/res/values/strings.xml' in STRINGS,'D-Play base strings.xml not found')
@@ -489,7 +483,7 @@ See [integration notes](docs/DI_CONNECT.md) for donor revisions, build details a
 shutil.copy2(root/'LICENSE',root/'docs/licenses/DiPlay-GPL-3.0.txt')
 shutil.copy2(src/'LICENSE',root/'LICENSE')
 
-(root/'common/src/test/java/com/shilapi/xcertplay/DiConnectHomeScreenshotsTest.kt').write_text('package com.shilapi.xcertplay\n\nimport android.graphics.Bitmap\nimport android.graphics.Canvas\nimport android.view.View\nimport android.view.ViewGroup\nimport android.widget.TextView\nimport com.shilapi.xcertplay.host.R\nimport java.io.File\nimport org.junit.Assert.assertEquals\nimport org.junit.Assert.assertTrue\nimport org.junit.Test\nimport org.junit.runner.RunWith\nimport org.robolectric.Robolectric\nimport org.robolectric.RobolectricTestRunner\nimport org.robolectric.RuntimeEnvironment\nimport org.robolectric.annotation.Config\nimport org.robolectric.annotation.GraphicsMode\nimport org.robolectric.util.ReflectionHelpers\n\n@RunWith(RobolectricTestRunner::class)\n@GraphicsMode(GraphicsMode.Mode.NATIVE)\nclass DiConnectHomeScreenshotsTest {\n    @Test @Config(sdk = [29], qualifiers = "en-w320dp-h700dp")\n    fun compactHomeAtLargeFont() = capture("compact-en")\n\n    @Test @Config(sdk = [29], qualifiers = "en-w1000dp-h700dp")\n    fun fullHomeAtLargeFont() = capture("full-en")\n\n    @Test @Config(sdk = [29], qualifiers = "ar-ldrtl-w320dp-h700dp")\n    fun compactRtlHomeAtLargeFont() = capture("compact-ar")\n\n    private fun capture(name: String) {\n        RuntimeEnvironment.setFontScale(1.5f)\n        val controller = Robolectric.buildActivity(DiPlayActivity::class.java).setup()\n        val activity = controller.get()\n        try {\n            ReflectionHelpers.setField(activity, "page", "home")\n            ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")\n            val root = activity.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)\n            val metrics = activity.resources.displayMetrics\n            val width = (activity.resources.configuration.screenWidthDp * metrics.density).toInt()\n            root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),\n                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))\n            root.layout(0, 0, width, root.measuredHeight)\n            val aa = descendants(root).filterIsInstance<TextView>().single {\n                it.text.toString() == activity.getString(R.string.di_connect_android_auto)\n            }\n            assertTrue("Android Auto entry must be laid out", aa.width > 0 && aa.height > 0)\n            val layout = aa.layout\n            if (layout != null) for (line in 0 until layout.lineCount) {\n                assertEquals("Android Auto label must fit", 0, layout.getEllipsisCount(line))\n            }\n            val image = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)\n            try {\n                root.draw(Canvas(image))\n                val file = File("build/reports/di-connect-home/$name.png")\n                file.parentFile.mkdirs()\n                file.outputStream().use { assertTrue(image.compress(Bitmap.CompressFormat.PNG, 100, it)) }\n            } finally { image.recycle() }\n        } finally {\n            controller.pause().stop().destroy()\n            RuntimeEnvironment.setFontScale(1f)\n        }\n    }\n\n    private fun descendants(view: View): Sequence<View> = sequence {\n        yield(view)\n        if (view is ViewGroup) for (i in 0 until view.childCount) yieldAll(descendants(view.getChildAt(i)))\n    }\n}\n')
+(root/'common/src/test/java/com/shilapi/xcertplay/DiConnectHomeScreenshotsTest.kt').write_text('package com.shilapi.xcertplay\n\nimport android.graphics.Bitmap\nimport android.graphics.Canvas\nimport android.view.View\nimport android.view.ViewGroup\nimport android.widget.TextView\nimport com.shilapi.xcertplay.host.R\nimport java.io.File\nimport org.junit.Assert.assertEquals\nimport org.junit.Assert.assertTrue\nimport org.junit.Test\nimport org.junit.runner.RunWith\nimport org.robolectric.Robolectric\nimport org.robolectric.RobolectricTestRunner\nimport org.robolectric.RuntimeEnvironment\nimport org.robolectric.annotation.Config\nimport org.robolectric.annotation.GraphicsMode\nimport org.robolectric.util.ReflectionHelpers\n\n@RunWith(RobolectricTestRunner::class)\n@GraphicsMode(GraphicsMode.Mode.NATIVE)\nclass DiConnectHomeScreenshotsTest {\n    @Test @Config(sdk = [29], qualifiers = "en-w320dp-h700dp")\n    fun compactHomeAtLargeFont() = capture("compact-en")\n\n    @Test @Config(sdk = [29], qualifiers = "en-w1000dp-h700dp")\n    fun fullHomeAtLargeFont() = capture("full-en")\n\n    @Test @Config(sdk = [29], qualifiers = "ar-ldrtl-w320dp-h700dp")\n    fun compactRtlHomeAtLargeFont() = capture("compact-ar")\n\n    private fun capture(name: String) {\n        RuntimeEnvironment.setFontScale(1.5f)\n        val controller = Robolectric.buildActivity(DiPlayActivity::class.java).setup()\n        val activity = controller.get()\n        try {\n            ReflectionHelpers.setField(activity, "page", "home")\n            ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")\n            val root = activity.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)\n            val metrics = activity.resources.displayMetrics\n            val width = (activity.resources.configuration.screenWidthDp * metrics.density).toInt()\n            root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),\n                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))\n            root.layout(0, 0, width, root.measuredHeight)\n            val aa = descendants(root).filterIsInstance<TextView>().single {\n                it.text.toString() == activity.getString(R.string.di_connect_connect_android_auto)\n            }\n            assertTrue("Android Auto entry must be laid out", aa.width > 0 && aa.height > 0)\n            val layout = aa.layout\n            if (layout != null) for (line in 0 until layout.lineCount) {\n                assertEquals("Android Auto label must fit", 0, layout.getEllipsisCount(line))\n            }\n            val image = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)\n            try {\n                root.draw(Canvas(image))\n                val file = File("build/reports/di-connect-home/$name.png")\n                file.parentFile.mkdirs()\n                file.outputStream().use { assertTrue(image.compress(Bitmap.CompressFormat.PNG, 100, it)) }\n            } finally { image.recycle() }\n        } finally {\n            controller.pause().stop().destroy()\n            RuntimeEnvironment.setFontScale(1f)\n        }\n    }\n\n    private fun descendants(view: View): Sequence<View> = sequence {\n        yield(view)\n        if (view is ViewGroup) for (i in 0 until view.childCount) yieldAll(descendants(view.getChildAt(i)))\n    }\n}\n')
 
 edit(root/'common/src/main/java/com/shilapi/xcertplay/update/UpdateClient.kt',('repos/shihabal3amri/DiPlay/releases','repos/jollyboy95/di-connect/releases'))
 # The donor's prebuilt APK belongs to D-Play; avoid presenting it as a Di-Connect build.
@@ -807,3 +801,205 @@ class DiConnectSharedSettingsTest {
     }
 }
 ''')
+
+# Android Auto first, from D-Play's own screens. The home button, the "connect when Di-Connect
+# opens" choice and the Android Auto settings card drive Android Auto without DiAuto's screens;
+# DiAuto's full settings stay reachable as "Advanced Android Auto settings".
+(dest/'src/main/java/com/andrerinas/openheadunit/DiConnectAndroidAuto.kt').write_text('''package com.andrerinas.openheadunit
+
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.hardware.usb.UsbManager
+import androidx.core.content.ContextCompat
+import com.andrerinas.openheadunit.aap.AapProjectionActivity
+import com.andrerinas.openheadunit.aap.AapService
+import com.andrerinas.openheadunit.aap.WirelessScopePolicy
+import com.andrerinas.openheadunit.connection.UsbDeviceCompat
+import com.andrerinas.openheadunit.utils.Settings
+
+/**
+ * Connects Android Auto from Di-Connect's home screen, as DiAuto's own home buttons do: an Android
+ * phone on USB connects by cable (DiAuto's USB check, which also asks for USB access and switches
+ * the phone to accessory mode); otherwise native wireless Android Auto to the chosen paired phone.
+ * Android Auto opens its projection screen by itself once the phone has connected.
+ */
+object DiConnectAndroidAuto {
+    enum class Route { OPENED, USB, WIRELESS, NEEDS_PHONE }
+
+    private const val PHONE_ADDRESS = "di_connect_aa_phone_address"
+    private const val PHONE_NAME = "di_connect_aa_phone_name"
+    private const val OPENS_WITH_CARPLAY = "di_connect_opens_with_carplay"
+
+    fun phoneAddress(context: Context): String? = prefs(context).getString(PHONE_ADDRESS, null)
+    fun phoneName(context: Context): String? = prefs(context).getString(PHONE_NAME, null)
+    fun savePhone(context: Context, address: String, name: String) =
+        prefs(context).edit().putString(PHONE_ADDRESS, address).putString(PHONE_NAME, name).apply()
+
+    /** "Connect when Di-Connect opens" starts Android Auto unless CarPlay is chosen. */
+    fun opensWithCarPlay(context: Context): Boolean = prefs(context).getBoolean(OPENS_WITH_CARPLAY, false)
+    fun saveOpensWithCarPlay(context: Context, carPlay: Boolean) =
+        prefs(context).edit().putBoolean(OPENS_WITH_CARPLAY, carPlay).apply()
+
+    /** Without starting Android Auto: only a running Android Auto service can be connected. */
+    fun isConnected(context: Context): Boolean =
+        DiConnectEngine.service != null && App.provide(context).commManager.isConnected
+
+    fun connect(activity: Activity): Route {
+        App.get(activity).initializeAndroidAuto()
+        val app = App.provide(activity)
+        if (app.commManager.isConnected) {
+            activity.startActivity(AapProjectionActivity.intent(activity).putExtra(AapProjectionActivity.EXTRA_FOCUS, true))
+            return Route.OPENED
+        }
+        val usb = activity.getSystemService(Context.USB_SERVICE) as? UsbManager
+        if (usb?.deviceList?.values?.any { UsbDeviceCompat.isAndroidDevice(it) } == true) {
+            start(activity, AapService.ACTION_CHECK_USB)
+            return Route.USB
+        }
+        val address = phoneAddress(activity) ?: return Route.NEEDS_PHONE
+        // As DiAuto's Wireless button: native wireless Android Auto, with Wi-Fi among the connection
+        // types so the USB-only gate does not keep the route down.
+        app.settings.wifiConnectionMode = 3
+        if (!WirelessScopePolicy.allowsWireless(app.settings.connectionModes)) {
+            app.settings.connectionModes = app.settings.connectionModes + Settings.ConnectionMode.WIFI
+        }
+        start(activity, AapService.ACTION_NATIVE_AA_POKE) { putExtra(AapService.EXTRA_MAC, address) }
+        return Route.WIRELESS
+    }
+
+    /** DiAuto's full settings, for anything Di-Connect's own settings do not cover. */
+    fun openAdvancedSettings(activity: Activity) {
+        App.get(activity).initializeAndroidAuto()
+        activity.startActivity(Intent(activity, com.andrerinas.openheadunit.main.SettingsActivity::class.java))
+    }
+
+    private fun start(context: Context, action: String, extras: Intent.() -> Unit = {}) {
+        ContextCompat.startForegroundService(context, Intent(context, AapService::class.java).apply {
+            this.action = action
+            extras()
+        })
+    }
+
+    private fun prefs(context: Context) =
+        context.applicationContext.getSharedPreferences("xcertplay_airplay", Context.MODE_PRIVATE)
+}
+''')
+AA_='com.andrerinas.openheadunit.DiConnectAndroidAuto'
+edit(D,
+    ('    private var connectButton: Button? = null\n','    private var connectButton: Button? = null\n    private var androidAutoButton: Button? = null\n'),
+    ('connectButton = null; disconnectButton = null','connectButton = null; androidAutoButton = null; disconnectButton = null'),
+    ('    private val bluetoothAutoConnectPermission = registerForActivityResult(',f'''    private val androidAutoBluetoothPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {{ granted ->
+        if (granted) chooseAndroidAutoPhone(connectAfter = true)
+        else permissionHelp(getString(R.string.nearby_devices), getString(R.string.allow_nearby_devices_so_diplay_can_connect_to_your_paired))
+    }}
+    private val bluetoothAutoConnectPermission = registerForActivityResult('''),
+    ('    private fun diConnectEntryEnabled(): Boolean = runCatching {',f'''    /** Di-Connect's main action: CarPlay stops first, then Android Auto connects by cable or wirelessly. */
+    private fun connectAndroidAuto(choosePhoneIfNeeded: Boolean = true) {{
+        CarPlayBackgroundSession.stop {{
+            runOnUiThread {{
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                when ({AA_}.connect(this)) {{
+                    {AA_}.Route.NEEDS_PHONE -> {{ if (choosePhoneIfNeeded) chooseAndroidAutoPhone(connectAfter = true) }}
+                    {AA_}.Route.OPENED -> {{ }}
+                    else -> {{ status?.text = getString(R.string.di_connect_aa_connecting) }}
+                }}
+            }}
+        }}
+    }}
+
+    /** The paired Android phone for wireless Android Auto, in the same dialog style as the iPhone choice. */
+    private fun chooseAndroidAutoPhone(connectAfter: Boolean) {{
+        if (Build.VERSION.SDK_INT >= 31 && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {{
+            androidAutoBluetoothPermission.launch(Manifest.permission.BLUETOOTH_CONNECT); return
+        }}
+        val adapter = getSystemService(BluetoothManager::class.java)?.adapter ?: BluetoothAdapter.getDefaultAdapter()
+        val devices = runCatching {{ adapter?.takeIf {{ it.isEnabled }}?.bondedDevices?.sortedBy {{ it.name ?: "" }} }}.getOrNull().orEmpty()
+        if (devices.isEmpty()) {{
+            appDialogBuilder().setTitle(getString(R.string.di_connect_choose_android_phone))
+                .setMessage(getString(R.string.di_connect_pair_android_phone))
+                .setPositiveButton(getString(R.string.open_bluetooth)) {{ _, _ -> openBluetoothSettings() }}
+                .setNegativeButton(getString(R.string.got_it), null).show(); return
+        }}
+        appDialogBuilder().setTitle(getString(R.string.di_connect_choose_android_phone))
+            .setItems(devices.map {{ device ->
+                val name = device.name ?: getString(R.string.paired_device)
+                if (devices.count {{ it.name == device.name }} > 1) "$name · ${{device.address.takeLast(5)}}" else name
+            }}.toTypedArray()) {{ _, index ->
+                val device = devices[index]
+                {AA_}.savePhone(this, device.address, device.name ?: getString(R.string.paired_device))
+                render()
+                if (connectAfter) connectAndroidAuto(choosePhoneIfNeeded = false)
+            }}.setNeutralButton(getString(R.string.pair_another)) {{ _, _ -> openBluetoothSettings() }}
+            .setNegativeButton(getString(R.string.cancel), null).show()
+    }}
+
+    private fun diConnectEntryEnabled(): Boolean = runCatching {{'''),
+    # Home status speaks for Android Auto while CarPlay is idle; CarPlay's own states still show.
+    ('        homeCardTitle?.text = getString(if (wired) R.string.home_usb_carplay else R.string.wireless_carplay)',
+     '        homeCardTitle?.text = if (running) getString(if (wired) R.string.home_usb_carplay else R.string.wireless_carplay)\n            else getString(R.string.di_connect_home_title)'),
+    ('''            setupError != null -> getString(R.string.setup_needs_attention)
+            CarPlayBackgroundSession.active -> getString(R.string.carplay_connected)
+            running -> getString(R.string.connecting_to_your_iphone)
+            DiPlayPreferences.phoneAddress(this) != null -> "${getString(R.string.status_ready_for_prefix)}${DiPlayPreferences.phoneName(this)}"
+            else -> getString(R.string.ready_when_you_are)''',f'''            CarPlayBackgroundSession.active -> getString(R.string.carplay_connected)
+            running -> getString(R.string.connecting_to_your_iphone)
+            {AA_}.isConnected(this) -> getString(R.string.di_connect_aa_connected)
+            {AA_}.phoneName(this) != null -> "${{getString(R.string.status_ready_for_prefix)}}${{{AA_}.phoneName(this)}}"
+            else -> getString(R.string.ready_when_you_are)'''),
+    ('        connectButton?.isEnabled = setupError == null\n',f'''        connectButton?.isEnabled = setupError == null
+        androidAutoButton?.text = getString(if ({AA_}.isConnected(this)) R.string.di_connect_open_android_auto
+            else R.string.di_connect_connect_android_auto)
+'''),
+    # "Connect when Di-Connect opens" connects Android Auto unless CarPlay is chosen.
+    ('''            if (setupError == null && !CarPlayBackgroundSession.hasSession() &&
+                DiPlayPreferences.autoConnect(this) && intent.getStringExtra("page") == null && page != "setup") {
+                handler.post { connect(DiPlayPreferences.autoConnectWireless(this)) }
+            }''',f'''            val carPlayFirst = {AA_}.opensWithCarPlay(this)
+            if ((setupError == null || !carPlayFirst) && !CarPlayBackgroundSession.hasSession() &&
+                DiPlayPreferences.autoConnect(this) && intent.getStringExtra("page") == null && page != "setup") {{
+                handler.post {{
+                    if (carPlayFirst) connect(DiPlayPreferences.autoConnectWireless(this))
+                    else connectAndroidAuto(choosePhoneIfNeeded = false)
+                }}
+            }}'''),
+    ('            toggle(card, getString(R.string.connect_when_diplay_opens), getString(R.string.default_connection_description), DiPlayPreferences.autoConnect(this)) { DiPlayPreferences.saveAutoConnect(this, it) }\n',
+     f'''            toggle(card, getString(R.string.connect_when_diplay_opens), getString(R.string.default_connection_description), DiPlayPreferences.autoConnect(this)) {{ DiPlayPreferences.saveAutoConnect(this, it) }}
+            choice(card, getString(R.string.settings_di_connect_open_with), listOf(getString(R.string.di_connect_android_auto), getString(R.string.carplay)),
+                if ({AA_}.opensWithCarPlay(this)) 1 else 0, reconnects = false) {{ index -> {AA_}.saveOpensWithCarPlay(this, index == 1) }}
+'''),
+    # Settings: an Android Auto card first in Connection.
+    ('    CARPLAY_CONTROLS,\n    WHEEL_KEYS,\n    CONNECTION_SETUP,\n','    CARPLAY_CONTROLS,\n    WHEEL_KEYS,\n    ANDROID_AUTO,\n    CONNECTION_SETUP,\n'),
+    ('        SettingsCategory.CONNECTION to setOf(\n            SettingsSection.CONNECTION_SETUP,','        SettingsCategory.CONNECTION to setOf(\n            SettingsSection.ANDROID_AUTO,\n            SettingsSection.CONNECTION_SETUP,'),
+    ('        filteredSection(content, SettingsSection.CONNECTION_SETUP,',f'''        filteredSection(content, SettingsSection.ANDROID_AUTO,
+            getString(R.string.settings_di_connect_android_auto), R.drawable.ic_dp_connection) {{ card ->
+            card.addView(label(getString(R.string.settings_di_connect_android_auto_description), 16, MUTED))
+            val phone = {AA_}.phoneName(this) ?: getString(R.string.settings_di_connect_aa_phone_none)
+            card.addView(button("${{getString(R.string.settings_di_connect_aa_phone)}} · $phone", false) {{
+                chooseAndroidAutoPhone(connectAfter = false)
+            }}, matchButton(12, 60))
+            card.addView(button(getString(R.string.settings_di_connect_aa_advanced), false) {{
+                {AA_}.openAdvancedSettings(this)
+            }}, matchButton(12, 60))
+        }}
+        filteredSection(content, SettingsSection.CONNECTION_SETUP,'''))
+AA_STRINGS={
+ 'di_connect_home_title':['ANDROID AUTO · CARPLAY']*9,
+ 'di_connect_connect_android_auto':['Connect Android Auto','اتصال Android Auto','Conectar Android Auto','Connetti Android Auto','Android Auto に接続','Подключить Android Auto','Підключити Android Auto','连接 Android Auto','連接 Android Auto'],
+ 'di_connect_open_android_auto':['Open Android Auto','فتح Android Auto','Abrir Android Auto','Apri Android Auto','Android Auto を開く','Открыть Android Auto','Відкрити Android Auto','打开 Android Auto','開啟 Android Auto'],
+ 'di_connect_aa_connecting':['Connecting Android Auto…','جارٍ اتصال Android Auto…','Conectando Android Auto…','Connessione ad Android Auto…','Android Auto に接続中…','Подключение Android Auto…','Підключення Android Auto…','正在连接 Android Auto…','正在連接 Android Auto…'],
+ 'di_connect_aa_connected':['Android Auto connected','Android Auto متصل','Android Auto conectado','Android Auto connesso','Android Auto に接続済み','Android Auto подключён','Android Auto підключено','Android Auto 已连接','Android Auto 已連接'],
+ 'di_connect_choose_android_phone':['Choose your Android phone','اختر هاتف Android','Elige tu teléfono Android','Scegli il tuo telefono Android','Android スマートフォンを選択','Выберите телефон Android','Виберіть телефон Android','选择你的 Android 手机','選擇你的 Android 手機'],
+ 'di_connect_pair_android_phone':["Turn on the car\\'s Bluetooth and pair your Android phone first, then choose it here.",'شغّل البلوتوث في السيارة واقرن هاتف Android أولًا، ثم اختره هنا.','Activa el Bluetooth del coche y empareja primero tu teléfono Android; después elígelo aquí.',"Attiva il Bluetooth dell\\'auto e abbina prima il tuo telefono Android, poi sceglilo qui.",'車の Bluetooth をオンにして Android スマートフォンをペアリングしてから、ここで選択してください。','Включите Bluetooth автомобиля и сначала создайте пару с телефоном Android, затем выберите его здесь.','Увімкніть Bluetooth автомобіля й спершу створіть пару з телефоном Android, потім виберіть його тут.','请先打开车机蓝牙并配对你的 Android 手机，然后在这里选择它。','請先開啟車機藍牙並配對你的 Android 手機，然後在這裡選擇它。'],
+ 'settings_di_connect_android_auto':['Android Auto']*9,
+ 'settings_di_connect_android_auto_description':['Connect Android Auto from the home screen. A phone plugged in by USB connects by cable; otherwise the chosen phone connects wirelessly.','اتصل بـ Android Auto من الشاشة الرئيسية. يتصل الهاتف الموصول عبر USB بالكابل؛ وإلا يتصل الهاتف المختار لاسلكيًا.','Conecta Android Auto desde la pantalla de inicio. Un teléfono conectado por USB se conecta por cable; si no, el teléfono elegido se conecta de forma inalámbrica.',"Connetti Android Auto dalla schermata iniziale. Un telefono collegato via USB si connette via cavo; altrimenti il telefono scelto si connette in wireless.",'ホーム画面から Android Auto に接続します。USB で接続したスマートフォンはケーブルで、それ以外は選択したスマートフォンがワイヤレスで接続します。','Подключайте Android Auto с главного экрана. Телефон, подключённый по USB, работает через кабель; иначе выбранный телефон подключается без проводов.',"Підключайте Android Auto з головного екрана. Телефон, під\\'єднаний через USB, працює через кабель; інакше вибраний телефон підключається бездротово.",'从主屏幕连接 Android Auto。通过 USB 插入的手机使用数据线连接；否则所选手机以无线方式连接。','從主畫面連接 Android Auto。透過 USB 插入的手機使用傳輸線連接；否則所選手機以無線方式連接。'],
+ 'settings_di_connect_aa_phone':['Wireless phone','الهاتف اللاسلكي','Teléfono inalámbrico','Telefono wireless','ワイヤレスのスマートフォン','Телефон для беспроводного подключения','Телефон для бездротового підключення','无线连接手机','無線連接手機'],
+ 'settings_di_connect_aa_phone_none':['Not chosen','لم يُختر','Sin elegir','Non scelto','未選択','Не выбран','Не вибрано','未选择','未選擇'],
+ 'settings_di_connect_aa_advanced':['Advanced Android Auto settings','إعدادات Android Auto المتقدمة','Ajustes avanzados de Android Auto','Impostazioni avanzate di Android Auto','Android Auto の詳細設定','Дополнительные настройки Android Auto','Додаткові налаштування Android Auto','Android Auto 高级设置','Android Auto 進階設定'],
+ 'settings_di_connect_open_with':['Connect on open with','الاتصال عند الفتح باستخدام','Conectar al abrir con',"Connetti all\\'apertura con",'起動時に接続する方式','Подключаться при запуске через','Підключатися під час запуску через','打开时连接','開啟時連接'],
+}
+LOCALE_ORDER=['values','values-ar','values-es','values-it','values-ja','values-ru','values-uk','values-zh-rCN','values-zh-rTW']
+require(sorted(LOCALE_ORDER)==sorted(p.parent.name for p in STRINGS),'D-Play locales changed')
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in AA_STRINGS.items())+'</resources>'))

@@ -979,4 +979,17 @@
     <string name="di_connect_android_auto">Android Auto</string>
     <string name="settings_di_connect_aa_nav_card">Карточка маршрута в Android Auto</string>
     <string name="settings_di_connect_aa_nav_card_description">Google Карты уже показывают свою карточку маршрута на приборной панели. Включите, чтобы добавить карточку Di-Connect. В CarPlay она показывается всегда. Применяется при следующем подключении Android Auto.</string>
+    <string name="di_connect_home_title">ANDROID AUTO · CARPLAY</string>
+    <string name="di_connect_connect_android_auto">Подключить Android Auto</string>
+    <string name="di_connect_open_android_auto">Открыть Android Auto</string>
+    <string name="di_connect_aa_connecting">Подключение Android Auto…</string>
+    <string name="di_connect_aa_connected">Android Auto подключён</string>
+    <string name="di_connect_choose_android_phone">Выберите телефон Android</string>
+    <string name="di_connect_pair_android_phone">Включите Bluetooth автомобиля и сначала создайте пару с телефоном Android, затем выберите его здесь.</string>
+    <string name="settings_di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_android_auto_description">Подключайте Android Auto с главного экрана. Телефон, подключённый по USB, работает через кабель; иначе выбранный телефон подключается без проводов.</string>
+    <string name="settings_di_connect_aa_phone">Телефон для беспроводного подключения</string>
+    <string name="settings_di_connect_aa_phone_none">Не выбран</string>
+    <string name="settings_di_connect_aa_advanced">Дополнительные настройки Android Auto</string>
+    <string name="settings_di_connect_open_with">Подключаться при запуске через</string>
 </resources>

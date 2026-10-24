@@ -1081,4 +1081,17 @@
     <string name="di_connect_android_auto">Android Auto</string>
     <string name="settings_di_connect_aa_nav_card">Android Auto の案内カード</string>
     <string name="settings_di_connect_aa_nav_card_description">Google マップはメーターに独自の案内カードを表示します。オンにすると Di-Connect のカードも表示します。CarPlay では常に表示されます。次に Android Auto が接続したときに適用されます。</string>
+    <string name="di_connect_home_title">ANDROID AUTO · CARPLAY</string>
+    <string name="di_connect_connect_android_auto">Android Auto に接続</string>
+    <string name="di_connect_open_android_auto">Android Auto を開く</string>
+    <string name="di_connect_aa_connecting">Android Auto に接続中…</string>
+    <string name="di_connect_aa_connected">Android Auto に接続済み</string>
+    <string name="di_connect_choose_android_phone">Android スマートフォンを選択</string>
+    <string name="di_connect_pair_android_phone">車の Bluetooth をオンにして Android スマートフォンをペアリングしてから、ここで選択してください。</string>
+    <string name="settings_di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_android_auto_description">ホーム画面から Android Auto に接続します。USB で接続したスマートフォンはケーブルで、それ以外は選択したスマートフォンがワイヤレスで接続します。</string>
+    <string name="settings_di_connect_aa_phone">ワイヤレスのスマートフォン</string>
+    <string name="settings_di_connect_aa_phone_none">未選択</string>
+    <string name="settings_di_connect_aa_advanced">Android Auto の詳細設定</string>
+    <string name="settings_di_connect_open_with">起動時に接続する方式</string>
 </resources>

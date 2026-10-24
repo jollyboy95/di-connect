@@ -114,6 +114,7 @@ internal enum class SettingsCategory {
 internal enum class SettingsSection {
     CARPLAY_CONTROLS,
     WHEEL_KEYS,
+    ANDROID_AUTO,
     CONNECTION_SETUP,
     DIAGNOSTICS,
     AUTOMATIC_CONNECTION,
@@ -141,6 +142,7 @@ internal object SettingsInformationArchitecture {
         SettingsCategory.LANGUAGE to setOf(SettingsSection.LANGUAGE),
         SettingsCategory.ABOUT to emptySet(),
         SettingsCategory.CONNECTION to setOf(
+            SettingsSection.ANDROID_AUTO,
             SettingsSection.CONNECTION_SETUP,
             SettingsSection.AUTOMATIC_CONNECTION,
             SettingsSection.USB_CONNECTION,
@@ -204,6 +206,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     private var homeCardTitle: TextView? = null
     private var homeConnectionHint: TextView? = null
     private var connectButton: Button? = null
+    private var androidAutoButton: Button? = null
     private var disconnectButton: Button? = null
     private var lastRunning: Boolean? = null
     private var pendingWireless = false
@@ -319,6 +322,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     }
     private val bluetoothPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) choosePhone() else permissionHelp(getString(R.string.nearby_devices), getString(R.string.allow_nearby_devices_so_diplay_can_connect_to_your_paired))
+    }
+    private val androidAutoBluetoothPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) chooseAndroidAutoPhone(connectAfter = true)
+        else permissionHelp(getString(R.string.nearby_devices), getString(R.string.allow_nearby_devices_so_diplay_can_connect_to_your_paired))
     }
     private val bluetoothAutoConnectPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
@@ -786,9 +793,13 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         if (initialLaunch) {
             initialLaunch = false
             startCarHotspotOnLaunch()
-            if (setupError == null && !CarPlayBackgroundSession.hasSession() &&
+            val carPlayFirst = com.andrerinas.openheadunit.DiConnectAndroidAuto.opensWithCarPlay(this)
+            if ((setupError == null || !carPlayFirst) && !CarPlayBackgroundSession.hasSession() &&
                 DiPlayPreferences.autoConnect(this) && intent.getStringExtra("page") == null && page != "setup") {
-                handler.post { connect(DiPlayPreferences.autoConnectWireless(this)) }
+                handler.post {
+                    if (carPlayFirst) connect(DiPlayPreferences.autoConnectWireless(this))
+                    else connectAndroidAuto(choosePhoneIfNeeded = false)
+                }
             }
         }
     }
@@ -924,7 +935,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             (settingsSearchExpanded && settingsSearchBox?.hasFocus() == true)
         settingsSearchBox = null
         if (page != "settings") clearSettingsSearchState()
-        status = null; connectButton = null; disconnectButton = null; lastRunning = null; carButtonCard = null
+        status = null; connectButton = null; androidAutoButton = null; disconnectButton = null; lastRunning = null; carButtonCard = null
         reconnectBar = null
         readinessCard = null
         exportButton = null
@@ -1165,6 +1176,46 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         tag = APPEARANCE_BUTTON_TAG
     }
 
+    /** Di-Connect's main action: CarPlay stops first, then Android Auto connects by cable or wirelessly. */
+    private fun connectAndroidAuto(choosePhoneIfNeeded: Boolean = true) {
+        CarPlayBackgroundSession.stop {
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                when (com.andrerinas.openheadunit.DiConnectAndroidAuto.connect(this)) {
+                    com.andrerinas.openheadunit.DiConnectAndroidAuto.Route.NEEDS_PHONE -> { if (choosePhoneIfNeeded) chooseAndroidAutoPhone(connectAfter = true) }
+                    com.andrerinas.openheadunit.DiConnectAndroidAuto.Route.OPENED -> { }
+                    else -> { status?.text = getString(R.string.di_connect_aa_connecting) }
+                }
+            }
+        }
+    }
+
+    /** The paired Android phone for wireless Android Auto, in the same dialog style as the iPhone choice. */
+    private fun chooseAndroidAutoPhone(connectAfter: Boolean) {
+        if (Build.VERSION.SDK_INT >= 31 && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            androidAutoBluetoothPermission.launch(Manifest.permission.BLUETOOTH_CONNECT); return
+        }
+        val adapter = getSystemService(BluetoothManager::class.java)?.adapter ?: BluetoothAdapter.getDefaultAdapter()
+        val devices = runCatching { adapter?.takeIf { it.isEnabled }?.bondedDevices?.sortedBy { it.name ?: "" } }.getOrNull().orEmpty()
+        if (devices.isEmpty()) {
+            appDialogBuilder().setTitle(getString(R.string.di_connect_choose_android_phone))
+                .setMessage(getString(R.string.di_connect_pair_android_phone))
+                .setPositiveButton(getString(R.string.open_bluetooth)) { _, _ -> openBluetoothSettings() }
+                .setNegativeButton(getString(R.string.got_it), null).show(); return
+        }
+        appDialogBuilder().setTitle(getString(R.string.di_connect_choose_android_phone))
+            .setItems(devices.map { device ->
+                val name = device.name ?: getString(R.string.paired_device)
+                if (devices.count { it.name == device.name } > 1) "$name · ${device.address.takeLast(5)}" else name
+            }.toTypedArray()) { _, index ->
+                val device = devices[index]
+                com.andrerinas.openheadunit.DiConnectAndroidAuto.savePhone(this, device.address, device.name ?: getString(R.string.paired_device))
+                render()
+                if (connectAfter) connectAndroidAuto(choosePhoneIfNeeded = false)
+            }.setNeutralButton(getString(R.string.pair_another)) { _, _ -> openBluetoothSettings() }
+            .setNegativeButton(getString(R.string.cancel), null).show()
+    }
+
     private fun diConnectEntryEnabled(): Boolean = runCatching {
         packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
             .metaData?.getBoolean("di_connect_entry_point", false) == true
@@ -1182,27 +1233,18 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             left.addView(label(getString(R.string.your_maps_music_and_conversations_carplay_right_here_on_yo), 19, MUTED))
         }
         val card = card()
-        homeCardTitle = label(getString(R.string.wireless_carplay), 12, ACCENT, true).apply { letterSpacing = .12f }
+        homeCardTitle = label(getString(R.string.di_connect_home_title), 12, ACCENT, true).apply { letterSpacing = .12f }
         card.addView(homeCardTitle)
         status = label(getString(R.string.ready_when_you_are), 24, TEXT, true).apply { setPadding(0, dp(10), 0, dp(16)) }
         card.addView(status)
-        connectButton = homeButton(getString(R.string.connect_phone), true) {
+        connectButton = homeButton(getString(R.string.connect_phone), false) {
             if (CarPlayBackgroundSession.hasSession()) openProjection()
             else if (diConnectEntryEnabled() && !SetupGuide.seen(this)) { page = "setup"; render() }
             else connect(true)
         }
-        card.addView(connectButton, matchButton(height = if (compact) 54 else 68))
-        card.addView(homeButton(getString(R.string.di_connect_android_auto), false) {
-            CarPlayBackgroundSession.stop {
-                runOnUiThread {
-                    if (!isFinishing && !isDestroyed) {
-                        com.andrerinas.openheadunit.DiConnectEngine.open(this)
-                        finish()
-                    }
-                }
-            }
-        }, matchButton(CONTROL_GAP_DP, if (compact) 54 else 68))
-
+        androidAutoButton = homeButton(getString(R.string.di_connect_connect_android_auto), true) { connectAndroidAuto() }
+        card.addView(androidAutoButton, matchButton(height = if (compact) 54 else 68))
+        card.addView(connectButton, matchButton(CONTROL_GAP_DP, if (compact) 54 else 68))
         val connectionHint = when (AirPlayPersistence.loadWirelessHotspotMode(this)) {
             WirelessHotspotMode.EXISTING_WIFI -> getString(R.string.existing_wifi_hint)
             WirelessHotspotMode.MANUAL -> getString(R.string.hotspot_hint_manual)
@@ -1994,6 +2036,17 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         filteredSection(content, SettingsSection.WHEEL_KEYS,
             getString(R.string.settings_wheel_keys), R.drawable.ic_dp_controls, ::wheelKeysSettings)
+        filteredSection(content, SettingsSection.ANDROID_AUTO,
+            getString(R.string.settings_di_connect_android_auto), R.drawable.ic_dp_connection) { card ->
+            card.addView(label(getString(R.string.settings_di_connect_android_auto_description), 16, MUTED))
+            val phone = com.andrerinas.openheadunit.DiConnectAndroidAuto.phoneName(this) ?: getString(R.string.settings_di_connect_aa_phone_none)
+            card.addView(button("${getString(R.string.settings_di_connect_aa_phone)} · $phone", false) {
+                chooseAndroidAutoPhone(connectAfter = false)
+            }, matchButton(12, 60))
+            card.addView(button(getString(R.string.settings_di_connect_aa_advanced), false) {
+                com.andrerinas.openheadunit.DiConnectAndroidAuto.openAdvancedSettings(this)
+            }, matchButton(12, 60))
+        }
         filteredSection(content, SettingsSection.CONNECTION_SETUP,
             getString(R.string.connection_setup), R.drawable.ic_dp_connection) { card ->
             card.addView(label(getString(R.string.choose_how_to_connect_follow_the_setup_steps_and_save_your), 16, MUTED))
@@ -2049,6 +2102,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         filteredSection(content, SettingsSection.AUTOMATIC_CONNECTION,
             getString(R.string.automatic_connection), R.drawable.ic_dp_automation) { card ->
             toggle(card, getString(R.string.connect_when_diplay_opens), getString(R.string.default_connection_description), DiPlayPreferences.autoConnect(this)) { DiPlayPreferences.saveAutoConnect(this, it) }
+            choice(card, getString(R.string.settings_di_connect_open_with), listOf(getString(R.string.di_connect_android_auto), getString(R.string.carplay)),
+                if (com.andrerinas.openheadunit.DiConnectAndroidAuto.opensWithCarPlay(this)) 1 else 0, reconnects = false) { index -> com.andrerinas.openheadunit.DiConnectAndroidAuto.saveOpensWithCarPlay(this, index == 1) }
             toggle(card, getString(R.string.connect_when_iphone_bluetooth_connects),
                 getString(R.string.connect_when_iphone_bluetooth_connects_description),
                 DiPlayPreferences.connectOnPhoneBluetooth(this)) { enabled ->
@@ -6121,13 +6176,14 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val running = CarPlayBackgroundSession.hasSession()
         // A USB session shares this card's status and Disconnect, but not its wireless title or Wi-Fi hint (#742).
         val wired = HomeCardTransport.wired(running, AirPlayPersistence.loadWirelessEnabled(this))
-        homeCardTitle?.text = getString(if (wired) R.string.home_usb_carplay else R.string.wireless_carplay)
+        homeCardTitle?.text = if (running) getString(if (wired) R.string.home_usb_carplay else R.string.wireless_carplay)
+            else getString(R.string.di_connect_home_title)
         homeConnectionHint?.visibility = if (wired) View.GONE else View.VISIBLE
         status?.text = when {
-            setupError != null -> getString(R.string.setup_needs_attention)
             CarPlayBackgroundSession.active -> getString(R.string.carplay_connected)
             running -> getString(R.string.connecting_to_your_iphone)
-            DiPlayPreferences.phoneAddress(this) != null -> "${getString(R.string.status_ready_for_prefix)}${DiPlayPreferences.phoneName(this)}"
+            com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this) -> getString(R.string.di_connect_aa_connected)
+            com.andrerinas.openheadunit.DiConnectAndroidAuto.phoneName(this) != null -> "${getString(R.string.status_ready_for_prefix)}${com.andrerinas.openheadunit.DiConnectAndroidAuto.phoneName(this)}"
             else -> getString(R.string.ready_when_you_are)
         }
         if (lastRunning != running) {
@@ -6137,6 +6193,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             lastRunning = running
         }
         connectButton?.isEnabled = setupError == null
+        androidAutoButton?.text = getString(if (com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this)) R.string.di_connect_open_android_auto
+            else R.string.di_connect_connect_android_auto)
         refreshReconnectBar()
         refreshReadiness()
     }

@@ -1069,4 +1069,17 @@
     <string name="di_connect_android_auto">Android Auto</string>
     <string name="settings_di_connect_aa_nav_card">Scheda indicazioni in Android Auto</string>
     <string name="settings_di_connect_aa_nav_card_description">Google Maps mostra già la propria scheda di indicazioni sul quadro strumenti. Attiva per aggiungere anche la scheda di Di-Connect. CarPlay la mostra sempre. Si applica alla prossima connessione di Android Auto.</string>
+    <string name="di_connect_home_title">ANDROID AUTO · CARPLAY</string>
+    <string name="di_connect_connect_android_auto">Connetti Android Auto</string>
+    <string name="di_connect_open_android_auto">Apri Android Auto</string>
+    <string name="di_connect_aa_connecting">Connessione ad Android Auto…</string>
+    <string name="di_connect_aa_connected">Android Auto connesso</string>
+    <string name="di_connect_choose_android_phone">Scegli il tuo telefono Android</string>
+    <string name="di_connect_pair_android_phone">Attiva il Bluetooth dell\'auto e abbina prima il tuo telefono Android, poi sceglilo qui.</string>
+    <string name="settings_di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_android_auto_description">Connetti Android Auto dalla schermata iniziale. Un telefono collegato via USB si connette via cavo; altrimenti il telefono scelto si connette in wireless.</string>
+    <string name="settings_di_connect_aa_phone">Telefono wireless</string>
+    <string name="settings_di_connect_aa_phone_none">Non scelto</string>
+    <string name="settings_di_connect_aa_advanced">Impostazioni avanzate di Android Auto</string>
+    <string name="settings_di_connect_open_with">Connetti all\'apertura con</string>
 </resources>

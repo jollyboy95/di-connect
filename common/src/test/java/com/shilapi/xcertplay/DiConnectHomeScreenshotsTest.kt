@@ -44,7 +44,7 @@ class DiConnectHomeScreenshotsTest {
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
             root.layout(0, 0, width, root.measuredHeight)
             val aa = descendants(root).filterIsInstance<TextView>().single {
-                it.text.toString() == activity.getString(R.string.di_connect_android_auto)
+                it.text.toString() == activity.getString(R.string.di_connect_connect_android_auto)
             }
             assertTrue("Android Auto entry must be laid out", aa.width > 0 && aa.height > 0)
             val layout = aa.layout

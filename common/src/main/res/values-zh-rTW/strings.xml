@@ -1039,4 +1039,17 @@
     <string name="di_connect_android_auto">Android Auto</string>
     <string name="settings_di_connect_aa_nav_card">Android Auto 中的導航卡片</string>
     <string name="settings_di_connect_aa_nav_card_description">Google 地圖已在儀表板上顯示自己的導航卡片。開啟後會同時顯示 Di-Connect 的卡片。CarPlay 一律顯示。下次連接 Android Auto 時生效。</string>
+    <string name="di_connect_home_title">ANDROID AUTO · CARPLAY</string>
+    <string name="di_connect_connect_android_auto">連接 Android Auto</string>
+    <string name="di_connect_open_android_auto">開啟 Android Auto</string>
+    <string name="di_connect_aa_connecting">正在連接 Android Auto…</string>
+    <string name="di_connect_aa_connected">Android Auto 已連接</string>
+    <string name="di_connect_choose_android_phone">選擇你的 Android 手機</string>
+    <string name="di_connect_pair_android_phone">請先開啟車機藍牙並配對你的 Android 手機，然後在這裡選擇它。</string>
+    <string name="settings_di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_android_auto_description">從主畫面連接 Android Auto。透過 USB 插入的手機使用傳輸線連接；否則所選手機以無線方式連接。</string>
+    <string name="settings_di_connect_aa_phone">無線連接手機</string>
+    <string name="settings_di_connect_aa_phone_none">未選擇</string>
+    <string name="settings_di_connect_aa_advanced">Android Auto 進階設定</string>
+    <string name="settings_di_connect_open_with">開啟時連接</string>
 </resources>

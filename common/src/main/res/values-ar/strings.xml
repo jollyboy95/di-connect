@@ -1028,4 +1028,17 @@
     <string name="di_connect_android_auto">Android Auto</string>
     <string name="settings_di_connect_aa_nav_card">بطاقة الاتجاهات في Android Auto</string>
     <string name="settings_di_connect_aa_nav_card_description">تعرض خرائط Google بطاقة الاتجاهات الخاصة بها على لوحة العدادات. شغّل هذا الخيار لإضافة بطاقة Di-Connect أيضًا. تعرضها CarPlay دائمًا. يُطبَّق عند اتصال Android Auto في المرة القادمة.</string>
+    <string name="di_connect_home_title">ANDROID AUTO · CARPLAY</string>
+    <string name="di_connect_connect_android_auto">اتصال Android Auto</string>
+    <string name="di_connect_open_android_auto">فتح Android Auto</string>
+    <string name="di_connect_aa_connecting">جارٍ اتصال Android Auto…</string>
+    <string name="di_connect_aa_connected">Android Auto متصل</string>
+    <string name="di_connect_choose_android_phone">اختر هاتف Android</string>
+    <string name="di_connect_pair_android_phone">شغّل البلوتوث في السيارة واقرن هاتف Android أولًا، ثم اختره هنا.</string>
+    <string name="settings_di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_android_auto_description">اتصل بـ Android Auto من الشاشة الرئيسية. يتصل الهاتف الموصول عبر USB بالكابل؛ وإلا يتصل الهاتف المختار لاسلكيًا.</string>
+    <string name="settings_di_connect_aa_phone">الهاتف اللاسلكي</string>
+    <string name="settings_di_connect_aa_phone_none">لم يُختر</string>
+    <string name="settings_di_connect_aa_advanced">إعدادات Android Auto المتقدمة</string>
+    <string name="settings_di_connect_open_with">الاتصال عند الفتح باستخدام</string>
 </resources>
