@@ -47,6 +47,11 @@ class GwmAndroidAutoClusterRenderTest {
                 Float::class.javaPrimitiveType, Float::class.javaPrimitiveType).apply {
                 isAccessible = true
             }.invoke(view, canvas, width.toFloat(), height.toFloat())
+            val output = File("build/reports/gwm-cluster")
+            output.mkdirs()
+            File(output, "android-auto-${width}x${height}-${speed.toInt()}.png").outputStream().use {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
             fun unchanged(left: Float, top: Float, right: Float, bottom: Float) {
                 for (y in (height * top).toInt() until (height * bottom).toInt())
                     for (x in (width * left).toInt() until (width * right).toInt())
@@ -60,11 +65,6 @@ class GwmAndroidAutoClusterRenderTest {
             assertEquals(charcoal, bitmap.getPixel((width*.50f).toInt(), (height*.84f).toInt()))
             assertEquals(charcoal, bitmap.getPixel((width*.72f).toInt(), (height*.24f).toInt()))
             assertTrue(bitmap.getPixel((width*.08f).toInt(), (height*.49f).toInt()) != background)
-            val output = File("build/reports/gwm-cluster")
-            output.mkdirs()
-            File(output, "android-auto-${width}x${height}-${speed.toInt()}.png").outputStream().use {
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
-            }
             bitmap.recycle()
             cover.recycle()
         }

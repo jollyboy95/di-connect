@@ -153,7 +153,7 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         body.shader = null
         body.color = Color.rgb(17, 24, 32)
         // The factory speed-limit/assist lamps stay outside the rail.
-        rect.set(w * 0.23f, h * 0.82f, w * 0.988f, h * 0.92f)
+        rect.set(w * 0.23f, h * 0.82f, w * 0.988f, h * 0.91f)
         canvas.drawRoundRect(rect, h * 0.018f, h * 0.018f, body)
         val baseline = h * 0.875f
         val labelSize = h * 0.024f
