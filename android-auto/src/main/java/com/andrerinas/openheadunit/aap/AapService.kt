@@ -1826,7 +1826,8 @@ class AapService : Service(), UsbReceiver.Listener {
 
         localHotspotCredentialsProvider?.stop()
 
-        if (App.provide(this).settings.autoEnableHotspot &&
+        if (!com.andrerinas.openheadunit.DiConnectEngine.handoverInProgress &&
+            App.provide(this).settings.autoEnableHotspot &&
             UserExitHotspotPolicy.usesHeadUnitHotspot(settings.wifiConnectionMode, settings.helperConnectionStrategy, nativeTransport())) {
             AppLog.i("AapService: Auto-disabling hotspot...")
             HotspotManager.setHotspotEnabled(this, false)
