@@ -1,0 +1,51 @@
+<?xml version="1.0" ?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:background="@color/aa_da_background">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="32dp">
+        <com.google.android.material.appbar.MaterialToolbar android:id="@+id/aa_toolbar" android:layout_width="match_parent" android:layout_height="64dp" app:title="@string/aa_da_settings" app:titleTextColor="@color/aa_da_text" app:navigationIcon="@drawable/aa_ic_arrow_back_white" app:navigationIconTint="@color/aa_da_text"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/aa_da_preferences" android:textSize="36sp" android:textColor="@color/aa_da_text"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:layout_marginBottom="18dp" android:text="@string/aa_da_preferences_hint" android:textSize="18sp" android:textColor="@color/aa_da_muted"/>
+        <LinearLayout android:id="@+id/aa_da_connection_setup" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="92dp" android:layout_marginTop="10dp" android:orientation="horizontal" android:gravity="center_vertical" android:padding="20dp" android:background="@drawable/aa_da_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@drawable/aa_ic_network_wifi_white" app:tint="@color/aa_da_accent" android:importantForAccessibility="no"/>
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/aa_da_connection_setup" android:textSize="20sp" android:textColor="@color/aa_da_text"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/aa_da_connection_setup_hint" android:textSize="15sp" android:textColor="@color/aa_da_muted"/>
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:id="@+id/aa_da_diagnostics" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="92dp" android:layout_marginTop="10dp" android:orientation="horizontal" android:gravity="center_vertical" android:padding="20dp" android:background="@drawable/aa_da_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@drawable/aa_ic_da_diagnostics" app:tint="@color/aa_da_accent" android:importantForAccessibility="no"/>
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/aa_da_diagnostics" android:textSize="20sp" android:textColor="@color/aa_da_text"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/aa_da_diagnostics_hint" android:textSize="15sp" android:textColor="@color/aa_da_muted"/>
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:id="@+id/aa_da_automation" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="92dp" android:layout_marginTop="10dp" android:orientation="horizontal" android:gravity="center_vertical" android:padding="20dp" android:background="@drawable/aa_da_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@drawable/aa_ic_da_automation" app:tint="@color/aa_da_accent" android:importantForAccessibility="no"/>
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/aa_da_automation" android:textSize="20sp" android:textColor="@color/aa_da_text"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/aa_da_automation_hint" android:textSize="15sp" android:textColor="@color/aa_da_muted"/>
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:id="@+id/aa_da_display" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="92dp" android:layout_marginTop="10dp" android:orientation="horizontal" android:gravity="center_vertical" android:padding="20dp" android:background="@drawable/aa_da_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@drawable/aa_ic_da_display" app:tint="@color/aa_da_accent" android:importantForAccessibility="no"/>
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/aa_da_display" android:textSize="20sp" android:textColor="@color/aa_da_text"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/aa_da_display_hint" android:textSize="15sp" android:textColor="@color/aa_da_muted"/>
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:id="@+id/aa_da_permissions" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="92dp" android:layout_marginTop="10dp" android:orientation="horizontal" android:gravity="center_vertical" android:padding="20dp" android:background="@drawable/aa_da_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@drawable/aa_ic_da_permissions" app:tint="@color/aa_da_accent" android:importantForAccessibility="no"/>
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/aa_da_permissions" android:textSize="20sp" android:textColor="@color/aa_da_text"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/aa_da_permissions_hint" android:textSize="15sp" android:textColor="@color/aa_da_muted"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/aa_da_about" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="92dp" android:layout_marginTop="10dp" android:orientation="horizontal" android:gravity="center_vertical" android:padding="20dp" android:background="@drawable/aa_da_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true">
+            <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@drawable/aa_ic_da_about" app:tint="@color/aa_da_accent" android:importantForAccessibility="no"/>
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/aa_da_about" android:textSize="20sp" android:textColor="@color/aa_da_text"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/aa_da_about_hint" android:textSize="15sp" android:textColor="@color/aa_da_muted"/>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

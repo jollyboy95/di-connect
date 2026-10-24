@@ -6,13 +6,14 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: di-connect-integration
   cancel-in-progress: true
 jobs:
   integrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,7 +24,7 @@ jobs:
           git clone https://github.com/jollyboy95/d-play-gwm-h7.git dplay
           git -C dplay checkout 3df998919f075bc6e21efb5e8a314347813647a1
           git clone https://github.com/jollyboy95/DiAuto-GWM.git diauto
-          git -C diauto checkout f3046721814bff289a78e58f597b45d895efbb95
+          git -C diauto checkout 4febfe1568faab5bf6899575b31e1c708298759f
       - name: Import Android Auto into D-Play
         run: python3 target/_integration/integrate.py
       - name: Commit combined source on the integration branch
@@ -42,55 +43,11 @@ jobs:
           git add -A
           git diff --cached --quiet || git commit -m 'Import D-Play GWM foundation and Android Auto engine into Di-Connect'
           git push origin integration/android-auto
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '25'
-      - uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools platforms;android-37.0 build-tools;36.0.0 ndk;28.2.13676358 ndk;29.0.14206865 cmake;3.22.1
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Provision published upstream CarPlay runtime assets
+      # The bot push above cannot start workflows by itself, so the regenerated branch is
+      # built once by the branch's own "Build Di-Connect APK" workflow. That run carries the
+      # preview APK, signing check and per-task test/lint steps. A pull_request run the bot
+      # push leaves waiting for approval would be the same build again; it can be ignored.
+      - name: Build the regenerated branch
         env:
-          RUNTIME_DIR: ${{ runner.temp }}/diconnect-runtime
-        run: |
-          python3 - <<'PY'
-          import urllib.request, hashlib, zipfile, pathlib, os
-          base='https://github.com/shihabal3amri/DiPlay/releases/download/v0.2.21/'
-          apk=pathlib.Path(os.environ['RUNNER_TEMP'])/'DiPlay-0.2.21.apk'
-          urllib.request.urlretrieve(base+apk.name,apk)
-          sums=urllib.request.urlopen(base+'SHA256SUMS.txt').read().decode()
-          expected=next(line.split()[0] for line in sums.splitlines() if line.split()[-1].lstrip('*')==apk.name)
-          assert hashlib.sha256(apk.read_bytes()).hexdigest()==expected, 'Upstream APK checksum mismatch'
-          out=pathlib.Path(os.environ['RUNTIME_DIR'])/'offline-mfi'
-          out.mkdir(parents=True,exist_ok=True)
-          with zipfile.ZipFile(apk) as z:
-              for n in ('identity.pk8','certificate.p7b'):
-                  data=z.read('assets/offline-mfi/'+n)
-                  assert data, 'Missing runtime asset'
-                  (out/n).write_bytes(data)
-          PY
-          echo "DIPLAY_AUTH_ASSETS_DIR=$RUNTIME_DIR" >> "$GITHUB_ENV"
-      - name: Set increasing APK revision
-        run: echo "DI_CONNECT_REVISION=$(( $(date +%s) - 1767225600 ))" >> "$GITHUB_ENV"
-      - name: Compile preview APK
-        working-directory: target
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleDebug --stacktrace --no-configuration-cache
-      - name: Unit tests, lint and source builds
-        working-directory: target
-        run: |
-          chmod +x gradlew
-          ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :shared:testDebugUnitTest :common:testDebugUnitTest :home:testDebugUnitTest :android-auto:testDebugUnitTest :mobile:lintDebug :home:lintDebug :maphost:lintDebug :mobile:assembleDebug :home:assembleDebug :maphost:assembleDebug --stacktrace --no-configuration-cache
-      - name: Verify standalone CarPlay build
-        working-directory: target
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleStandaloneDebug --stacktrace --no-configuration-cache
-      - name: Preview APK and reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Di-Connect-preview
-          path: |
-            target/mobile/build/outputs/apk/debug/*.apk
-            target/**/build/reports/tests/
-            target/common/build/reports/di-connect-home/
-            target/**/build/reports/lint-results-debug.html
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build-di-connect.yml --repo "$GITHUB_REPOSITORY" --ref integration/android-auto
