@@ -461,7 +461,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         setupStep = savedInstanceState?.getInt("setup_step") ?: SetupGuide.STEP_CAR
         setupFromSettings = savedInstanceState?.getBoolean("setup_from_settings") ?: false
         page = savedInstanceState?.getString("page") ?: intent.getStringExtra("page")
-            ?: if (setupError == null && SetupGuide.shouldOpenOnLaunch(SetupGuide.seen(this),
+            ?: if (diConnectEntryEnabled()) "home" else if (setupError == null && SetupGuide.shouldOpenOnLaunch(SetupGuide.seen(this),
                     DiPlayPreferences.phoneAddress(this) != null)) "setup" else "home"
         render()
         scheduleAutomaticVehicleValidation()
@@ -1163,6 +1163,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         tag = APPEARANCE_BUTTON_TAG
     }
 
+    private fun diConnectEntryEnabled(): Boolean = runCatching {
+        packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+            .metaData?.getBoolean("di_connect_entry_point", false) == true
+    }.getOrDefault(false)
+
     private fun home(content: LinearLayout) {
         val compact = isCompactLayout
         fun homeButton(title: String, primary: Boolean, click: () -> Unit) = button(title, primary, click)
@@ -1181,6 +1186,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         card.addView(status)
         connectButton = homeButton(getString(R.string.connect_phone), true) {
             if (CarPlayBackgroundSession.hasSession()) openProjection()
+            else if (diConnectEntryEnabled() && !SetupGuide.seen(this)) { page = "setup"; render() }
             else connect(true)
         }
         card.addView(connectButton, matchButton(height = if (compact) 54 else 68))
