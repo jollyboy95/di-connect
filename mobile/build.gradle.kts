@@ -26,7 +26,7 @@ android {
         targetSdk = 37
         // CI revisions count up (r16 -> 1016) so each GWM build installs over the previous one.
         versionCode = gwmRevision?.let { 1000 + it.toInt() } ?: 40
-        versionName = "0.2.21"
+        versionName = "0.1.0"
         if (selectedAbiFilters.isNotEmpty()) {
             ndk { abiFilters.addAll(selectedAbiFilters) }
         }
@@ -59,8 +59,9 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            if (file("gwm-debug.keystore").isFile) signingConfig = signingConfigs.getByName("gwmDebug")
-            versionNameSuffix = "-hud-test" + (gwmRevision?.let { "-gwm.r$it" } ?: "")
+            check(file("gwm-debug.keystore").isFile) { "Di-Connect update signing key is missing" }
+            signingConfig = signingConfigs.getByName("gwmDebug")
+            versionNameSuffix = "-preview" + (gwmRevision?.let { ".r$it" } ?: "")
         }
         release {
             optimization {

@@ -1,3 +1,11 @@
+# Di-Connect
+
+CarPlay and Android Auto for the GWM/Haval H7, built on D-Play GWM's interface.
+
+This branch is an integration preview. The Android Auto connection engine is included in the same APK, with its existing setup screens. Compilation checks and physical vehicle testing must pass before this is a release.
+
+See [integration notes](docs/DI_CONNECT.md) for donor revisions, build details and current limitations. The original D-Play overview follows below; its upstream download links point to DiPlay, not to a Di-Connect release.
+
 # DiPlay
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
