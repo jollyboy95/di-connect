@@ -23,7 +23,8 @@ jobs:
         shell: bash
     timeout-minutes: 90
     env:
-      GRADLE_ARGS: --stacktrace --no-configuration-cache --profile --console=plain
+      # -PgwmLintFast applies DiAuto-GWM's own fast lint check set to the Android Auto module only.
+      GRADLE_ARGS: --stacktrace --no-configuration-cache --profile --console=plain -PgwmLintFast
     steps:
       - uses: actions/checkout@v4
       - run: chmod +x gradlew
