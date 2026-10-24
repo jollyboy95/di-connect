@@ -53,14 +53,17 @@ jobs:
           PY
           echo "DIPLAY_AUTH_ASSETS_DIR=$RUNTIME_DIR" >> "$GITHUB_ENV"
       # Lint on the combined ~194k-line app ran past 40 minutes with the project's 2 GB Gradle
-      # heap. Give Gradle and lint more memory on the 16 GB runner. CI only; gradle.properties
-      # in the project is unchanged, and lint still covers the same modules.
+      # heap. Lint gets its own larger heap; Gradle and the Kotlin daemon stay small enough to
+      # leave room for the 2 GB Robolectric test JVM on the 16 GB runner (5 GB for both daemons
+      # slowed the common tests from 7 to 23+ minutes). CI only; the project's gradle.properties
+      # and lint coverage are unchanged.
       - name: Give Gradle and lint more memory on CI
         run: |
           mkdir -p ~/.gradle
           cat >> ~/.gradle/gradle.properties <<'PROPS'
-          org.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC -Dfile.encoding=UTF-8
-          android.experimental.lint.heapSize=5g
+          org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
+          kotlin.daemon.jvmargs=-Xmx2g
+          android.experimental.lint.heapSize=6g
           PROPS
       - name: Set increasing APK revision
         run: echo "DI_CONNECT_REVISION=$(( $(date +%s) - 1767225600 ))" >> "$GITHUB_ENV"
@@ -113,7 +116,12 @@ jobs:
       - name: Lint · mobile
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:lintDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
+        run: |
+          # Free the long-lived daemons' memory for lint's own process.
+          ./gradlew --stop
+          pkill -f KotlinCompileDaemon || true
+          free -m
+          ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:lintDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Lint · home
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
