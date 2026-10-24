@@ -43,5 +43,5 @@ release-signing.properties
 # Written by scripts/download_count.py when the site is deployed
 site/assets/downloads.json
 
-# Fixed public debug key for install-over updates.
+# Deliberately committed GWM development key for install-over preview updates (not for production releases).
 !/mobile/gwm-debug.keystore
