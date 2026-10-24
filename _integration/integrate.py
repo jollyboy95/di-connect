@@ -76,7 +76,7 @@ tree.write(p,encoding='unicode',xml_declaration=True)
 shutil.copytree(dest/'src/github/java',dest/'src/main/java',dirs_exist_ok=True)
 shutil.rmtree(dest/'src/github')
 shutil.rmtree(dest/'src/playstore',ignore_errors=True)
-shutil.rmtree(dest/'src/debug',ignore_errors=True)
+(dest/'src/debug/AndroidManifest.xml').unlink(missing_ok=True)
 p=dest/'src/main/AndroidManifest.xml'; tree=ET.parse(p); app=tree.getroot().find('application')
 el=ET.SubElement(app,'service',{A+'name':'com.andrerinas.openheadunit.aap.DummyVpnService',A+'permission':'android.permission.BIND_VPN_SERVICE',A+'exported':'false'})
 f=ET.SubElement(el,'intent-filter'); ET.SubElement(f,'action',{A+'name':'android.net.VpnService'})
@@ -91,7 +91,7 @@ for p in (dest/'src/main/java').rglob('*'):
 original=(src/'app/build.gradle.kts').read_text(); deps=original[original.index('dependencies {'):]
 deps=re.sub(r'    "playstoreImplementation"\([^\n]+\n','',deps).replace('"githubImplementation"','implementation')
 deps=re.sub(r'^.*kapt\([^\n]+\n','',deps,flags=re.M).replace('project(":contract")','project(":aa-contract")')
-locales=sorted(p.name[7:] for p in (dest/'src/main/res').glob('values-*') if (p/'strings.xml').exists() and '-' not in p.name[7:])
+locales=sorted(p.name[7:] for p in (dest/'src/main/res').glob('values-*') if (p/'strings.xml').exists())
 (dest/'build.gradle.kts').write_text('''plugins { id("com.android.library") }
 android {
     namespace = "com.andrerinas.openheadunit"
