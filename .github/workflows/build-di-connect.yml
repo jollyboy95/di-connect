@@ -17,6 +17,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Explicit bash adds pipefail, so a Gradle failure piped through tee still fails its step.
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 90
     env:
       GRADLE_ARGS: --stacktrace --no-configuration-cache --profile --console=plain
