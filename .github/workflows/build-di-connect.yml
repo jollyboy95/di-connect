@@ -77,7 +77,7 @@ jobs:
       # once the APK itself has failed to compile.
       - name: Render actual Android Auto cluster and check protected regions
         timeout-minutes: 15
-        run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' $GRADLE_ARGS
+        run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' $GRADLE_ARGS
       - name: Upload actual cluster renders
         if: always()
         uses: actions/upload-artifact@v4

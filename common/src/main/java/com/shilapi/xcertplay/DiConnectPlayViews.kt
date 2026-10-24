@@ -56,11 +56,14 @@ internal object DiConnectPlayViews {
     }
 
     private class HudLayer(displayContext: Context, anchor: Int) : DiConnectViews.Layer {
-        private val hud = GwmHeadUpView(displayContext).apply {
-            setAnchor(GwmHeadUpView.Anchor.entries.getOrElse(anchor) { GwmHeadUpView.Anchor.CENTRE })
+        private val hud = GwmAndroidAutoHeadUpView(displayContext).apply {
+            setAnchor(GwmAndroidAutoHeadUpView.Anchor.entries.getOrElse(anchor) { GwmAndroidAutoHeadUpView.Anchor.LEFT })
         }
         override val view: View get() = hud
-        override fun setGuidance(guidance: DiConnectViews.Guidance?) = hud.setGuidance(guidance(guidance))
+        override fun setGuidance(guidance: DiConnectViews.Guidance?) {
+            hud.setArrivalText(guidance?.arrivalText)
+            hud.setGuidance(guidance(guidance))
+        }
         override fun release() = Unit
     }
 }

@@ -24,7 +24,7 @@ import org.robolectric.util.ReflectionHelpers
 class GwmAndroidAutoClusterRenderTest {
     @Test fun rendersWithClearNavigationAndStockWarningRegions() {
         val background = Color.rgb(20, 125, 210)
-        for ((width, height) in listOf(1920 to 720, 1280 to 480, 1920 to 720)) {
+        for ((width, height) in listOf(1920 to 720, 1280 to 480, 1600 to 600)) {
             val speed = if (width == 1280) 120f else 0f
             val view = GwmAndroidAutoClusterView(RuntimeEnvironment.getApplication())
             view.setSnapshot(GwmVehicleData.Snapshot(speed, "P", 75f, 789f, 26f,
@@ -62,11 +62,12 @@ class GwmAndroidAutoClusterRenderTest {
             unchanged(.05f, .82f, .20f, .93f) // factory speed-limit and lane symbols
             unchanged(.44f, .92f, .55f, .99f) // factory READY below the information row
             val charcoal = Color.rgb(17, 24, 32)
-            assertEquals(charcoal, bitmap.getPixel((width*.50f).toInt(), (height*.84f).toInt()))
-            assertEquals(charcoal, bitmap.getPixel((width*.72f).toInt(), (height*.24f).toInt()))
+            assertEquals(charcoal, bitmap.getPixel((width*.50f).toInt(), (height*.85f).toInt()))
+            assertEquals(charcoal, bitmap.getPixel((width*.88f).toInt(), (height*.22f).toInt()))
             assertTrue(bitmap.getPixel((width*.08f).toInt(), (height*.49f).toInt()) != background)
             bitmap.recycle()
             cover.recycle()
         }
     }
 }
+

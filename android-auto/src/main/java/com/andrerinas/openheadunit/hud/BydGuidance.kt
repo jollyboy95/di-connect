@@ -11,4 +11,5 @@ internal data class BydGuidance(
     val remainingMeters: Int = -1,
     val remainingSeconds: Int = -1,
     val updatedNs: Long = System.nanoTime(),
+    val arrivalText: String? = null,
 )

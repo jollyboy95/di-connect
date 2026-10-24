@@ -32,7 +32,12 @@ internal object BydNavigationMapper {
         val remaining = destination?.takeIf { it.hasDistance() && it.distance.hasMeters() }?.distance?.meters ?: -1
         val seconds = destination?.takeIf { it.hasTimeToArrivalSeconds() }?.timeToArrivalSeconds
             ?.coerceIn(0, Int.MAX_VALUE.toLong())?.toInt() ?: -1
-        return BydGuidance(codes.cluster, codes.gaode, codes.arrow, codes.exit, distance, road, remaining, seconds)
+        // Some phones send the formatted ETA without a numeric remaining duration.
+        // Preserve it verbatim instead of inventing a duration or dropping arrival from the HUD.
+        val arrivalText = destination?.takeIf { it.hasEstimatedTimeAtArrival() }
+            ?.estimatedTimeAtArrival?.trim()?.takeIf { it.isNotEmpty() }
+        return BydGuidance(codes.cluster, codes.gaode, codes.arrow, codes.exit, distance, road, remaining, seconds,
+            arrivalText = arrivalText)
     }
 
     data class Codes(val cluster: Int, val gaode: Int, val arrow: Int, val exit: Int = 0)

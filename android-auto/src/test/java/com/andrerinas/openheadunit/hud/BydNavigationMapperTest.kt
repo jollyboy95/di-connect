@@ -6,6 +6,19 @@ import com.andrerinas.openheadunit.aap.AapNavigationHelper
 import com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus as N
 
 class BydNavigationMapperTest {
+    @Test fun `formatted arrival survives when phone omits numeric journey time`() {
+        val value = snapshot(300)
+        val position = value.currentPosition!!.payload.toBuilder().addDestinationDistances(
+            N.NavigationDestinationDistance.newBuilder().setEstimatedTimeAtArrival("10:31 AM"))
+        value.currentPosition = AapNavigationHelper.TimedMessage(position.build(), 0)
+        val guidance = BydNavigationMapper.from(value)!!
+        assertEquals("10:31 AM", guidance.arrivalText)
+        assertEquals(-1, guidance.remainingSeconds)
+        assertEquals(300, guidance.distanceMeters)
+        // A new route/position with no arrival must not reuse the old ETA.
+        assertNull(BydNavigationMapper.from(snapshot(300))!!.arrivalText)
+    }
+
     @Test fun `left and right maneuvers retain direction`() {
         assertEquals(2, BydNavigationMapper.codes(7)!!.cluster)
         assertEquals(3, BydNavigationMapper.codes(8)!!.cluster)
@@ -90,3 +103,4 @@ class BydNavigationMapperTest {
         }
     }
 }
+

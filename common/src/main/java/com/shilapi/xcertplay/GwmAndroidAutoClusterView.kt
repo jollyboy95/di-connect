@@ -153,9 +153,9 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         body.shader = null
         body.color = Color.rgb(17, 24, 32)
         // The factory speed-limit/assist lamps stay outside the rail.
-        rect.set(w * 0.23f, h * 0.82f, w * 0.988f, h * 0.91f)
+        rect.set(w * 0.23f, h * 0.835f, w * 0.988f, h * 0.91f)
         canvas.drawRoundRect(rect, h * 0.018f, h * 0.018f, body)
-        val baseline = h * 0.875f
+        val baseline = h * 0.89f
         val labelSize = h * 0.024f
         val valueSize = h * 0.038f
 
@@ -285,9 +285,9 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         val info = music.info
         val title = info.title?.takeIf { it.isNotBlank() } ?: return
         val mw = w * 0.17f
-        val mh = h * 0.14f
-        val left = w * 0.71f // ends at 88%, before the stock right-side warning region
-        val top = h * 0.23f // bottom 37%, leaving a gap before Google's card at ~40%
+        val mh = h * 0.17f
+        val left = w * 0.715f // ends at 88.5%, before stock right-side warnings
+        val top = h * 0.20f // bottom 37%, clear of Google's fixed card below
         val box = RectF(left, top, left + mw, top + mh)
         drawGlass(canvas, box, mh * 0.14f)
 
@@ -307,10 +307,10 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         val textWidth = left + mw - mh * 0.12f - textLeft
         if (textWidth <= 0f) return
         text.textAlign = Paint.Align.LEFT
-        valuePaint(mh * 0.155f, medium)
+        valuePaint(h * 0.030f, medium)
         canvas.drawText(fit(title, textWidth), textLeft, top + mh * 0.36f, text)
         info.artist?.takeIf { it.isNotBlank() }?.let { artist ->
-            valuePaint(mh * 0.13f, light)
+            valuePaint(h * 0.024f, regular)
             text.color = secondary
             canvas.drawText(fit(artist, textWidth), textLeft, top + mh * 0.57f, text)
             text.color = Color.WHITE
@@ -380,3 +380,4 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         const val FADE_TOP = 0.74f
     }
 }
+
