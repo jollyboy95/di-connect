@@ -1037,4 +1037,6 @@
     <string name="settings_gwm_hud_test_shown">已在螢幕 %1$d 上顯示測試箭頭 10 秒。</string>
     <string name="settings_gwm_hud_test_failed">無法顯示抬頭顯示測試：%1$s</string>
     <string name="di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card">Android Auto 中的導航卡片</string>
+    <string name="settings_di_connect_aa_nav_card_description">Google 地圖已在儀表板上顯示自己的導航卡片。開啟後會同時顯示 Di-Connect 的卡片。CarPlay 一律顯示。下次連接 Android Auto 時生效。</string>
 </resources>

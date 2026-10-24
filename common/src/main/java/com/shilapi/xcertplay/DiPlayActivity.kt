@@ -601,6 +601,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             }
             toggle(card, getString(R.string.settings_gwm_music_card), getString(R.string.settings_gwm_music_card_description),
                 AirPlayPersistence.loadGwmMusicCard(this)) { AirPlayPersistence.saveGwmMusicCard(this, it) }
+            toggle(card, getString(R.string.settings_di_connect_aa_nav_card), getString(R.string.settings_di_connect_aa_nav_card_description),
+                AirPlayPersistence.loadAndroidAutoNavCard(this)) { AirPlayPersistence.saveAndroidAutoNavCard(this, it) }
         }
         toggle(card, getString(R.string.settings_gwm_hud), getString(R.string.settings_gwm_hud_description),
             AirPlayPersistence.loadGwmHudEnabled(this)) { on ->

@@ -977,4 +977,6 @@
     <string name="settings_gwm_hud_test_shown">Flecha de prueba en la pantalla %1$d durante 10 segundos.</string>
     <string name="settings_gwm_hud_test_failed">No se pudo mostrar la prueba del HUD: %1$s</string>
     <string name="di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card">Tarjeta de indicaciones en Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card_description">Google Maps ya muestra su propia tarjeta de indicaciones en el cuadro de instrumentos. Actívalo para añadir también la tarjeta de Di-Connect. CarPlay siempre la muestra. Se aplica la próxima vez que se conecte Android Auto.</string>
 </resources>

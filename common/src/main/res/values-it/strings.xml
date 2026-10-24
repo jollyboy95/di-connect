@@ -1067,4 +1067,6 @@
     <string name="settings_gwm_hud_test_shown">Freccia di prova sul display %1$d per 10 secondi.</string>
     <string name="settings_gwm_hud_test_failed">Impossibile mostrare la prova HUD: %1$s</string>
     <string name="di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card">Scheda indicazioni in Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card_description">Google Maps mostra già la propria scheda di indicazioni sul quadro strumenti. Attiva per aggiungere anche la scheda di Di-Connect. CarPlay la mostra sempre. Si applica alla prossima connessione di Android Auto.</string>
 </resources>

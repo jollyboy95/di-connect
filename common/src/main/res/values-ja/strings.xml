@@ -1079,4 +1079,6 @@
     <string name="settings_gwm_hud_test_shown">ディスプレイ %1$d にテスト用の矢印を 10 秒間表示しています。</string>
     <string name="settings_gwm_hud_test_failed">HUD テストを表示できませんでした: %1$s</string>
     <string name="di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card">Android Auto の案内カード</string>
+    <string name="settings_di_connect_aa_nav_card_description">Google マップはメーターに独自の案内カードを表示します。オンにすると Di-Connect のカードも表示します。CarPlay では常に表示されます。次に Android Auto が接続したときに適用されます。</string>
 </resources>

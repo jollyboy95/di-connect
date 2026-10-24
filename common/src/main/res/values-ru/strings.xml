@@ -977,4 +977,6 @@
     <string name="settings_gwm_hud_test_shown">Тестовая стрелка на дисплее %1$d в течение 10 секунд.</string>
     <string name="settings_gwm_hud_test_failed">Не удалось показать тест HUD: %1$s</string>
     <string name="di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card">Карточка маршрута в Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card_description">Google Карты уже показывают свою карточку маршрута на приборной панели. Включите, чтобы добавить карточку Di-Connect. В CarPlay она показывается всегда. Применяется при следующем подключении Android Auto.</string>
 </resources>

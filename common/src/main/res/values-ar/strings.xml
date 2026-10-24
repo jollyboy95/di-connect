@@ -1026,4 +1026,6 @@
     <string name="settings_gwm_hud_test_shown">سهم تجريبي معروض على الشاشة %1$d لمدة 10 ثوانٍ.</string>
     <string name="settings_gwm_hud_test_failed">تعذر عرض اختبار شاشة العرض الأمامية: %1$s</string>
     <string name="di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card">بطاقة الاتجاهات في Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card_description">تعرض خرائط Google بطاقة الاتجاهات الخاصة بها على لوحة العدادات. شغّل هذا الخيار لإضافة بطاقة Di-Connect أيضًا. تعرضها CarPlay دائمًا. يُطبَّق عند اتصال Android Auto في المرة القادمة.</string>
 </resources>

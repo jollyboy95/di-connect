@@ -1080,4 +1080,6 @@
     <string name="settings_gwm_hud_test_shown">Sample arrow shown on display %1$d for 10 seconds.</string>
     <string name="settings_gwm_hud_test_failed">HUD test could not be shown: %1$s</string>
     <string name="di_connect_android_auto">Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card">Directions card in Android Auto</string>
+    <string name="settings_di_connect_aa_nav_card_description">Google Maps already shows its own directions card on the cluster. Turn on to add Di-Connect\'s card as well. CarPlay always shows it. Applies the next time Android Auto connects.</string>
 </resources>

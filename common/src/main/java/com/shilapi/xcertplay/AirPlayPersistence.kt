@@ -93,6 +93,8 @@ object AirPlayPersistence {
     private const val KEY_GWM_HUD_ENABLED = "gwm_hud_enabled"
     private const val KEY_GWM_CARD_ANCHOR = "gwm_card_anchor"
     private const val KEY_GWM_MUSIC_CARD = "gwm_music_card"
+    /** Shared with Android Auto (DiConnectSettings.AA_NAV_CARD). */
+    private const val KEY_DI_CONNECT_AA_NAV_CARD = "di_connect_aa_nav_card"
     private const val KEY_GWM_HUD_DISPLAY_ID = "gwm_hud_display_id"
     private const val KEY_GWM_HUD_ANCHOR = "gwm_hud_anchor"
     const val GWM_HUD_DEFAULT_DISPLAY_ID = 3
@@ -875,6 +877,14 @@ object AirPlayPersistence {
 
     fun saveGwmCardAnchor(context: Context, anchor: Int) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_GWM_CARD_ANCHOR, anchor.coerceIn(0, 1)).apply()
+    }
+
+    /** Di-Connect: Android Auto's own directions card on the GWM cluster (Google Maps draws one too). */
+    fun loadAndroidAutoNavCard(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DI_CONNECT_AA_NAV_CARD, false)
+
+    fun saveAndroidAutoNavCard(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_DI_CONNECT_AA_NAV_CARD, enabled).apply()
     }
 
     fun loadGwmMusicCard(context: Context): Boolean =
