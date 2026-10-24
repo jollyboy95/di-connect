@@ -54,14 +54,14 @@ object DialogUtils {
         }
         container.addView(editText)
 
-        val dialog = MaterialAlertDialogBuilder(context, com.andrerinas.openheadunit.R.style.DarkAlertDialog)
+        val dialog = MaterialAlertDialogBuilder(context, com.andrerinas.openheadunit.R.style.aa_DarkAlertDialog)
             .setTitle(titleResId)
             .setView(container)
             .setPositiveButton(R.string.ok) { _, _ ->
                 val value = editText.text.toString().trim()
                 onResult(value)
             }
-            .setNeutralButton(com.andrerinas.openheadunit.R.string.reset) { _, _ ->
+            .setNeutralButton(com.andrerinas.openheadunit.R.string.aa_reset) { _, _ ->
                 onResult("")
             }
             .setNegativeButton(R.string.cancel, null)

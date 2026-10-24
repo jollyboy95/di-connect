@@ -83,8 +83,8 @@ class AapNavigationHelper(
         )
         context.applicationContext.sendBroadcast(intent,
             if (com.andrerinas.openheadunit.BuildConfig.DEBUG)
-                com.andrerinas.openheadunit.BuildConfig.APPLICATION_ID + ".permission.NAVIGATION_UPDATE"
-            else NavigationUpdateIntent.BROADCAST_PERMISSION)
+                context.packageName + ".permission.NAVIGATION_UPDATE"
+            else context.packageName + ".permission.NAVIGATION_UPDATE")
     }
 
     fun showNotificationForSnapshot(snapshot: NavigationSnapshot, distanceMeters: Int?) {

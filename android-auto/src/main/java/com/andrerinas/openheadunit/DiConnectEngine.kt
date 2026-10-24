@@ -25,6 +25,7 @@ object DiConnectEngine {
         callbacks.forEach { main.post(it) }
     }
     fun open(activity: Activity) {
+        App.get(activity).initializeAndroidAuto()
         activity.startActivity(Intent(activity, com.andrerinas.openheadunit.main.MainActivity::class.java))
     }
 }

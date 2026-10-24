@@ -32,6 +32,13 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+    }
+
+    private var androidAutoInitialized = false
+
+    fun initializeAndroidAuto() {
+        if (androidAutoInitialized) return
+        androidAutoInitialized = true
 
 
 

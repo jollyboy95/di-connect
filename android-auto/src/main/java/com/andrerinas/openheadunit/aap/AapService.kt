@@ -721,8 +721,9 @@ class AapService : Service(), UsbReceiver.Listener {
     // -------------------------------------------------------------------------
 
     override fun onCreate() {
-        com.andrerinas.openheadunit.DiConnectEngine.service = this
         super.onCreate()
+        App.get(this).initializeAndroidAuto()
+        com.andrerinas.openheadunit.DiConnectEngine.service = this
         AppLog.i("AapService creating...")
 
         try {
