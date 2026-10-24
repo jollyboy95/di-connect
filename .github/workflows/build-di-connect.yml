@@ -1,20 +1,25 @@
 name: Build Di-Connect APK
 on:
+  # Pull requests (including PR #1 from integration/android-auto) build once through
+  # pull_request. Pushing to the PR branch therefore no longer starts a second, identical
+  # push run. The preview workflow on main dispatches this workflow after it regenerates
+  # the integration branch, because its own bot push cannot start other workflows.
   push:
-    branches: [main, integration/android-auto]
+    branches: [main]
     paths-ignore: ['_integration/**', '**.md']
   pull_request:
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: di-connect-build-${{ github.ref }}
+  group: di-connect-build-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 jobs:
   build:
-    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
+    env:
+      GRADLE_ARGS: --stacktrace --no-configuration-cache
     steps:
       - uses: actions/checkout@v4
       - run: chmod +x gradlew
@@ -49,16 +54,56 @@ jobs:
           echo "DIPLAY_AUTH_ASSETS_DIR=$RUNTIME_DIR" >> "$GITHUB_ENV"
       - name: Set increasing APK revision
         run: echo "DI_CONNECT_REVISION=$(( $(date +%s) - 1767225600 ))" >> "$GITHUB_ENV"
+      # One Gradle task (or a small group) per step, so the Actions page shows which one failed
+      # or ran long. Later checks still run after an earlier test or lint failure, but none run
+      # once the APK itself has failed to compile.
       - name: Compile preview APK
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleDebug --stacktrace --no-configuration-cache
-      - name: Unit tests, lint and source builds
-        working-directory: .
+        id: compile
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleDebug $GRADLE_ARGS --profile
+      - name: Check preview APK package, version and signing key
+        id: apk
         run: |
-          chmod +x gradlew
-          ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :shared:testDebugUnitTest :common:testDebugUnitTest :home:testDebugUnitTest :android-auto:testDebugUnitTest :mobile:lintDebug :home:lintDebug :maphost:lintDebug :mobile:assembleDebug :home:assembleDebug :maphost:assembleDebug --stacktrace --no-configuration-cache
+          apk=$(ls mobile/build/outputs/apk/debug/*.apk | head -1)
+          echo "APK: $apk"
+          bt="$ANDROID_HOME/build-tools/36.0.0"
+          badging=$("$bt/aapt2" dump badging "$apk" | head -1)
+          echo "$badging"
+          echo "$badging" | grep -q "name='com.jollyboy95.diconnect.debug'" || { echo "::error::Wrong package ID"; exit 1; }
+          code=$(echo "$badging" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+          [ "$code" = "$((1000 + DI_CONNECT_REVISION))" ] || { echo "::error::Unexpected versionCode $code"; exit 1; }
+          want=$(keytool -list -v -keystore mobile/gwm-debug.keystore -storepass android -alias androiddebugkey | sed -n 's/.*SHA256: *//p' | tr -d ':' | tr 'A-F' 'a-f')
+          got=$("$bt/apksigner" verify --print-certs "$apk" | sed -n 's/.*certificate SHA-256 digest: *//p' | head -1)
+          echo "Expected GWM key SHA-256: $want"; echo "APK signer SHA-256:       $got"
+          [ -n "$want" ] && [ "$want" = "$got" ] || { echo "::error::APK is not signed with mobile/gwm-debug.keystore"; exit 1; }
+          echo "### Preview APK" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`$(basename "$apk")\` · versionCode $code · signed with the GWM development key" >> "$GITHUB_STEP_SUMMARY"
+      - name: Unit tests · shared
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :shared:testDebugUnitTest $GRADLE_ARGS
+      - name: Unit tests · common (D-Play)
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :common:testDebugUnitTest $GRADLE_ARGS
+      - name: Unit tests · home
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:testDebugUnitTest $GRADLE_ARGS
+      - name: Unit tests · android-auto
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :android-auto:testDebugUnitTest $GRADLE_ARGS
+      - name: Lint · mobile
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:lintDebug $GRADLE_ARGS --profile
+      - name: Lint · home
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:lintDebug $GRADLE_ARGS
+      - name: Lint · maphost
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :maphost:lintDebug $GRADLE_ARGS
+      - name: Build home and maphost APKs
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:assembleDebug :maphost:assembleDebug $GRADLE_ARGS
       - name: Verify standalone CarPlay build
-        working-directory: .
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleStandaloneDebug --stacktrace --no-configuration-cache
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleStandaloneDebug $GRADLE_ARGS
       - name: Preview APK and reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,5 +112,7 @@ jobs:
           path: |
             mobile/build/outputs/apk/debug/*.apk
             **/build/reports/tests/
+            **/build/test-results/
             common/build/reports/di-connect-home/
             **/build/reports/lint-results-debug.html
+            build/reports/profile/
