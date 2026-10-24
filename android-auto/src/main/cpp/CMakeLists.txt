@@ -75,5 +75,5 @@ endif()
 target_link_libraries(hur_soft_hevc PRIVATE ${log-lib} ${android-lib})
 
 # Ordinary-UID, read-only legacy AP frequency query.
-add_library(local_hotspot_radio SHARED local_hotspot_radio.c)
-target_compile_options(local_hotspot_radio PRIVATE -Wall -Wextra -Werror)
+add_library(aa_local_hotspot_radio SHARED local_hotspot_radio.c)
+target_compile_options(aa_local_hotspot_radio PRIVATE -Wall -Wextra -Werror)

@@ -5691,6 +5691,12 @@ class CarPlayHostActivity : ComponentActivity() {
     }
 
     private fun startCarPlay(size: DisplaySize) {
+        if (com.andrerinas.openheadunit.DiConnectEngine.service != null) {
+            com.andrerinas.openheadunit.DiConnectEngine.stopThen {
+                if (!isFinishing && !isDestroyed) startCarPlay(size)
+            }
+            return
+        }
         if (CarPlayBackgroundSession.hasSession() && !CarPlayBackgroundSession.isOwner(this)) return
         if (shuttingDown.get() || menuOpen || handshakeResetInProgress || controller != null) return
         val controllerGeneration = restartGeneration
