@@ -52,6 +52,16 @@ jobs:
                   (out/n).write_bytes(data)
           PY
           echo "DIPLAY_AUTH_ASSETS_DIR=$RUNTIME_DIR" >> "$GITHUB_ENV"
+      # Lint on the combined ~194k-line app ran past 40 minutes with the project's 2 GB Gradle
+      # heap. Give Gradle and lint more memory on the 16 GB runner. CI only; gradle.properties
+      # in the project is unchanged, and lint still covers the same modules.
+      - name: Give Gradle and lint more memory on CI
+        run: |
+          mkdir -p ~/.gradle
+          cat >> ~/.gradle/gradle.properties <<'PROPS'
+          org.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC -Dfile.encoding=UTF-8
+          android.experimental.lint.heapSize=5g
+          PROPS
       - name: Set increasing APK revision
         run: echo "DI_CONNECT_REVISION=$(( $(date +%s) - 1767225600 ))" >> "$GITHUB_ENV"
       # One Gradle task (or a small group) per step, so the Actions page shows which one failed
