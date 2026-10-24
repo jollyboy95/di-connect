@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
@@ -151,11 +152,22 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         // The information rail and music card share one matte near-black surface.
         body.shader = null
         body.color = Color.rgb(17, 24, 32)
-        canvas.drawRect(0f, h * 0.80f, w, h, body)
+        // The factory speed-limit/assist lamps stay outside the rail.
+        rect.set(w * 0.23f, h * 0.82f, w * 0.988f, h * 0.92f)
+        canvas.drawRoundRect(rect, h * 0.018f, h * 0.018f, body)
         val baseline = h * 0.875f
-        val cx = w / 2f
         val labelSize = h * 0.024f
         val valueSize = h * 0.038f
+
+        // Soft local contrast behind speed; do not recolour the phone video.
+        shade.shader = RadialGradient(w * 0.08f, h * 0.49f, w * 0.28f,
+            intArrayOf(Color.argb(205, 7, 16, 25), Color.argb(120, 7, 16, 25), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.42f, 1f), Shader.TileMode.CLAMP)
+        canvas.save()
+        canvas.clipRect(0f, h * 0.17f, w * 0.38f, h * 0.79f)
+        canvas.drawRect(0f, h * 0.17f, w * 0.38f, h * 0.79f, shade)
+        canvas.restore()
+        shade.shader = null
 
         // Inset from the panel edge to clear the steering wheel (approved on-car reference).
         data.speedKph?.let { speed ->
@@ -272,10 +284,10 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
     private fun drawMusic(canvas: Canvas, w: Float, h: Float) {
         val info = music.info
         val title = info.title?.takeIf { it.isNotBlank() } ?: return
-        val mw = w * 0.19f
-        val mh = h * 0.15f
-        val left = w - mw - w * 0.016f
-        val top = h * 0.25f // below the car's top-right warning lamps
+        val mw = w * 0.17f
+        val mh = h * 0.14f
+        val left = w * 0.71f // ends at 88%, before the stock right-side warning region
+        val top = h * 0.23f // bottom 37%, leaving a gap before Google's card at ~40%
         val box = RectF(left, top, left + mw, top + mh)
         drawGlass(canvas, box, mh * 0.14f)
 
