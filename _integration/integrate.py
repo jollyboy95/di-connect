@@ -267,3 +267,17 @@ p=root/'common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt';t=p.read_t
 needle='            setPadding(if (compact) dp(8) else dp(12), 0, 0, 0)'
 t=t.replace(needle,needle+'\n            // In compact headers the app icon carries the identity; reserve the flexible gap.\n            if (compact) visibility = View.INVISIBLE',1)
 p.write_text(t)
+# The mobile combined app starts at the shared home; each protocol owns its setup flow.
+p=root/'mobile/src/main/AndroidManifest.xml';t=p.read_text().replace('        <!-- Based on the split-screen metadata', '        <meta-data android:name="di_connect_entry_point" android:value="true" />\n\n        <!-- Based on the split-screen metadata',1);p.write_text(t)
+p=root/'common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt';t=p.read_text()
+t=t.replace('?: if (setupError == null && SetupGuide.shouldOpenOnLaunch', '?: if (diConnectEntryEnabled()) "home" else if (setupError == null && SetupGuide.shouldOpenOnLaunch',1)
+t=t.replace('''            if (CarPlayBackgroundSession.hasSession()) openProjection()
+            else connect(true)''','''            if (CarPlayBackgroundSession.hasSession()) openProjection()
+            else if (diConnectEntryEnabled() && !SetupGuide.seen(this)) { page = "setup"; render() }
+            else connect(true)''',1)
+t=t.replace('    private fun home(content: LinearLayout) {','''    private fun diConnectEntryEnabled(): Boolean = runCatching {
+        packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+            .metaData?.getBoolean("di_connect_entry_point", false) == true
+    }.getOrDefault(false)
+
+    private fun home(content: LinearLayout) {''',1);p.write_text(t)
