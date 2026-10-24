@@ -36,6 +36,7 @@ jobs:
             git checkout -b integration/android-auto
           fi
           rsync -a --delete --exclude='.git' --exclude='.github' --exclude='_integration' ../dplay/ ./
+          cp ../dplay/.github/workflows/build-di-connect.yml .github/workflows/build-di-connect.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
@@ -72,6 +73,9 @@ jobs:
           echo "DIPLAY_AUTH_ASSETS_DIR=$RUNTIME_DIR" >> "$GITHUB_ENV"
       - name: Set increasing APK revision
         run: echo "DI_CONNECT_REVISION=$(( $(date +%s) - 1767225600 ))" >> "$GITHUB_ENV"
+      - name: Compile preview APK
+        working-directory: target
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleDebug --stacktrace --no-configuration-cache
       - name: Unit tests, lint and source builds
         working-directory: target
         run: |
