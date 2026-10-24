@@ -107,11 +107,10 @@ android {
     buildFeatures { buildConfig = true; aidl = true }
     externalNativeBuild { cmake { path("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_11; targetCompatibility = JavaVersion.VERSION_11 }
-    sourceSets.getByName("main").assets.srcDir("src/main/di-connect-notices")
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
 '''+deps)
-notices=dest/'src/main/di-connect-notices'; notices.mkdir(parents=True,exist_ok=True)
+notices=dest/'src/main/assets'; notices.mkdir(parents=True,exist_ok=True)
 for n in ['LICENSE','CHANGELOG.md']: shutil.copy2(src/n,notices/n)
 (root/'aa-contract/build.gradle.kts').write_text('''plugins { id("com.android.library") }
 android {
@@ -210,3 +209,16 @@ Physical tests are required for wired/wireless phones, calls, microphones, wheel
 The upstream source omits runtime identity files. The existing import-from-APK flow is retained. CI can provision the two files from the upstream published DiPlay release into an external build directory; they are not committed as source files.
 ''')
 print('Integrated Android Auto library; resources:',{k:len(v) for k,v in names.items()})
+# Qualified app resources remain app resources even in a file that imports android.R.
+p=dest/'src/main/java/com/andrerinas/openheadunit/utils/DialogUtils.kt'
+p.write_text(p.read_text().replace('openheadunit.R.style.DarkAlertDialog','openheadunit.R.style.aa_DarkAlertDialog').replace('openheadunit.R.string.reset','openheadunit.R.string.aa_reset'))
+p=root/'mobile/src/main/res/values/strings.xml'; p.write_text(p.read_text().replace('>DiPlay<','>Di-Connect<'))
+# Internal navigation permission follows the combined package in debug and release builds.
+p=dest/'src/main/java/com/andrerinas/openheadunit/aap/AapNavigationHelper.kt'
+t=p.read_text().replace('com.andrerinas.openheadunit.BuildConfig.APPLICATION_ID + ".permission.NAVIGATION_UPDATE"','context.packageName + ".permission.NAVIGATION_UPDATE"').replace('else NavigationUpdateIntent.BROADCAST_PERMISSION','else context.packageName + ".permission.NAVIGATION_UPDATE"'); p.write_text(t)
+p=dest/'src/main/AndroidManifest.xml'; t=p.read_text().replace('android:name="com.andrerinas.openheadunit.permission.NAVIGATION_UPDATE"','android:name="${applicationId}.permission.NAVIGATION_UPDATE"');p.write_text(t)
+# Android Auto initialization is deferred so its theme and radio setup do not run on CarPlay launch.
+p=dest/'src/main/java/com/andrerinas/openheadunit/App.kt';t=p.read_text();t=t.replace('        instance = this\n','        instance = this\n    }\n\n    private var androidAutoInitialized = false\n\n    fun initializeAndroidAuto() {\n        if (androidAutoInitialized) return\n        androidAutoInitialized = true\n',1);p.write_text(t)
+p=dest/'src/main/java/com/andrerinas/openheadunit/DiConnectEngine.kt';t=p.read_text().replace('    fun open(activity: Activity) {','    fun open(activity: Activity) {\n        App.get(activity).initializeAndroidAuto()');p.write_text(t)
+p=dest/'src/main/java/com/andrerinas/openheadunit/aap/AapService.kt';t=p.read_text().replace('        com.andrerinas.openheadunit.DiConnectEngine.service = this\n        super.onCreate()','        super.onCreate()\n        App.get(this).initializeAndroidAuto()\n        com.andrerinas.openheadunit.DiConnectEngine.service = this',1);p.write_text(t)
+p=dest/'src/main/java/com/andrerinas/openheadunit/main/MainActivity.kt';t=p.read_text().replace('    override fun onCreate(savedInstanceState: Bundle?) {','    override fun onCreate(savedInstanceState: Bundle?) {\n        App.get(this).initializeAndroidAuto()',1);p.write_text(t)
