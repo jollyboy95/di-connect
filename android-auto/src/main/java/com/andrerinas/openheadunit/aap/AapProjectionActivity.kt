@@ -1477,7 +1477,21 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
 
     private val commManager get() = App.provide(this).commManager
 
+    // Di-Connect: CarPlay's settings swipe opens Di-Connect's settings without leaving Android Auto.
+    private val diConnectSettingsSwipe by lazy { com.andrerinas.openheadunit.DiConnectSettingsSwipe(this) }
+
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (diConnectSettingsSwipe.onTouch(ev)) {
+            com.andrerinas.openheadunit.DiConnectSettingsSwipe.Result.STARTED -> {
+                // Release what the first fingers pressed in Android Auto, as D-Play does for CarPlay.
+                val cancel = MotionEvent.obtain(ev).apply { action = MotionEvent.ACTION_CANCEL }
+                super.dispatchTouchEvent(cancel)
+                cancel.recycle()
+                return true
+            }
+            com.andrerinas.openheadunit.DiConnectSettingsSwipe.Result.CONSUMED -> return true
+            com.andrerinas.openheadunit.DiConnectSettingsSwipe.Result.PASS -> Unit
+        }
         // 1. 2-finger swipe detection from the left or right edge (to open exit menu or toggle fullscreen)
         if (ev.pointerCount == 2) {
             when (ev.actionMasked) {

@@ -496,6 +496,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         if (isLauncherIntent(intent) && CarPlayBackgroundSession.hasSession()) {
             page = "home"; render(); openProjection(); return
         }
+        // Di-Connect: the icon returns to a connected Android Auto the same way.
+        if (isLauncherIntent(intent) && com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this)) {
+            page = "home"; render(); com.andrerinas.openheadunit.DiConnectAndroidAuto.connect(this); return
+        }
         page = intent.getStringExtra("page") ?: "home"; render()
         automaticVehicleValidationStarted = false
         scheduleAutomaticVehicleValidation()
