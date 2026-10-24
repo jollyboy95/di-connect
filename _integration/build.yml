@@ -113,9 +113,19 @@ jobs:
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
         run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :android-auto:testDebugUnitTest $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
+      # Lint analysis runs per module and is reused by :mobile:lintDebug, so analysing the two
+      # large libraries first shows which one is slow without repeating the work.
+      - name: Lint analysis · android-auto
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 20
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :android-auto:lintAnalyzeDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
+      - name: Lint analysis · common (D-Play)
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 20
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :common:lintAnalyzeDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Lint · mobile
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
-        timeout-minutes: 40
+        timeout-minutes: 30
         run: |
           # Free the long-lived daemons' memory for lint's own process.
           ./gradlew --stop
