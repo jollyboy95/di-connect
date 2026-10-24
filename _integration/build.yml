@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      GRADLE_ARGS: --stacktrace --no-configuration-cache
+      GRADLE_ARGS: --stacktrace --no-configuration-cache --profile
     steps:
       - uses: actions/checkout@v4
       - run: chmod +x gradlew
@@ -59,7 +59,8 @@ jobs:
       # once the APK itself has failed to compile.
       - name: Compile preview APK
         id: compile
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleDebug $GRADLE_ARGS --profile
+        timeout-minutes: 30
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleDebug $GRADLE_ARGS
       - name: Check preview APK package, version and signing key
         id: apk
         run: |
@@ -77,40 +78,75 @@ jobs:
           [ -n "$want" ] && [ "$want" = "$got" ] || { echo "::error::APK is not signed with mobile/gwm-debug.keystore"; exit 1; }
           echo "### Preview APK" >> "$GITHUB_STEP_SUMMARY"
           echo "\`$(basename "$apk")\` · versionCode $code · signed with the GWM development key" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload preview APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Di-Connect-preview-apk
+          path: mobile/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
       - name: Unit tests · shared
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 40
         run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :shared:testDebugUnitTest $GRADLE_ARGS
       - name: Unit tests · common (D-Play)
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 40
         run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :common:testDebugUnitTest $GRADLE_ARGS
       - name: Unit tests · home
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 40
         run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:testDebugUnitTest $GRADLE_ARGS
       - name: Unit tests · android-auto
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 40
         run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :android-auto:testDebugUnitTest $GRADLE_ARGS
       - name: Lint · mobile
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:lintDebug $GRADLE_ARGS --profile
+        timeout-minutes: 40
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:lintDebug $GRADLE_ARGS
       - name: Lint · home
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 40
         run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:lintDebug $GRADLE_ARGS
       - name: Lint · maphost
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 40
         run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :maphost:lintDebug $GRADLE_ARGS
       - name: Build home and maphost APKs
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 40
         run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:assembleDebug :maphost:assembleDebug $GRADLE_ARGS
       - name: Verify standalone CarPlay build
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        timeout-minutes: 40
         run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleStandaloneDebug $GRADLE_ARGS
-      - name: Preview APK and reports
+      - name: Report slowest Gradle tasks
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, html, re
+          def secs(text):
+              total = 0.0
+              for value, unit in re.findall(r'([\d.]+)(h|m|s)', text):
+                  total += float(value) * {'h': 3600, 'm': 60, 's': 1}[unit]
+              return total
+          tasks = {}
+          for report in glob.glob('build/reports/profile/*.html'):
+              page = html.unescape(open(report, encoding='utf-8', errors='replace').read())
+              for task, took in re.findall(r'<td class="indentPath">(:[\w:.-]+)</td>\s*<td class="numeric">([^<]+)</td>', page):
+                  tasks[task] = max(tasks.get(task, 0.0), secs(took))
+          top = sorted(tasks.items(), key=lambda item: -item[1])[:12]
+          lines = [f'{task}: {int(took // 60)}m {took % 60:.0f}s' for task, took in top if took >= 1]
+          print('\n'.join(lines) or 'No Gradle profile found')
+          if lines:
+              print('::notice title=Slowest Gradle tasks::' + ' | '.join(lines))
+          PY
+      - name: Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Di-Connect-preview
+          name: Di-Connect-reports
           path: |
-            mobile/build/outputs/apk/debug/*.apk
             **/build/reports/tests/
             **/build/test-results/
             common/build/reports/di-connect-home/
