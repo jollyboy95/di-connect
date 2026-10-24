@@ -32,6 +32,10 @@ shutil.copytree(src/'app/src',dest/'src',dirs_exist_ok=True)
 shutil.copytree(src/'contract',root/'aa-contract',dirs_exist_ok=True)
 for name in ['LICENSE','COPYRIGHT_MICHAEL_REID_GPLv3AFFERO.txt','README.md','CHANGELOG.md']:
     shutil.copy2(src/name,dest/name)
+# DiAuto-GWM's third-party notices (including the D-Play GWM code it ports) and its H7 notes.
+(dest/'docs').mkdir(exist_ok=True)
+for name in ['THIRD_PARTY.md','GWM_H7.md']:
+    shutil.copy2(src/'docs'/name,dest/'docs'/name)
 # Resource isolation: Android library resource names are global in the final APK.
 names={}
 for p in (dest/'src').glob('*/res/**/*'):
@@ -131,6 +135,26 @@ original=(src/'app/build.gradle.kts').read_text(); deps=original[original.index(
 require('"githubImplementation"' in deps and 'project(":contract")' in deps,'Android Auto dependency block no longer has githubImplementation/contract entries')
 deps=re.sub(r'    "playstoreImplementation"\([^\n]+\n','',deps).replace('"githubImplementation"','implementation')
 deps=re.sub(r'^.*kapt\([^\n]+\n','',deps,flags=re.M).replace('project(":contract")','project(":aa-contract")')
+# DiAuto-GWM's own lint policy, carried over verbatim: abortOnError off, and with -PgwmLintFast only
+# the correctness checks it chose because the full pass overruns a hosted runner.
+li=original.index('    lint {'); depth=0
+for i in range(li,len(original)):
+    if original[i]=='{': depth+=1
+    elif original[i]=='}':
+        depth-=1
+        if depth==0: lint_block=original[li:i+1]; break
+require('abortOnError = false' in lint_block and 'gwmLintFast' in lint_block,'DiAuto-GWM lint block no longer has abortOnError=false and the gwmLintFast check set')
+# Android Auto uses D-Play's GWM adapter module instead of its own copy of the same org.dplay.gwm
+# classes; two copies in one APK are duplicate classes.
+dup=dest/'src/main/java/org/dplay/gwm'
+require(sorted(p.name for p in dup.iterdir())==['GwmAdapterConfig.java','GwmDisplayAdapter.java','GwmDisplayTestView.java'],
+    f'DiAuto-GWM org.dplay.gwm copies changed: {sorted(p.name for p in dup.iterdir())}')
+shutil.rmtree(dest/'src/main/java/org')
+deps=deps.replace('dependencies {','dependencies {\n    implementation(project(":gwm-adapter"))',1)
+# DiAuto-GWM builds the GWM test view from its own package, so D-Play's must be public too.
+edit(root/'gwm-adapter/src/main/java/org/dplay/gwm/GwmDisplayTestView.java',
+    ('final class GwmDisplayTestView extends View {','public final class GwmDisplayTestView extends View {'),
+    ('    GwmDisplayTestView(Context context) {','    public GwmDisplayTestView(Context context) {'))
 locales=sorted(p.name[7:] for p in (dest/'src/main/res').glob('values-*') if (p/'strings.xml').exists())
 (dest/'build.gradle.kts').write_text('''plugins { id("com.android.library") }
 android {
@@ -148,6 +172,7 @@ android {
     externalNativeBuild { cmake { path("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_11; targetCompatibility = JavaVersion.VERSION_11 }
     testOptions { unitTests.isIncludeAndroidResources = true }
+'''+lint_block+'''
 }
 '''+deps)
 notices=dest/'src/main/assets'; notices.mkdir(parents=True,exist_ok=True)
@@ -260,7 +285,10 @@ object DiConnectEngine {
         Handler(Looper.getMainLooper()),
         STOP_TIMEOUT_MS,
         requestStop = { it.stopService(Intent(it, AapService::class.java)) },
-        onTimeout = { Log.w(TAG, "Android Auto did not stop within $STOP_TIMEOUT_MS ms; starting CarPlay anyway") },
+        onTimeout = {
+            Log.w(TAG, "Android Auto did not stop within $STOP_TIMEOUT_MS ms; starting CarPlay anyway")
+            clearClusterWindows("Android Auto stop timed out; CarPlay taking over")
+        },
     )
 
     var service: AapService?
@@ -278,7 +306,17 @@ object DiConnectEngine {
         gate.stopThen(completion)
     }
 
-    fun onStopped() = gate.onStopped()
+    fun onStopped() {
+        clearClusterWindows("Android Auto service stopped")
+        gate.onStopped()
+    }
+
+    /** Android Auto's GWM cluster and HUD windows must be gone before CarPlay draws there. */
+    private fun clearClusterWindows(reason: String) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            com.andrerinas.openheadunit.gwm.GwmOutputs.stop(reason)
+        }
+    }
 
     fun open(activity: Activity) {
         activity.startActivity(Intent(activity, com.andrerinas.openheadunit.main.MainActivity::class.java))
@@ -405,7 +443,7 @@ for p in STRINGS:
 D-Play GWM is the CarPlay and UI foundation. Android Auto is imported as an Android library in the same APK, not an external app dependency.
 
 - D-Play source: jollyboy95/d-play-gwm-h7 at 3df998919f075bc6e21efb5e8a314347813647a1.
-- Android Auto source: jollyboy95/DiAuto-GWM at f3046721814bff289a78e58f597b45d895efbb95.
+- Android Auto source: jollyboy95/DiAuto-GWM at 4febfe1568faab5bf6899575b31e1c708298759f (gwm-h7-hud-fit, the r16 DiAuto GWM build), including its GWM/Haval H7 port. It uses D-Play's gwm-adapter module rather than its own copy.
 - Separate application ID: com.jollyboy95.diconnect (debug suffix .debug).
 - Open Android Auto from the existing D-Play home card. CarPlay is stopped before AA opens. Starting CarPlay waits for AA service teardown.
 - AA retains its connection and settings screens in this first integration; these have not yet been redesigned to match every D-Play screen.

@@ -1,5 +1,9 @@
 # DiAuto
 
+> **This fork (jollyboy95/DiAuto-GWM)** adds an experimental GWM/Haval H7 path: Android Auto's
+> cluster map, a map-first cluster layer and a HUD arrow on the H7's secondary displays.
+> See [docs/GWM_H7.md](docs/GWM_H7.md). Not yet validated on the car.
+
 **Android Auto on your BYD display. Wireless or USB.**
 
 > **BYD support scope:** These projects focus on BYD cars. They may work on other brands, but other brands are unsupported and there are no plans to add support or fix brand-specific incompatibilities.

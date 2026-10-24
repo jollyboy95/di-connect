@@ -18,10 +18,10 @@ import android.view.View;
 
 /** Parked-only visual check; deliberately shows no simulated vehicle readings. */
 @SuppressLint("ViewConstructor")
-final class GwmDisplayTestView extends View {
+public final class GwmDisplayTestView extends View {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    GwmDisplayTestView(Context context) {
+    public GwmDisplayTestView(Context context) {
         super(context);
         setBackgroundColor(Color.TRANSPARENT);
         paint.setColor(Color.WHITE);

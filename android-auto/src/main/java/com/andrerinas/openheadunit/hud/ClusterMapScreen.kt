@@ -272,6 +272,12 @@ internal class ClusterMapScreen(
 
         /** Shows the dashboard map while a session with it enabled is up. Safe to call repeatedly. */
         fun show(context: Context) {
+            // GWM/Haval head units take their own route (cluster display chosen by the driver);
+            // nothing below, which is BYD-specific, runs there.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && com.andrerinas.openheadunit.gwm.GwmMode.active(context)) {
+                com.andrerinas.openheadunit.gwm.GwmOutputs.start(context)
+                return
+            }
             showContext = java.lang.ref.WeakReference(context)
             decoderContext = java.lang.ref.WeakReference(context.applicationContext)
             val settings = App.provide(context).settings
@@ -322,6 +328,7 @@ internal class ClusterMapScreen(
 
         /** The session ended. */
         fun dismiss() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) com.andrerinas.openheadunit.gwm.GwmOutputs.stop()
             closeWindow(keepSurface = false)
             // A surface kept for a move that never found its window is released here.
             releaseSharedSurface("session ended")

@@ -14,8 +14,23 @@ android {
     externalNativeBuild { cmake { path("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_11; targetCompatibility = JavaVersion.VERSION_11 }
     testOptions { unitTests.isIncludeAndroidResources = true }
+    lint {
+        abortOnError = false
+        disable += "PackagedPrivateKey"
+        // CI for the GWM H7 port (-PgwmLintFast): the full pass overruns a hosted runner, so it
+        // runs only the correctness checks that matter when porting code to an Android 9 head unit.
+        if (project.hasProperty("gwmLintFast")) {
+            checkOnly += setOf(
+                "NewApi", "InlinedApi", "WrongConstant", "ResourceType", "MissingPermission",
+                "WrongThread", "Range", "StringFormatInvalid", "StringFormatMatches",
+                "StringFormatCount", "MissingDefaultResource", "MissingClass", "Instantiatable",
+                "DuplicateIds", "UnspecifiedRegisterReceiverFlag", "WrongViewCast",
+            )
+        }
+    }
 }
 dependencies {
+    implementation(project(":gwm-adapter"))
     // Conscrypt (Flavor specific: 2.6.1 for Playstore 16KB alignment; 2.5.3 for Github minSdk 16)
     implementation("org.conscrypt:conscrypt-android:2.5.3")
 

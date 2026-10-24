@@ -526,6 +526,12 @@ class AapTransport(
             }
         }
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                com.andrerinas.openheadunit.gwm.GwmOutputs.stop()
+            }
+        }
+
         // Never let a half-finished cycle outlive the transport that owed the regain: the claim is
         // session state, and a stuck one would refuse every cycle of the next session.
         endFocusCycle()

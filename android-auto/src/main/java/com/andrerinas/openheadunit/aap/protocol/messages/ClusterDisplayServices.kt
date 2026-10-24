@@ -16,7 +16,10 @@ import com.andrerinas.openheadunit.utils.Settings
 internal object ClusterDisplayServices {
 
 
-    fun profile(context: android.content.Context, settings: Settings): ClusterMapConfig.Profile = ClusterMapConfig.profile(
+    fun profile(context: android.content.Context, settings: Settings): ClusterMapConfig.Profile =
+        // GWM/Haval: the same sink, sized and laid out for the GWM cluster display.
+        if (com.andrerinas.openheadunit.gwm.GwmMode.clusterRoute(context)) com.andrerinas.openheadunit.gwm.GwmClusterProfile.forSession(context)
+        else ClusterMapConfig.profile(
         ClusterMapConfig.Size.of(settings.clusterMapSize),
         ClusterMapConfig.Detail.of(settings.clusterMapDetail),
         settings.clusterMarkerX,
@@ -47,7 +50,7 @@ internal object ClusterDisplayServices {
     fun build(context: android.content.Context, settings: Settings): List<Control.Service> {
         if (!settings.clusterMapEnabled) return emptyList()
         val p = profile(context, settings)
-        AppLog.i("[ServiceDiscovery] Announcing dashboard display: theme=${theme(context, settings)} " +
+        AppLog.i("[ServiceDiscovery] Announcing dashboard display: gwm=${com.andrerinas.openheadunit.gwm.GwmMode.clusterRoute(context)} theme=${theme(context, settings)} " +
             "codec=${p.codecWidth}x${p.codecHeight} content=${p.contentWidth}x${p.contentHeight} " +
             "density=${p.density} insets=${p.contentInsets}")
 

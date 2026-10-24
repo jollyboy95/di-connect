@@ -368,6 +368,7 @@ class AapService : Service(), UsbReceiver.Listener {
 
     private fun onAaMediaMetadataFromPhone(meta: MediaPlayback.MediaMetaData) {
         if (isDestroying) return
+        com.andrerinas.openheadunit.gwm.GwmMusicState.onMetadata(meta)
         lastAaMediaMetadata = meta
         if (!App.provide(this).settings.syncMediaSessionWithAaMetadata) return
         // Avoid showing a previous track's art with new title/artist until decode finishes.
@@ -377,6 +378,7 @@ class AapService : Service(), UsbReceiver.Listener {
 
     private fun onAaPlaybackStatusFromPhone(status: MediaPlayback.MediaPlaybackStatus) {
         if (isDestroying) return
+        com.andrerinas.openheadunit.gwm.GwmMusicState.onStatus(status)
         if (status.hasPlaybackSeconds()) {
             lastAaPlaybackPositionMs = status.playbackSeconds.protoUint32ToLong() * 1000L
         }

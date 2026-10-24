@@ -17,6 +17,7 @@ interface CarKeyReceiver {
             return arrayOf(
                 CarKeyBroadcastReceiver(),
                 CarFYTReceiver(),
+                GwmAdapterKeyReceiver(),
             )
         }
     }

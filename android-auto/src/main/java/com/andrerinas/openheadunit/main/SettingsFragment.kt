@@ -1251,6 +1251,19 @@ class SettingsFragment : Fragment() {
         }
 
 
+        // GWM/Haval: cluster, HUD and vehicle data have their own screen, so none of the BYD rows
+        // below change on a GWM head unit. It saves as it goes; see onResume for the pending sync.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            items.add(SettingItem.ActionButton(
+                stableId = "gwmVehicle",
+                textResId = R.string.aa_gwm_settings_entry,
+                onClick = {
+                    returningFromGwm = true
+                    startActivity(Intent(requireContext(), com.andrerinas.openheadunit.gwm.GwmSettingsActivity::class.java))
+                }
+            ))
+        }
+
         // Android Auto's own cluster map on the BYD dashboard. Declared to the phone at connection
         // time, so every change here applies on the next connection.
         val dashboardAvailable = com.andrerinas.openheadunit.hud.BydNavigationOutputs.available(requireContext()) ||
@@ -3426,9 +3439,19 @@ class SettingsFragment : Fragment() {
         // Refresh settings list when returning from sub-screens (e.g. AutoConnectFragment, DarkModeFragment)
         if (::settingsAdapter.isInitialized) {
             settings = App.provide(requireContext()).settings
+            if (returningFromGwm) {
+                // The GWM screen saved these directly; a later Save here must not undo them.
+                returningFromGwm = false
+                pendingClusterMapEnabled = settings.clusterMapEnabled
+                pendingClusterMapDetail = settings.clusterMapDetail
+                pendingBydLeftHandTraffic = settings.bydLeftHandTraffic
+                checkChanges()
+            }
             updateSettingsList()
         }
     }
+
+    private var returningFromGwm = false
 
     private fun getKillOnDisconnectConflicts(): List<String> {
         val conflicts = mutableListOf<String>()

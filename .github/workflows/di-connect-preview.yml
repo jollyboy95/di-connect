@@ -24,7 +24,7 @@ jobs:
           git clone https://github.com/jollyboy95/d-play-gwm-h7.git dplay
           git -C dplay checkout 3df998919f075bc6e21efb5e8a314347813647a1
           git clone https://github.com/jollyboy95/DiAuto-GWM.git diauto
-          git -C diauto checkout f3046721814bff289a78e58f597b45d895efbb95
+          git -C diauto checkout 4febfe1568faab5bf6899575b31e1c708298759f
       - name: Import Android Auto into D-Play
         run: python3 target/_integration/integrate.py
       - name: Commit combined source on the integration branch

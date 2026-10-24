@@ -32,6 +32,8 @@
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     
+    <uses-permission android:name="com.gwm.android.adapter.permission.GET_DATA" />
+    
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
@@ -76,6 +78,8 @@
             </activity>
 
         <activity android:name="com.andrerinas.openheadunit.main.SettingsActivity" android:label="@string/aa_settings" android:windowSoftInputMode="stateHidden|adjustResize" android:theme="@style/aa_AppTheme" />
+
+        <activity android:name="com.andrerinas.openheadunit.gwm.GwmSettingsActivity" android:exported="false" android:label="@string/aa_gwm_settings_title" android:theme="@style/aa_AppTheme" />
 
         <activity android:name="com.andrerinas.openheadunit.main.OnboardingActivity" android:exported="false" android:windowSoftInputMode="adjustResize" android:theme="@style/aa_AppTheme" />
 
