@@ -60,7 +60,7 @@ jobs:
       - name: Compile preview APK
         id: compile
         timeout-minutes: 30
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleDebug $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Check preview APK package, version and signing key
         id: apk
         run: |
@@ -87,39 +87,66 @@ jobs:
       - name: Unit tests · shared
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :shared:testDebugUnitTest $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :shared:testDebugUnitTest $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Unit tests · common (D-Play)
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :common:testDebugUnitTest $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :common:testDebugUnitTest $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Unit tests · home
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:testDebugUnitTest $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:testDebugUnitTest $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Unit tests · android-auto
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :android-auto:testDebugUnitTest $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :android-auto:testDebugUnitTest $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Lint · mobile
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:lintDebug $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:lintDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Lint · home
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:lintDebug $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:lintDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Lint · maphost
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :maphost:lintDebug $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :maphost:lintDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Build home and maphost APKs
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:assembleDebug :maphost:assembleDebug $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :home:assembleDebug :maphost:assembleDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Verify standalone CarPlay build
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
         timeout-minutes: 40
-        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleStandaloneDebug $GRADLE_ARGS
+        run: ./gradlew -PgwmRevision="$DI_CONNECT_REVISION" :mobile:assembleStandaloneDebug $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
+      - name: Report Gradle errors and failed tests
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, os, re, xml.etree.ElementTree as ET
+          notes = []
+          log = os.path.join(os.environ['RUNNER_TEMP'], 'gradle-output.log')
+          text = open(log, encoding='utf-8', errors='replace').read() if os.path.exists(log) else ''
+          for line in text.splitlines():
+              if re.match(r'^(e: |> Task .* FAILED|.*\bFAILED$)', line):
+                  notes.append(line.strip())
+          for block in re.findall(r'\* What went wrong:\n(.*?)\n\* Try:', text, re.S):
+              notes.append(' '.join(block.split())[:600])
+          for report in glob.glob('**/build/test-results/**/TEST-*.xml', recursive=True):
+              for case in ET.parse(report).getroot().iter('testcase'):
+                  for bad in list(case.findall('failure')) + list(case.findall('error')):
+                      message = ' '.join((bad.get('message') or bad.text or '').split())[:400]
+                      notes.append(f"{case.get('classname')}.{case.get('name')}: {message}")
+          seen = []
+          for note in notes:
+              if note not in seen:
+                  seen.append(note)
+          for note in seen[:40]:
+              print('::error title=Gradle::' + note.replace('%', '%25').replace('\r', '').replace('\n', ' '))
+          if not seen:
+              print('No Gradle error lines or failed tests found')
+          PY
       - name: Report slowest Gradle tasks
         if: always()
         run: |
