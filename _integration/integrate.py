@@ -1358,3 +1358,11 @@ edit(dest/'src/main/java/com/andrerinas/openheadunit/utils/Settings.kt',
     ('prefs.getString("vehicle-display-name", "DiAuto")!!','prefs.getString("vehicle-display-name", "Di-Connect")!!'))
 edit(dest/'src/main/java/com/andrerinas/openheadunit/connection/LocalHotspotCredentialsProvider.kt',
     ('"DiAuto-${UUID.randomUUID().toString().take(6)}"','"Di-Connect-${UUID.randomUUID().toString().take(6)}"'))
+
+# Android Auto-only luxury cluster skin. Preserve the donor CarPlay renderer byte-for-byte.
+skin = root/'_integration/GwmAndroidAutoClusterView.kt'
+require(skin.is_file(), 'Missing Android Auto cluster skin')
+(root/'common/src/main/java/com/shilapi/xcertplay/GwmAndroidAutoClusterView.kt').write_text(skin.read_text())
+edit(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt',
+    ('private val hud = GwmClusterHudView(displayContext)',
+     'private val hud = GwmAndroidAutoClusterView(displayContext)'))
