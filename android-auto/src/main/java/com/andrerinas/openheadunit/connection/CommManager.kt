@@ -561,11 +561,9 @@ class CommManager(
                 }
                 com.andrerinas.openheadunit.aap.AapService.killProcessOnDestroy = true
                 context.stopService(stopIntent)
-                // Finish all tasks (API 21+)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-                    activityManager.appTasks.forEach { it.finishAndRemoveTask() }
-                }
+                // Di-Connect: CarPlay, the home screen and the cluster window share this app's
+                // tasks. The ACTION_FINISH_ACTIVITIES broadcast above closes the Android Auto
+                // screens, so the shared tasks are left running.
             }, 500)
         }
     }
@@ -850,11 +848,9 @@ class CommManager(
                 }
                 com.andrerinas.openheadunit.aap.AapService.killProcessOnDestroy = true
                 context.stopService(stopIntent)
-                // Finish all tasks (API 21+)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-                    activityManager.appTasks.forEach { it.finishAndRemoveTask() }
-                }
+                // Di-Connect: CarPlay, the home screen and the cluster window share this app's
+                // tasks. The ACTION_FINISH_ACTIVITIES broadcast above closes the Android Auto
+                // screens, so the shared tasks are left running.
             }, 500)
         }
     }
