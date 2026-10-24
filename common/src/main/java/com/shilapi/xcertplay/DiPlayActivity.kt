@@ -5978,7 +5978,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     }
 
     private fun connect(wireless: Boolean) {
-        if (com.andrerinas.openheadunit.DiConnectEngine.service != null) {
+        if (com.andrerinas.openheadunit.DiConnectEngine.needsStop()) {
             com.andrerinas.openheadunit.DiConnectEngine.stopThen {
                 if (!isFinishing && !isDestroyed) connect(wireless)
             }
