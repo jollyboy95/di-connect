@@ -39,7 +39,7 @@
             <data android:mimeType="*/*" />
         </intent>
     </queries>
-    <application android:name="com.andrerinas.openheadunit.App">
+    <application android:name="com.andrerinas.openheadunit.App" tools:ignore="MissingClass">
         <provider
             android:name="com.shilapi.xcertplay.CrashRecordInstaller"
             android:authorities="${applicationId}.crash-record"
@@ -188,6 +188,11 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/usb_auto_confirm_service_config" />
         </service>
+        <!-- Di-Connect: D-Play's cluster layer and HUD for Android Auto (DiConnectPlayViews). -->
+        <provider
+            android:name="com.shilapi.xcertplay.DiConnectViewsProvider"
+            android:authorities="${applicationId}.di-connect-views"
+            android:exported="false" />
     </application>
 
 </manifest>

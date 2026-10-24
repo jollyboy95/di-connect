@@ -57,6 +57,10 @@ internal object GwmOutputs {
     private var clusterRoot: View? = null
     private var clusterDisplayId = Display.INVALID_DISPLAY
     private var layer: GwmClusterLayerView? = null
+    // Di-Connect: D-Play's cluster layer and HUD, used instead of DiAuto's when D-Play provides them.
+    private var dplayLayer: com.andrerinas.openheadunit.DiConnectViews.Layer? = null
+    private var dplayLayerNavCard = false
+    private var dplayHud: com.andrerinas.openheadunit.DiConnectViews.Layer? = null
     private var surface: Surface? = null
 
     private var hudManager: WindowManager? = null
@@ -75,6 +79,10 @@ internal object GwmOutputs {
             val next = DashboardGuidance.current()
             layer?.setGuidance(next)
             hudView?.setGuidance(next)
+            val mapped = com.andrerinas.openheadunit.DiConnectViews.from(next)
+            // Google Maps draws its own card into the cluster video; Di-Connect's is opt-in in Android Auto.
+            dplayLayer?.setGuidance(if (dplayLayerNavCard) mapped else null)
+            dplayHud?.setGuidance(mapped)
             handler.postDelayed(this, GUIDANCE_TICK_MS)
         }
     }
@@ -93,7 +101,7 @@ internal object GwmOutputs {
         }
         if (gwm.hudEnabled) showHud(app, gwm) else hideHud("off")
         handler.removeCallbacks(guidanceTick)
-        if (clusterRoot != null || hudView != null) handler.post(guidanceTick)
+        if (clusterRoot != null || hudView != null || dplayHud != null) handler.post(guidanceTick)
     }
 
     /** The session ended: remove every window, stop polling and free the decoder's surface. */
@@ -130,14 +138,23 @@ internal object GwmOutputs {
         val root = FrameLayout(displayContext).apply { setBackgroundColor(Color.BLACK) }
         root.addView(mapView(app, displayContext, display, profile), FrameLayout.LayoutParams(-1, -1))
         if (gwm.styledLayer) {
-            val view = GwmClusterLayerView(displayContext, gwm)
-            root.addView(view, FrameLayout.LayoutParams(-1, -1))
-            layer = view
+            val dplay = com.andrerinas.openheadunit.DiConnectViews.cluster?.invoke(displayContext)
+            if (dplay != null) {
+                root.addView(dplay.view, FrameLayout.LayoutParams(-1, -1))
+                dplayLayer = dplay
+                dplayLayerNavCard = gwm.navCard
+            } else {
+                val view = GwmClusterLayerView(displayContext, gwm)
+                root.addView(view, FrameLayout.LayoutParams(-1, -1))
+                layer = view
+            }
         }
         try {
             windows.addView(root, overlayParams(opaque = true))
         } catch (error: RuntimeException) {
             layer = null
+            dplayLayer?.release()
+            dplayLayer = null
             clusterStatus = "Display $target refused the overlay window: ${error.javaClass.simpleName}: ${error.message}"
             AppLog.w("GWM cluster: $clusterStatus")
             return
@@ -145,7 +162,8 @@ internal object GwmOutputs {
         clusterManager = windows
         clusterRoot = root
         clusterDisplayId = target
-        if (gwm.styledLayer && gwm.vehicleStrip) GwmVehicleData.addListener(app, vehicleListener)
+        // D-Play's layer reads the car's values itself.
+        if (layer != null && gwm.vehicleStrip) GwmVehicleData.addListener(app, vehicleListener)
         val size = sizeOf(display)
         clusterStatus = "Showing on display $target \"${display.name}\" ${size.x}x${size.y}; " +
             "map ${profile.contentWidth}x${profile.contentHeight} in a ${profile.codecWidth}x${profile.codecHeight} stream." +
@@ -197,6 +215,8 @@ internal object GwmOutputs {
         clusterRoot = null
         clusterManager = null
         layer = null
+        dplayLayer?.release()
+        dplayLayer = null
         clusterDisplayId = Display.INVALID_DISPLAY
         if (root != null && windows != null) {
             runCatching { windows.removeViewImmediate(root) }
@@ -212,7 +232,7 @@ internal object GwmOutputs {
     private fun showHud(app: Context, gwm: GwmSettings) {
         val target = gwm.hudDisplayId
         val anchor = GwmHeadUpView.Anchor.entries.getOrElse(gwm.hudAnchor) { GwmHeadUpView.Anchor.CENTRE }
-        if (hudView != null && hudDisplayId == target) {
+        if ((hudView != null || dplayHud != null) && hudDisplayId == target) {
             hudView?.setAnchor(anchor)
             hudView?.setArea(gwm.hudArea)
             return
@@ -224,16 +244,19 @@ internal object GwmOutputs {
             hudStatus = "No window manager for display $target."
             return
         }
-        val view = GwmHeadUpView(displayContext).apply { setAnchor(anchor); setArea(gwm.hudArea) }
+        val dplay = com.andrerinas.openheadunit.DiConnectViews.hud?.invoke(displayContext, gwm.hudAnchor)
+        val view: android.view.View = dplay?.view
+            ?: GwmHeadUpView(displayContext).apply { setAnchor(anchor); setArea(gwm.hudArea) }
         try {
             windows.addView(view, overlayParams(opaque = false))
         } catch (error: RuntimeException) {
+            dplay?.release()
             hudStatus = "Display $target refused the overlay window: ${error.javaClass.simpleName}: ${error.message}"
             AppLog.w("GWM HUD: $hudStatus")
             return
         }
         hudManager = windows
-        hudView = view
+        if (dplay != null) dplayHud = dplay else hudView = view as GwmHeadUpView
         hudDisplayId = target
         val size = sizeOf(display)
         hudStatus = "Showing on display $target \"${display.name}\" ${size.x}x${size.y}; draws only while a route is active."
@@ -241,9 +264,11 @@ internal object GwmOutputs {
     }
 
     private fun hideHud(reason: String) {
-        val view = hudView
+        val view: android.view.View? = hudView ?: dplayHud?.view
         val windows = hudManager
         hudView = null
+        dplayHud?.release()
+        dplayHud = null
         hudManager = null
         hudDisplayId = Display.INVALID_DISPLAY
         if (view != null && windows != null) {
