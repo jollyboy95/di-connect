@@ -1,0 +1,5 @@
+<?xml version="1.0" ?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/aa_da_background"/>
+    <item android:drawable="@drawable/aa_da_launcher_foreground"/>
+</layer-list>
