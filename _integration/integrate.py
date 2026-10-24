@@ -260,3 +260,10 @@ p=root/'common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt';t=p.r
             }
             return
         }''',1);p.write_text(t)
+# Brand the shared shell without changing upstream credits or internal identifiers.
+for p in (root/'common/src/main/res').glob('values*/strings.xml'):
+    p.write_text(re.sub(r'(<string name="diplay">).*?(</string>)',r'\g<1>Di-Connect\2',p.read_text()))
+p=root/'common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt';t=p.read_text()
+needle='            setPadding(if (compact) dp(8) else dp(12), 0, 0, 0)'
+t=t.replace(needle,needle+'\n            // In compact headers the app icon carries the identity; reserve the flexible gap.\n            if (compact) visibility = View.INVISIBLE',1)
+p.write_text(t)
