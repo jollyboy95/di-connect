@@ -11,7 +11,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.ConscryptMode
 
+// Same Robolectric setup as LocaleHelperTest: no network stack, so Conscrypt stays off.
+@ConscryptMode(ConscryptMode.Mode.OFF)
 @RunWith(RobolectricTestRunner::class)
 @Config(application = android.app.Application::class, sdk = [33], manifest = Config.NONE)
 class StopGateTest {
