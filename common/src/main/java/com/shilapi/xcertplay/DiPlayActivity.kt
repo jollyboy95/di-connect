@@ -1029,8 +1029,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         gravity = Gravity.CENTER_VERTICAL
         val logoSize = dp(if (compact) 30 else 36)
         addView(ImageView(this@DiPlayActivity).apply {
-            setImageResource(R.drawable.ic_carplay)
-            contentDescription = getString(R.string.carplay)
+            setImageResource(R.drawable.ic_di_connect_badge)
+            contentDescription = getString(R.string.diplay)
         }, LinearLayout.LayoutParams(logoSize, logoSize))
         addView(label(getString(R.string.diplay), if (compact) 20 else 26, TEXT, true,
             centreGlyphs = resources.configuration.locales[0].language != "zh").apply {
@@ -1239,8 +1239,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         card.addView(disconnectButton, matchButton(if (compact) CONTROL_GAP_DP else 16, if (compact) 46 else 56))
         val right = column().apply { gravity = Gravity.CENTER_HORIZONTAL }
         val logo = ImageView(this).apply {
-            setImageResource(R.drawable.ic_carplay)
-            contentDescription = getString(R.string.carplay_icon)
+            setImageResource(R.drawable.ic_di_connect_badge)
+            contentDescription = getString(R.string.diplay)
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
         val branding = column().apply {

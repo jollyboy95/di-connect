@@ -8,10 +8,10 @@
         android:allowBackup="false"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:icon="@drawable/ic_carplay"
+        android:icon="@drawable/ic_di_connect"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
-        android:roundIcon="@drawable/ic_carplay"
+        android:roundIcon="@drawable/ic_di_connect"
         android:supportsRtl="true"
         android:resizeableActivity="true"
         android:theme="@style/Theme.Xcertplay">

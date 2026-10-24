@@ -517,3 +517,56 @@ edit(dest/'src/main/java/com/andrerinas/openheadunit/connection/CommManager.kt',
 # hotspot is left up so a wireless CarPlay start does not lose the network it is about to use.
 edit(AAP,('        if (App.provide(this).settings.autoEnableHotspot &&','        if (!com.andrerinas.openheadunit.DiConnectEngine.handoverInProgress &&\n            App.provide(this).settings.autoEnableHotspot &&'))
 p=root/'docs/DI_CONNECT.md';p.write_text(p.read_text()+'''\n## Switching between CarPlay and Android Auto\n\n- Starting CarPlay waits for the Android Auto service to finish stopping, for at most 10 seconds. After that CarPlay starts anyway and the log notes the timeout.\n- While Android Auto stops for CarPlay, it leaves its auto-enabled hotspot on so wireless CarPlay can use it.\n- Android Auto's "kill on disconnect" setting closes only the Android Auto screens and service. It no longer closes CarPlay, the home screen or the cluster window.\n''')
+
+# Di-Connect identity: an original mark (two linked rings, one per connection type), not either
+# platform's logo. The launcher gets an adaptive icon with a themed-icon layer; the app header and
+# home card get a round badge. CarPlay's own connecting screen keeps the CarPlay icon.
+RINGS = {
+    'blue': 'M45,38 A16,16 0 1 1 45,70 A16,16 0 1 1 45,38',
+    'green': 'M63,38 A16,16 0 1 1 63,70 A16,16 0 1 1 63,38',
+    # Blue passes over green inside this disc, so the rings read as linked.
+    'over': 'M46.5,40.77 A7.5,7.5 0 1 1 61.5,40.77 A7.5,7.5 0 1 1 46.5,40.77 Z',
+}
+def rings_xml(blue,green,indent='    '):
+    s=f'{indent}<path android:pathData="{{p}}" android:strokeColor="{{c}}" android:strokeWidth="7.5" android:fillColor="#00000000"/>\n'
+    return (s.format(p=RINGS['blue'],c=blue)+s.format(p=RINGS['green'],c=green)+
+        f'{indent}<group>\n{indent}    <clip-path android:pathData="{RINGS["over"]}"/>\n'+
+        s.format(p=RINGS['blue'],c=blue).replace(indent,indent+'    ',1)+f'{indent}</group>\n')
+RES=root/'common/src/main/res'
+VEC='<vector xmlns:android="http://schemas.android.com/apk/res/android"\n    android:width="108dp" android:height="108dp"\n    android:viewportWidth="108" android:viewportHeight="108">\n'
+(RES/'drawable/ic_di_connect_foreground.xml').write_text(VEC+rings_xml('#FF3D8BFF','#FF2FD07F')+'</vector>\n')
+(RES/'drawable/ic_di_connect_monochrome.xml').write_text(VEC+rings_xml('#FF000000','#FF000000')+'</vector>\n')
+(RES/'drawable/ic_di_connect_background.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="38" android:centerY="32"
+                android:gradientRadius="97" android:startColor="#FF1B2A44" android:endColor="#FF0E1726"/>
+        </aapt:attr>
+    </path>
+</vector>
+''')
+(RES/'drawable-anydpi-v26').mkdir(exist_ok=True)
+(RES/'drawable-anydpi-v26/ic_di_connect.xml').write_text('''<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_di_connect_background"/>
+    <foreground android:drawable="@drawable/ic_di_connect_foreground"/>
+    <monochrome android:drawable="@drawable/ic_di_connect_monochrome"/>
+</adaptive-icon>
+''')
+BADGE=VEC+'    <path android:pathData="M54,0 A54,54 0 1 1 54,108 A54,54 0 1 1 54,0 Z" android:fillColor="#FF13203A"/>\n    <group android:pivotX="54" android:pivotY="54" android:scaleX="1.3" android:scaleY="1.3">\n'+rings_xml('#FF3D8BFF','#FF2FD07F','        ')+'    </group>\n</vector>\n'
+(RES/'drawable/ic_di_connect.xml').write_text(BADGE)        # launcher fallback before Android 8
+(RES/'drawable/ic_di_connect_badge.xml').write_text(BADGE)  # in-app logo on every version
+edit(root/'mobile/src/main/AndroidManifest.xml',
+    ('android:icon="@drawable/ic_carplay"','android:icon="@drawable/ic_di_connect"'),
+    ('android:roundIcon="@drawable/ic_carplay"','android:roundIcon="@drawable/ic_di_connect"'))
+edit(D,
+    ('''            setImageResource(R.drawable.ic_carplay)
+            contentDescription = getString(R.string.carplay)
+        }, LinearLayout.LayoutParams(logoSize, logoSize))''','''            setImageResource(R.drawable.ic_di_connect_badge)
+            contentDescription = getString(R.string.diplay)
+        }, LinearLayout.LayoutParams(logoSize, logoSize))'''),
+    ('''            setImageResource(R.drawable.ic_carplay)
+            contentDescription = getString(R.string.carplay_icon)''','''            setImageResource(R.drawable.ic_di_connect_badge)
+            contentDescription = getString(R.string.diplay)'''))
