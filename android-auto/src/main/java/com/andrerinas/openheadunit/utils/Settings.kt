@@ -118,8 +118,9 @@ class Settings(private val context: Context) {
     // Instrument-cluster ("dashboard") map from Android Auto. Declared to the phone at connection
     // time, so changes apply on the next connection. See hud/ClusterMapConfig.
     var clusterMapEnabled: Boolean
-        get() = prefs.getBoolean("cluster-map-enabled", false)
-        set(value) { prefs.edit().putBoolean("cluster-map-enabled", value).apply() }
+        // Di-Connect: one cluster-map switch for CarPlay and Android Auto, kept in D-Play's store.
+        get() = com.andrerinas.openheadunit.DiConnectSettings.bool(context, com.andrerinas.openheadunit.DiConnectSettings.CLUSTER_MAP, false)
+        set(value) { com.andrerinas.openheadunit.DiConnectSettings.setBool(context, com.andrerinas.openheadunit.DiConnectSettings.CLUSTER_MAP, value) }
 
     var clusterMapSize: Int
         get() = prefs.getInt("cluster-map-size", 0)

@@ -14,38 +14,43 @@ import android.content.SharedPreferences
 internal class GwmSettings(context: Context) {
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    // Di-Connect: the settings shared with CarPlay live in D-Play's store (DiConnectSettings).
+    private val app: Context = context.applicationContext
 
     /** Treat this head unit as GWM even when the build identity names no GWM, Haval or B11. */
     var forced: Boolean
-        get() = prefs.getBoolean("forced", false)
-        set(value) = prefs.edit().putBoolean("forced", value).apply()
+        get() = com.andrerinas.openheadunit.DiConnectSettings.bool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_FORCED, false)
+        set(value) = com.andrerinas.openheadunit.DiConnectSettings.setBool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_FORCED, value)
 
     /** Show Android Auto's cluster map on [clusterDisplayId]. Applies on the next connection. */
     var clusterEnabled: Boolean
-        get() = prefs.getBoolean("cluster-enabled", false)
-        set(value) = prefs.edit().putBoolean("cluster-enabled", value).apply()
+        get() = com.andrerinas.openheadunit.DiConnectSettings.bool(app, com.andrerinas.openheadunit.DiConnectSettings.CLUSTER_MAP, false) && com.andrerinas.openheadunit.DiConnectSettings.bool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_CLUSTER_OVERLAY_ENABLED, false)
+        set(value) {
+            com.andrerinas.openheadunit.DiConnectSettings.setBool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_CLUSTER_OVERLAY_ENABLED, value)
+            if (value) com.andrerinas.openheadunit.DiConnectSettings.setBool(app, com.andrerinas.openheadunit.DiConnectSettings.CLUSTER_MAP, true)
+        }
 
     /** Logical display of the instrument cluster: 2 on the 2026 H7 Vanta (B11). */
     var clusterDisplayId: Int
-        get() = prefs.getInt("cluster-display-id", DEFAULT_CLUSTER_DISPLAY_ID)
-        set(value) = prefs.edit().putInt("cluster-display-id", value).apply()
+        get() = com.andrerinas.openheadunit.DiConnectSettings.displayId(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_CLUSTER_DISPLAY_ID, DEFAULT_CLUSTER_DISPLAY_ID)
+        set(value) = com.andrerinas.openheadunit.DiConnectSettings.setInt(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_CLUSTER_DISPLAY_ID, value)
 
     /** The map-first layer: navigation card, music card and the bottom instrument strip. */
     var styledLayer: Boolean
-        get() = prefs.getBoolean("styled-layer", true)
-        set(value) = prefs.edit().putBoolean("styled-layer", value).apply()
+        get() = com.andrerinas.openheadunit.DiConnectSettings.bool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_CLUSTER_STYLE, true)
+        set(value) = com.andrerinas.openheadunit.DiConnectSettings.setBool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_CLUSTER_STYLE, value)
 
     /**
      * DiAuto's own turn card. Off by default: Google Maps draws its own card into the cluster video
      * and that cannot be switched off, so two cards would show.
      */
     var navCard: Boolean
-        get() = prefs.getBoolean("nav-card", false)
-        set(value) = prefs.edit().putBoolean("nav-card", value).apply()
+        get() = com.andrerinas.openheadunit.DiConnectSettings.bool(app, com.andrerinas.openheadunit.DiConnectSettings.AA_NAV_CARD, false)
+        set(value) = com.andrerinas.openheadunit.DiConnectSettings.setBool(app, com.andrerinas.openheadunit.DiConnectSettings.AA_NAV_CARD, value)
 
     var musicCard: Boolean
-        get() = prefs.getBoolean("music-card", true)
-        set(value) = prefs.edit().putBoolean("music-card", value).apply()
+        get() = com.andrerinas.openheadunit.DiConnectSettings.bool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_MUSIC_CARD, true)
+        set(value) = com.andrerinas.openheadunit.DiConnectSettings.setBool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_MUSIC_CARD, value)
 
     var vehicleStrip: Boolean
         get() = prefs.getBoolean("vehicle-strip", true)
@@ -53,17 +58,17 @@ internal class GwmSettings(context: Context) {
 
     /** Turn arrow, distance and arrival time in the head-up display's arrow area. */
     var hudEnabled: Boolean
-        get() = prefs.getBoolean("hud-enabled", false)
-        set(value) = prefs.edit().putBoolean("hud-enabled", value).apply()
+        get() = com.andrerinas.openheadunit.DiConnectSettings.bool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_HUD_ENABLED, false)
+        set(value) = com.andrerinas.openheadunit.DiConnectSettings.setBool(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_HUD_ENABLED, value)
 
     /** Logical display of the head-up display's arrow area: 3 on the H7 the owner uses. */
     var hudDisplayId: Int
-        get() = prefs.getInt("hud-display-id", DEFAULT_HUD_DISPLAY_ID)
-        set(value) = prefs.edit().putInt("hud-display-id", value).apply()
+        get() = com.andrerinas.openheadunit.DiConnectSettings.displayId(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_HUD_DISPLAY_ID, DEFAULT_HUD_DISPLAY_ID)
+        set(value) = com.andrerinas.openheadunit.DiConnectSettings.setInt(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_HUD_DISPLAY_ID, value)
 
     var hudAnchor: Int
-        get() = prefs.getInt("hud-anchor", 0)
-        set(value) = prefs.edit().putInt("hud-anchor", value).apply()
+        get() = com.andrerinas.openheadunit.DiConnectSettings.int(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_HUD_ANCHOR, 0).coerceIn(0, 2)
+        set(value) = com.andrerinas.openheadunit.DiConnectSettings.setInt(app, com.andrerinas.openheadunit.DiConnectSettings.GWM_HUD_ANCHOR, value.coerceIn(0, 2))
 
     /**
      * The part of the HUD display the windscreen actually shows (the arrow window), in percent of

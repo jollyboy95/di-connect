@@ -608,3 +608,202 @@ edit(D,
     ('''            setImageResource(R.drawable.ic_carplay)
             contentDescription = getString(R.string.carplay_icon)''','''            setImageResource(R.drawable.ic_di_connect_badge)
             contentDescription = getString(R.string.diplay)'''))
+
+# One set of GWM settings. Android Auto's GWM cluster/HUD settings and DiAuto's cluster-map switch
+# read and write D-Play's own settings (the same file, in the same process), so the cluster, HUD and
+# music card are set once for both protocols. Settings only Android Auto has (HUD arrow area, lower
+# strip) stay in Android Auto's store, and its directions card gets its own Di-Connect key, off by
+# default because Google Maps draws a card into the cluster video that cannot be switched off.
+PERSIST=root/'common/src/main/java/com/shilapi/xcertplay/AirPlayPersistence.kt'
+SHARED_KEYS={'CLUSTER_MAP':'cluster_map_enabled','GWM_CLUSTER_OVERLAY_ENABLED':'gwm_cluster_overlay_enabled',
+    'GWM_CLUSTER_DISPLAY_ID':'gwm_cluster_display_id','GWM_FORCED':'gwm_forced','GWM_CLUSTER_STYLE':'gwm_cluster_style',
+    'GWM_MUSIC_CARD':'gwm_music_card','GWM_HUD_ENABLED':'gwm_hud_enabled','GWM_HUD_DISPLAY_ID':'gwm_hud_display_id',
+    'GWM_HUD_ANCHOR':'gwm_hud_anchor'}
+persist=PERSIST.read_text()
+require('private const val PREFS = "xcertplay_airplay"' in persist,'D-Play settings file name changed')
+for const,key in SHARED_KEYS.items():
+    require(f'KEY_{const} = "{key}"' in persist,f'D-Play setting KEY_{const} is no longer "{key}"')
+(dest/'src/main/java/com/andrerinas/openheadunit/DiConnectSettings.kt').write_text('''package com.andrerinas.openheadunit
+
+import android.content.Context
+import android.content.SharedPreferences
+
+/**
+ * D-Play's settings store, shared with Android Auto so both protocols are set up in one place.
+ * The keys are D-Play's own (AirPlayPersistence); the integration script fails if they change.
+ */
+internal object DiConnectSettings {
+    private const val PREFS = "xcertplay_airplay"
+'''+''.join(f'    const val {c} = "{k}"\n' for c,k in SHARED_KEYS.items())+'''    /** Android Auto only: Di-Connect's directions card. Off: Google Maps draws its own card. */
+    const val AA_NAV_CARD = "di_connect_aa_nav_card"
+    const val DEFAULT_CLUSTER_DISPLAY_ID = 2
+    const val DEFAULT_HUD_DISPLAY_ID = 3
+
+    private fun prefs(context: Context): SharedPreferences =
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    fun bool(context: Context, key: String, default: Boolean) = prefs(context).getBoolean(key, default)
+    fun setBool(context: Context, key: String, value: Boolean) = prefs(context).edit().putBoolean(key, value).apply()
+    fun int(context: Context, key: String, default: Int) = prefs(context).getInt(key, default)
+    fun setInt(context: Context, key: String, value: Int) = prefs(context).edit().putInt(key, value).apply()
+
+    /** A display id above the main screen's, or [default]. */
+    fun displayId(context: Context, key: String, default: Int) =
+        int(context, key, -1).takeIf { it > android.view.Display.DEFAULT_DISPLAY } ?: default
+}
+''')
+G=dest/'src/main/java/com/andrerinas/openheadunit/gwm/GwmSettings.kt'
+S_='com.andrerinas.openheadunit.DiConnectSettings'
+edit(G,
+    ('''    private val prefs: SharedPreferences =
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+''','''    private val prefs: SharedPreferences =
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    // Di-Connect: the settings shared with CarPlay live in D-Play's store (DiConnectSettings).
+    private val app: Context = context.applicationContext
+'''),
+    ('''        get() = prefs.getBoolean("forced", false)
+        set(value) = prefs.edit().putBoolean("forced", value).apply()''',
+     f'''        get() = {S_}.bool(app, {S_}.GWM_FORCED, false)
+        set(value) = {S_}.setBool(app, {S_}.GWM_FORCED, value)'''),
+    ('''        get() = prefs.getBoolean("cluster-enabled", false)
+        set(value) = prefs.edit().putBoolean("cluster-enabled", value).apply()''',
+     f'''        get() = {S_}.bool(app, {S_}.CLUSTER_MAP, false) && {S_}.bool(app, {S_}.GWM_CLUSTER_OVERLAY_ENABLED, false)
+        set(value) {{
+            {S_}.setBool(app, {S_}.GWM_CLUSTER_OVERLAY_ENABLED, value)
+            if (value) {S_}.setBool(app, {S_}.CLUSTER_MAP, true)
+        }}'''),
+    ('''        get() = prefs.getInt("cluster-display-id", DEFAULT_CLUSTER_DISPLAY_ID)
+        set(value) = prefs.edit().putInt("cluster-display-id", value).apply()''',
+     f'''        get() = {S_}.displayId(app, {S_}.GWM_CLUSTER_DISPLAY_ID, DEFAULT_CLUSTER_DISPLAY_ID)
+        set(value) = {S_}.setInt(app, {S_}.GWM_CLUSTER_DISPLAY_ID, value)'''),
+    ('''        get() = prefs.getBoolean("styled-layer", true)
+        set(value) = prefs.edit().putBoolean("styled-layer", value).apply()''',
+     f'''        get() = {S_}.bool(app, {S_}.GWM_CLUSTER_STYLE, true)
+        set(value) = {S_}.setBool(app, {S_}.GWM_CLUSTER_STYLE, value)'''),
+    ('''        get() = prefs.getBoolean("nav-card", false)
+        set(value) = prefs.edit().putBoolean("nav-card", value).apply()''',
+     f'''        get() = {S_}.bool(app, {S_}.AA_NAV_CARD, false)
+        set(value) = {S_}.setBool(app, {S_}.AA_NAV_CARD, value)'''),
+    ('''        get() = prefs.getBoolean("music-card", true)
+        set(value) = prefs.edit().putBoolean("music-card", value).apply()''',
+     f'''        get() = {S_}.bool(app, {S_}.GWM_MUSIC_CARD, true)
+        set(value) = {S_}.setBool(app, {S_}.GWM_MUSIC_CARD, value)'''),
+    ('''        get() = prefs.getBoolean("hud-enabled", false)
+        set(value) = prefs.edit().putBoolean("hud-enabled", value).apply()''',
+     f'''        get() = {S_}.bool(app, {S_}.GWM_HUD_ENABLED, false)
+        set(value) = {S_}.setBool(app, {S_}.GWM_HUD_ENABLED, value)'''),
+    ('''        get() = prefs.getInt("hud-display-id", DEFAULT_HUD_DISPLAY_ID)
+        set(value) = prefs.edit().putInt("hud-display-id", value).apply()''',
+     f'''        get() = {S_}.displayId(app, {S_}.GWM_HUD_DISPLAY_ID, DEFAULT_HUD_DISPLAY_ID)
+        set(value) = {S_}.setInt(app, {S_}.GWM_HUD_DISPLAY_ID, value)'''),
+    ('''        get() = prefs.getInt("hud-anchor", 0)
+        set(value) = prefs.edit().putInt("hud-anchor", value).apply()''',
+     f'''        get() = {S_}.int(app, {S_}.GWM_HUD_ANCHOR, 0).coerceIn(0, 2)
+        set(value) = {S_}.setInt(app, {S_}.GWM_HUD_ANCHOR, value.coerceIn(0, 2))'''))
+edit(dest/'src/main/java/com/andrerinas/openheadunit/utils/Settings.kt',
+    ('''        get() = prefs.getBoolean("cluster-map-enabled", false)
+        set(value) { prefs.edit().putBoolean("cluster-map-enabled", value).apply() }''',
+     '''        // Di-Connect: one cluster-map switch for CarPlay and Android Auto, kept in D-Play's store.
+        get() = com.andrerinas.openheadunit.DiConnectSettings.bool(context, com.andrerinas.openheadunit.DiConnectSettings.CLUSTER_MAP, false)
+        set(value) { com.andrerinas.openheadunit.DiConnectSettings.setBool(context, com.andrerinas.openheadunit.DiConnectSettings.CLUSTER_MAP, value) }'''))
+# D-Play settings: Android Auto's directions card, beside the GWM music card. CarPlay is unchanged.
+edit(PERSIST,('''    fun loadGwmMusicCard(context: Context): Boolean =''','''    /** Di-Connect: Android Auto's own directions card on the GWM cluster (Google Maps draws one too). */
+    fun loadAndroidAutoNavCard(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DI_CONNECT_AA_NAV_CARD, false)
+
+    fun saveAndroidAutoNavCard(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_DI_CONNECT_AA_NAV_CARD, enabled).apply()
+    }
+
+    fun loadGwmMusicCard(context: Context): Boolean ='''),
+    ('''    private const val KEY_GWM_MUSIC_CARD = "gwm_music_card"''','''    private const val KEY_GWM_MUSIC_CARD = "gwm_music_card"
+    /** Shared with Android Auto (DiConnectSettings.AA_NAV_CARD). */
+    private const val KEY_DI_CONNECT_AA_NAV_CARD = "di_connect_aa_nav_card"'''))
+edit(D,('''            toggle(card, getString(R.string.settings_gwm_music_card), getString(R.string.settings_gwm_music_card_description),
+                AirPlayPersistence.loadGwmMusicCard(this)) { AirPlayPersistence.saveGwmMusicCard(this, it) }''','''            toggle(card, getString(R.string.settings_gwm_music_card), getString(R.string.settings_gwm_music_card_description),
+                AirPlayPersistence.loadGwmMusicCard(this)) { AirPlayPersistence.saveGwmMusicCard(this, it) }
+            toggle(card, getString(R.string.settings_di_connect_aa_nav_card), getString(R.string.settings_di_connect_aa_nav_card_description),
+                AirPlayPersistence.loadAndroidAutoNavCard(this)) { AirPlayPersistence.saveAndroidAutoNavCard(this, it) }'''))
+AA_NAV_CARD_TEXT={
+    'values':('Directions card in Android Auto',"Google Maps already shows its own directions card on the cluster. Turn on to add Di-Connect\\'s card as well. CarPlay always shows it. Applies the next time Android Auto connects."),
+    'values-ar':('بطاقة الاتجاهات في Android Auto','تعرض خرائط Google بطاقة الاتجاهات الخاصة بها على لوحة العدادات. شغّل هذا الخيار لإضافة بطاقة Di-Connect أيضًا. تعرضها CarPlay دائمًا. يُطبَّق عند اتصال Android Auto في المرة القادمة.'),
+    'values-es':('Tarjeta de indicaciones en Android Auto','Google Maps ya muestra su propia tarjeta de indicaciones en el cuadro de instrumentos. Actívalo para añadir también la tarjeta de Di-Connect. CarPlay siempre la muestra. Se aplica la próxima vez que se conecte Android Auto.'),
+    'values-it':('Scheda indicazioni in Android Auto',"Google Maps mostra già la propria scheda di indicazioni sul quadro strumenti. Attiva per aggiungere anche la scheda di Di-Connect. CarPlay la mostra sempre. Si applica alla prossima connessione di Android Auto."),
+    'values-ja':('Android Auto の案内カード','Google マップはメーターに独自の案内カードを表示します。オンにすると Di-Connect のカードも表示します。CarPlay では常に表示されます。次に Android Auto が接続したときに適用されます。'),
+    'values-ru':('Карточка маршрута в Android Auto','Google Карты уже показывают свою карточку маршрута на приборной панели. Включите, чтобы добавить карточку Di-Connect. В CarPlay она показывается всегда. Применяется при следующем подключении Android Auto.'),
+    'values-uk':('Картка маршруту в Android Auto','Google Карти вже показують власну картку маршруту на приладовій панелі. Увімкніть, щоб додати картку Di-Connect. У CarPlay вона показується завжди. Застосовується під час наступного підключення Android Auto.'),
+    'values-zh-rCN':('Android Auto 中的导航卡片','Google 地图已在仪表盘上显示自己的导航卡片。开启后会同时显示 Di-Connect 的卡片。CarPlay 始终显示。下次连接 Android Auto 时生效。'),
+    'values-zh-rTW':('Android Auto 中的導航卡片','Google 地圖已在儀表板上顯示自己的導航卡片。開啟後會同時顯示 Di-Connect 的卡片。CarPlay 一律顯示。下次連接 Android Auto 時生效。'),
+}
+require(sorted(AA_NAV_CARD_TEXT)==sorted(p.parent.name for p in STRINGS),f'D-Play locales changed: {sorted(p.parent.name for p in STRINGS)}')
+for p in STRINGS:
+    title,description=AA_NAV_CARD_TEXT[p.parent.name]
+    edit(p,('</resources>',f'    <string name="settings_di_connect_aa_nav_card">{title}</string>\n    <string name="settings_di_connect_aa_nav_card_description">{description}</string>\n</resources>'))
+(dest/'src/test/java/com/andrerinas/openheadunit/gwm/DiConnectSharedSettingsTest.kt').write_text('''package com.andrerinas.openheadunit.gwm
+
+import android.app.Application
+import android.content.Context
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.ConscryptMode
+
+/** Android Auto's GWM settings are D-Play's: what the D-Play settings screen saves is what AA uses. */
+@ConscryptMode(ConscryptMode.Mode.OFF)
+@RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class, sdk = [33], manifest = Config.NONE)
+class DiConnectSharedSettingsTest {
+    private lateinit var context: Context
+    private val dplay get() = context.getSharedPreferences("xcertplay_airplay", Context.MODE_PRIVATE)
+
+    @Before fun clear() {
+        context = RuntimeEnvironment.getApplication()
+        dplay.edit().clear().commit()
+        context.getSharedPreferences(GwmSettings.PREFS, Context.MODE_PRIVATE).edit().clear().commit()
+    }
+
+    @Test fun defaultsMatchDPlayAndKeepAndroidAutosDirectionsCardOff() {
+        val gwm = GwmSettings(context)
+        assertFalse(gwm.clusterEnabled)
+        assertFalse(gwm.navCard)
+        assertTrue(gwm.musicCard)
+        assertTrue(gwm.styledLayer)
+        assertEquals(2, gwm.clusterDisplayId)
+        assertEquals(3, gwm.hudDisplayId)
+    }
+
+    @Test fun androidAutoReadsWhatDPlaySaved() {
+        dplay.edit().putBoolean("cluster_map_enabled", true).putBoolean("gwm_cluster_overlay_enabled", true)
+            .putBoolean("gwm_music_card", false).putBoolean("gwm_hud_enabled", true)
+            .putInt("gwm_hud_display_id", 4).putInt("gwm_hud_anchor", 2).commit()
+        val gwm = GwmSettings(context)
+        assertTrue(gwm.clusterEnabled)
+        assertFalse(gwm.musicCard)
+        assertTrue(gwm.hudEnabled)
+        assertEquals(4, gwm.hudDisplayId)
+        assertEquals(2, gwm.hudAnchor)
+        assertTrue(com.andrerinas.openheadunit.utils.Settings(context).clusterMapEnabled)
+    }
+
+    @Test fun theClusterNeedsBothDPlaySwitchesAndAndroidAutoSetsBoth() {
+        dplay.edit().putBoolean("gwm_cluster_overlay_enabled", true).commit()
+        val gwm = GwmSettings(context)
+        assertFalse("The cluster map switch is off", gwm.clusterEnabled)
+        gwm.clusterEnabled = true
+        assertTrue(dplay.getBoolean("cluster_map_enabled", false))
+        assertTrue(gwm.clusterEnabled)
+    }
+
+    @Test fun theDirectionsCardIsAndroidAutoOnly() {
+        GwmSettings(context).navCard = true
+        assertTrue(dplay.getBoolean("di_connect_aa_nav_card", false))
+    }
+}
+''')
