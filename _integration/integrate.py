@@ -247,3 +247,16 @@ p=root/'mobile/build.gradle.kts';t=p.read_text().replace('versionName = "0.2.21"
 # Keep the normal build workflow with the combined source for subsequent code changes.
 shutil.copy2(Path('target/_integration/build.yml'),root/'.github/workflows/build-di-connect.yml')
 p=root/'docs/DI_CONNECT.md';p.write_text(p.read_text()+'''\n## Installing updates\n\nCI uses the committed GWM debug signing key, the stable com.jollyboy95.diconnect.debug package, and an increasing version code derived from the build timestamp. Install a newer CI APK over the existing Di-Connect installation to retain settings. The first install is separate from D-Play and DiAuto. Do not replace the debug key or change the package ID between updates. In-app update checking points to Di-Connect; private repository downloads still require GitHub access.\n''')
+# The two JNI libraries export different package-qualified methods; both must be packaged.
+p=dest/'src/main/cpp/CMakeLists.txt';t=p.read_text().replace('add_library(local_hotspot_radio SHARED','add_library(aa_local_hotspot_radio SHARED').replace('target_compile_options(local_hotspot_radio PRIVATE','target_compile_options(aa_local_hotspot_radio PRIVATE');p.write_text(t)
+p=dest/'src/main/java/com/andrerinas/openheadunit/connection/LegacyHotspotRadio.kt';p.write_text(p.read_text().replace('System.loadLibrary("local_hotspot_radio")','System.loadLibrary("aa_local_hotspot_radio")'))
+# The exception is only for the documented, public Android debug signing key.
+p=root/'.gitignore';p.write_text(p.read_text()+'\n# Fixed public debug key for install-over updates.\n!/mobile/gwm-debug.keystore\n')
+# Direct USB launches must use the same teardown gate as the home-screen connection button.
+p=root/'common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt';t=p.read_text().replace('    private fun startCarPlay(size: DisplaySize) {','''    private fun startCarPlay(size: DisplaySize) {
+        if (com.andrerinas.openheadunit.DiConnectEngine.service != null) {
+            com.andrerinas.openheadunit.DiConnectEngine.stopThen {
+                if (!isFinishing && !isDestroyed) startCarPlay(size)
+            }
+            return
+        }''',1);p.write_text(t)
