@@ -8,7 +8,7 @@ android {
         buildConfigField("String", "APPLICATION_ID", "\"com.jollyboy95.diconnect.debug\"")
         buildConfigField("String", "VERSION_NAME", "\"0.1.0-preview\"")
         buildConfigField("int", "VERSION_CODE", "1")
-        buildConfigField("String", "AVAILABLE_LOCALES", "\"ar,cs,de,es,hu,it,ja,ka,ko,nl,pl,ro,ru,tr,uk,vi\"")
+        buildConfigField("String", "AVAILABLE_LOCALES", "\"ar,cs,de,es,es-rES,hu,it,ja,ka,ko,nl,pl,pt-rBR,ro,ru,tr,uk,vi,zh-rCN,zh-rTW\"")
     }
     buildFeatures { buildConfig = true; aidl = true }
     externalNativeBuild { cmake { path("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
