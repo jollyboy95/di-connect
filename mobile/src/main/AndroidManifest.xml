@@ -4,6 +4,7 @@
 
     <application
         android:name="com.andrerinas.openheadunit.App"
+        tools:ignore="MissingClass"
         tools:replace="android:label,android:icon,android:theme,android:localeConfig"
         android:allowBackup="false"
         android:fullBackupContent="@xml/backup_rules"
