@@ -121,11 +121,7 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
         drawLowerRow(canvas, w, h)
-        // The car draws D/P at top-centre; put the live clock just to its right.
-        valuePaint(h * 0.032f, medium)
-        text.textAlign = Paint.Align.LEFT
-        canvas.drawText(android.text.format.DateFormat.getTimeFormat(context).format(Date()),
-            w * 0.54f, h * 0.07f, text)
+        drawHeaderPills(canvas, w, h)
         // Android Auto supplies its turn card in the phone video; never draw a duplicate.
         if (AirPlayPersistence.loadGwmMusicCard(context)) drawMusic(canvas, w, h)
     }
@@ -152,6 +148,23 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         text.textSize = size
         text.letterSpacing = 0f
         text.color = Color.WHITE
+    }
+
+    /** Matching charcoal pills; the car continues to draw its own gear character above our map. */
+    private fun drawHeaderPills(canvas: Canvas, w: Float, h: Float) {
+        val gearBox = RectF(w * 0.5f - h * 0.035f, h * 0.012f,
+            w * 0.5f + h * 0.035f, h * 0.104f)
+        drawGlass(canvas, gearBox, gearBox.height() / 2f)
+
+        val time = android.text.format.DateFormat.getTimeFormat(context).format(Date())
+        valuePaint(h * 0.032f, medium)
+        text.textAlign = Paint.Align.LEFT
+        val x = w * 0.54f
+        val pad = h * 0.018f
+        val timeBox = RectF(x - pad, h * 0.018f, x + text.measureText(time) + pad, h * 0.093f)
+        drawGlass(canvas, timeBox, timeBox.height() / 2f)
+        val baseline = timeBox.centerY() - (text.ascent() + text.descent()) / 2f
+        canvas.drawText(time, x, baseline, text)
     }
 
     // ---- lower row ------------------------------------------------------------------------
@@ -393,5 +406,6 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         const val FADE_TOP = 0.74f
     }
 }
+
 
 

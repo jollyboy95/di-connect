@@ -62,6 +62,8 @@ class GwmAndroidAutoClusterRenderTest {
             unchanged(.05f, .82f, .20f, .93f) // factory speed-limit and lane symbols
             unchanged(.44f, .92f, .55f, .99f) // factory READY below the information row
             val charcoal = Color.rgb(17, 24, 32)
+            assertEquals(charcoal, bitmap.getPixel((width*.50f).toInt(), (height*.06f).toInt()))
+            assertEquals(charcoal, bitmap.getPixel((width*.535f).toInt(), (height*.055f).toInt()))
             assertEquals(charcoal, bitmap.getPixel((width*.50f).toInt(), (height*.85f).toInt()))
             assertEquals(charcoal, bitmap.getPixel((width*.88f).toInt(), (height*.22f).toInt()))
             assertTrue(bitmap.getPixel((width*.08f).toInt(), (height*.49f).toInt()) != background)
@@ -70,4 +72,5 @@ class GwmAndroidAutoClusterRenderTest {
         }
     }
 }
+
 

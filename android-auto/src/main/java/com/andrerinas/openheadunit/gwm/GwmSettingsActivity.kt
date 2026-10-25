@@ -166,6 +166,13 @@ class GwmSettingsActivity : BaseActivity() {
             else GwmOutputs.showTest(this, gwm.hudDisplayId, gwm.hudArea)?.let { toast(it) }
             render()
         }
+        com.andrerinas.openheadunit.DiConnectViews.hudTestLabel?.invoke(this)?.let { label ->
+            button(if (GwmOutputs.hudSampleShowing) getString(R.string.aa_gwm_test_hide) else label) {
+                if (GwmOutputs.hudSampleShowing) GwmOutputs.hideTest()
+                else GwmOutputs.showHudSample(this)?.let { toast(it) }
+                render()
+            }
+        }
         note(getString(R.string.aa_gwm_hud_area_note))
         val area = gwm.hudArea
         val steps = (0..100 step 5).toList()

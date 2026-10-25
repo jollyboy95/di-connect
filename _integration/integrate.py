@@ -1387,3 +1387,8 @@ edit(root/'common/src/test/java/com/shilapi/xcertplay/CarPlayVpnConsentTest.kt',
 # Keep roundabout images, route-level arrival retention and the debug launcher label fixes.
 for patch in json.loads(Path('target/_integration/roundabout-arrival-patches.json').read_text()):
     edit(root/patch['path'], (patch['old'], patch['new'], patch['count']))
+
+
+# Parked Android Auto HUD grid/sample tests and diagnostic data-presence snapshot.
+for patch in json.loads(Path('target/_integration/hud-test-pill-patches.json').read_text()):
+    edit(root/patch['path'], (patch['old'], patch['new'], patch['count']))

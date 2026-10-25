@@ -18,6 +18,7 @@ internal object DiConnectPlayViews {
     fun install(app: Context) {
         DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }
         DiConnectViews.hud = { displayContext, anchor -> HudLayer(displayContext, anchor) }
+        DiConnectViews.hudTestLabel = { it.getString(com.shilapi.xcertplay.host.R.string.settings_gwm_hud_test) }
     }
 
     fun guidance(next: DiConnectViews.Guidance?): ClusterTurnGuidance? = next?.takeIf { it.icon != 0 }?.let {

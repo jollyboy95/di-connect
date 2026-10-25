@@ -40,6 +40,8 @@ object DiConnectViews {
     @Volatile var cluster: ((Context) -> Layer)? = null
     /** [anchor]: 0 left, 1 centre, 2 right, as both apps store it. */
     @Volatile var hud: ((Context, Int) -> Layer)? = null
+    /** Reuse the already-translated parked HUD test label from the CarPlay host. */
+    @Volatile var hudTestLabel: ((Context) -> String)? = null
 
     fun observeMusic(observer: (Music) -> Unit): () -> Unit = GwmMusicState.observe { s ->
         observer(Music(s.title, s.artist, s.album, s.artwork, s.durationMillis, s.positionNow(), s.playing))
