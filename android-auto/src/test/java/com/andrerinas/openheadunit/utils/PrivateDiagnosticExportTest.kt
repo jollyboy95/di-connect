@@ -12,7 +12,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [28], manifest = Config.NONE)
+@Config(sdk = [28], manifest = Config.NONE, application = android.app.Application::class)
+@org.robolectric.annotation.ConscryptMode(org.robolectric.annotation.ConscryptMode.Mode.OFF)
 class PrivateDiagnosticExportTest {
     @Test fun android9ReportWritesWithoutExternalStorageOrDocumentPicker() {
         val app = RuntimeEnvironment.getApplication()
