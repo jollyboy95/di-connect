@@ -60,13 +60,13 @@ class GwmAndroidAutoClusterRenderTest {
             unchanged(.75f, .40f, .99f, .75f) // Google's unmodifiable directions card
             unchanged(.89f, .17f, .99f, .40f) // factory door and assistance warnings
             unchanged(.05f, .82f, .20f, .93f) // factory speed-limit and lane symbols
-            unchanged(.44f, .92f, .55f, .99f) // factory READY below the information row
+            unchanged(.76f, .92f, .82f, .99f) // factory drive mode\n            unchanged(.44f, .92f, .55f, .99f) // factory READY below the information row
             val charcoal = Color.rgb(17, 24, 32)
             assertEquals(charcoal, bitmap.getPixel((width*.50f).toInt(), (height*.06f).toInt()))
             assertEquals(charcoal, bitmap.getPixel((width*.535f).toInt(), (height*.055f).toInt()))
-            assertEquals(charcoal, bitmap.getPixel((width*.50f).toInt(), (height*.85f).toInt()))
+            assertEquals(charcoal, bitmap.getPixel((width*.24f).toInt(), (height*.85f).toInt()))
             assertEquals(charcoal, bitmap.getPixel((width*.88f).toInt(), (height*.22f).toInt()))
-            assertTrue(bitmap.getPixel((width*.08f).toInt(), (height*.49f).toInt()) != background)
+            assertEquals(background, bitmap.getPixel((width*.08f).toInt(), (height*.49f).toInt()))\n            unchanged(.48f, .80f, .70f, .91f) // open map between compact modules
             bitmap.recycle()
             cover.recycle()
         }

@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
@@ -24,7 +23,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * Android Auto-only GWM cluster skin: inset speed, aqua accents and matching charcoal surfaces.
+ * Android Auto-only GWM cluster skin: compact charcoal modules and an unobstructed map.
  * Derived from the CarPlay renderer to retain its live vehicle and media data lifecycle.
  * Google Maps owns the navigation card in the video; this view never draws another one.
  * Factory telltales are not redrawn or moved. Verify their clearances on the OFF-ROAD theme.
@@ -150,117 +149,92 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         text.color = Color.WHITE
     }
 
-    /** Matching charcoal pills; the car continues to draw its own gear character above our map. */
+    /** One header surface behind the fixed factory gear; never redraw the gear itself. */
     private fun drawHeaderPills(canvas: Canvas, w: Float, h: Float) {
-        val gearBox = RectF(w * 0.5f - h * 0.035f, h * 0.012f,
-            w * 0.5f + h * 0.035f, h * 0.104f)
-        drawGlass(canvas, gearBox, gearBox.height() / 2f)
-
-        val time = android.text.format.DateFormat.getTimeFormat(context).format(Date())
-        valuePaint(h * 0.032f, medium)
+        val box = RectF(w * .405f, h * .012f, w * .655f, h * .104f)
+        drawGlass(canvas, box, box.height() / 2f)
+        val baseline = box.centerY() - run {
+            valuePaint(h * .032f, medium)
+            (text.ascent() + text.descent()) / 2f
+        }
         text.textAlign = Paint.Align.LEFT
-        val x = w * 0.54f
-        val pad = h * 0.018f
-        val timeBox = RectF(x - pad, h * 0.018f, x + text.measureText(time) + pad, h * 0.093f)
-        drawGlass(canvas, timeBox, timeBox.height() / 2f)
-        val baseline = timeBox.centerY() - (text.ascent() + text.descent()) / 2f
-        canvas.drawText(time, x, baseline, text)
+        val temperature = snapshot?.outsideTempC?.let {
+            String.format(Locale.getDefault(), "%d°C", it.roundToInt())
+        } ?: "—°C"
+        canvas.drawText(temperature, w * .42f, baseline, text)
+        text.textAlign = Paint.Align.RIGHT
+        val time = android.text.format.DateFormat.getTimeFormat(context).format(Date())
+        canvas.drawText(time, w * .64f, baseline, text)
     }
 
-    // ---- lower row ------------------------------------------------------------------------
-
-    /**
-     * Slim lower row laid out around the H7 stock theme with its lamps along the bottom: the car's
-     * EV, speed-limit and lane icons in the left fifth, READY under the centre, ECO near 79 %.
-     */
+    /** Panels clear all factory telltales, including ECO at 79% and READY at the bottom centre. */
     private fun drawLowerRow(canvas: Canvas, w: Float, h: Float) {
         val data = snapshot ?: return
-        // The information rail and music card share one matte near-black surface.
-        body.shader = null
-        body.color = Color.rgb(17, 24, 32)
-        // The factory speed-limit/assist lamps stay outside the rail.
-        rect.set(w * 0.23f, h * 0.835f, w * 0.988f, h * 0.91f)
-        canvas.drawRoundRect(rect, h * 0.018f, h * 0.018f, body)
-        val baseline = h * 0.89f
-        val labelSize = h * 0.024f
-        val valueSize = h * 0.038f
-
-        // Soft local contrast behind speed; do not recolour the phone video.
-        shade.shader = RadialGradient(w * 0.08f, h * 0.49f, w * 0.28f,
-            intArrayOf(Color.argb(205, 7, 16, 25), Color.argb(120, 7, 16, 25), Color.TRANSPARENT),
-            floatArrayOf(0f, 0.42f, 1f), Shader.TileMode.CLAMP)
-        canvas.save()
-        canvas.clipRect(0f, h * 0.17f, w * 0.38f, h * 0.79f)
-        canvas.drawRect(0f, h * 0.17f, w * 0.38f, h * 0.79f, shade)
-        canvas.restore()
-        shade.shader = null
-
-        // Inset from the panel edge to clear the steering wheel (approved on-car reference).
+        val baseline = h * .89f
+        val size = h * .035f
         data.speedKph?.let { speed ->
-            val x = w * 0.15f
-            valuePaint(h * 0.22f, medium)
+            valuePaint(h * .22f, medium)
             text.textAlign = Paint.Align.CENTER
-            canvas.drawText(speed.roundToInt().toString(), x, h * 0.53f, text)
-            valuePaint(h * 0.032f)
-            canvas.drawText("km/h", x, h * 0.59f, text)
-            rect.set(x - w * 0.012f, h * 0.62f, x + w * 0.012f, h * 0.629f)
-            canvas.drawRoundRect(rect, h * 0.0045f, h * 0.0045f, accentFill)
+            canvas.drawText(speed.roundToInt().toString(), w * .15f, h * .53f, text)
+            valuePaint(h * .032f)
+            canvas.drawText("km/h", w * .15f, h * .59f, text)
         }
 
-        // Fuel and range between the car's lane icon (about 18 %) and the speed.
-        val fuelLeft = w * 0.24f
-        val icon = h * 0.042f
-        data.fuelPercent?.let { fuel ->
-            drawPump(canvas, fuelLeft, baseline - icon * 0.95f, icon)
-            val barLeft = fuelLeft + icon * 1.25f
-            val barW = w * 0.07f
-            val barH = h * 0.008f
-            val barY = baseline - icon * 0.45f
-            rect.set(barLeft, barY - barH / 2f, barLeft + barW, barY + barH / 2f)
-            canvas.drawRoundRect(rect, barH, barH, track)
-            rect.right = barLeft + barW * (fuel / 100f).coerceIn(0.03f, 1f)
-            canvas.drawRoundRect(rect, barH, barH, if (fuel < 15f) low else accentFill)
-        }
-        data.rangeKm?.let { range ->
-            valuePaint(valueSize)
-            text.textAlign = Paint.Align.LEFT
-            val x = fuelLeft + icon * 1.25f + w * 0.07f + w * 0.012f
-            val value = String.format(Locale.getDefault(), "%d", range.roundToInt())
-            canvas.drawText(value, x, baseline, text)
-            val valueWidth = text.measureText(value)
-            labelPaint(labelSize)
-            canvas.drawText(" KM", x + valueWidth, baseline, text)
-        }
+        // No guessed adapter keys or simulated live power. A dash explicitly means unavailable.
+        // Replace this state only after the H7's signed hybrid power signal is verified.
+        val meter = RectF(w * .065f, h * .625f, w * .235f, h * .643f)
+        drawGlass(canvas, RectF(meter.left - h*.012f, meter.top - h*.012f,
+            meter.right + h*.012f, meter.bottom + h*.012f), h*.018f)
+        canvas.drawRoundRect(meter, h*.009f, h*.009f, track)
+        canvas.drawLine(meter.centerX(), meter.top-h*.004f, meter.centerX(),
+            meter.bottom+h*.004f, stroke.apply { strokeWidth = h*.002f })
+        valuePaint(h*.018f)
+        text.color = secondary
+        text.textAlign = Paint.Align.LEFT
+        canvas.drawText("CHARGE", meter.left, h*.683f, text)
+        text.textAlign = Paint.Align.RIGHT
+        canvas.drawText("POWER", meter.right, h*.683f, text)
+        text.textAlign = Paint.Align.CENTER
+        canvas.drawText("—", meter.centerX(), h*.683f, text)
 
-        // Outside temperature between the speed and the car's ECO lamp.
-        data.outsideTempC?.let { temp ->
-            val x = w * 0.56f
-            labelPaint(labelSize)
-            text.textAlign = Paint.Align.LEFT
-            canvas.drawText("OUTSIDE", x, baseline, text)
-            val labelWidth = text.measureText("OUTSIDE  ")
-            valuePaint(valueSize)
-            canvas.drawText(String.format(Locale.getDefault(), "%d°C", temp.roundToInt()), x + labelWidth, baseline, text)
+        val fuel = RectF(w*.23f, h*.835f, w*.465f, h*.91f)
+        drawGlass(canvas, fuel, fuel.height()/2f)
+        val icon = h*.038f
+        val pumpX = fuel.left + h*.047f
+        drawPump(canvas, pumpX, baseline-icon*.94f, icon)
+        val triangle = Path().apply {
+            moveTo(pumpX-h*.017f, baseline-icon*.50f)
+            lineTo(pumpX-h*.007f, baseline-icon*.76f)
+            lineTo(pumpX-h*.007f, baseline-icon*.24f)
+            close()
         }
+        canvas.drawPath(triangle, fill)
+        val barLeft = pumpX+icon*1.15f
+        val barWidth = w*.057f
+        val barY = baseline-icon*.42f
+        rect.set(barLeft, barY-h*.004f, barLeft+barWidth, barY+h*.004f)
+        canvas.drawRoundRect(rect, h*.004f, h*.004f, track)
+        data.fuelPercent?.let {
+            rect.right=barLeft+barWidth*(it/100f).coerceIn(0f,1f)
+            canvas.drawRoundRect(rect,h*.004f,h*.004f,if(it<15f) low else accentFill)
+        }
+        valuePaint(size)
+        text.textAlign=Paint.Align.LEFT
+        canvas.drawText(data.fuelPercent?.let { "${it.roundToInt()}%" } ?: "—%",
+            barLeft+barWidth+w*.012f,baseline,text)
+        text.textAlign=Paint.Align.RIGHT
+        canvas.drawText(data.rangeKm?.let { "${it.roundToInt()} km" } ?: "— km",
+            fuel.right-h*.025f,baseline,text)
 
-        // Odometer right of ECO.
-        data.odometerKm?.let { odo ->
-            val right = w - w * 0.022f
-            valuePaint(valueSize)
-            text.textAlign = Paint.Align.RIGHT
-            val value = NumberFormat.getIntegerInstance().format(odo.roundToInt())
-            labelPaint(labelSize)
-            val unitWidth = text.measureText(" KM")
-            canvas.drawText(" KM", right, baseline, text)
-            valuePaint(valueSize)
-            text.textAlign = Paint.Align.RIGHT
-            canvas.drawText(value, right - unitWidth, baseline, text)
-            val valueWidth = text.measureText(value)
-            labelPaint(labelSize)
-            text.textAlign = Paint.Align.RIGHT
-            canvas.drawText("ODO  ", right - unitWidth - valueWidth, baseline, text)
-        }
-        text.letterSpacing = 0f
+        // The car owns the drive mode at x79%. Keep its area entirely clear.
+        val odo = RectF(w*.835f,h*.835f,w*.988f,h*.91f)
+        drawGlass(canvas,odo,odo.height()/2f)
+        valuePaint(h*.030f)
+        text.textAlign=Paint.Align.RIGHT
+        canvas.drawText(data.odometerKm?.let {
+            "ODO  ${NumberFormat.getIntegerInstance().format(it.roundToInt())} km"
+        } ?: "ODO  — km",odo.right-h*.024f,baseline,text)
+        text.letterSpacing=0f
     }
 
     // ---- navigation card ------------------------------------------------------------------
@@ -310,14 +284,14 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
     private fun drawMusic(canvas: Canvas, w: Float, h: Float) {
         val info = music.info
         val title = info.title?.takeIf { it.isNotBlank() } ?: return
-        val mw = w * 0.17f
-        val mh = h * 0.17f
-        val left = w * 0.715f // ends at 88.5%, before stock right-side warnings
-        val top = h * 0.20f // bottom 37%, clear of Google's fixed card below
+        val mw = w * 0.185f
+        val mh = h * 0.23f
+        val left = w * 0.70f // ends at 88.5%, before fixed factory warnings
+        val top = h * 0.14f // bottom 37%, clear of Google's fixed card below
         val box = RectF(left, top, left + mw, top + mh)
         drawGlass(canvas, box, mh * 0.14f)
 
-        val side = mh * 0.72f
+        val side = mh * 0.55f
         val ax = left + mh * 0.14f
         val ay = top + (mh - side) / 2f
         music.artwork?.takeUnless(Bitmap::isRecycled)?.let { bitmap ->
@@ -333,10 +307,10 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         val textWidth = left + mw - mh * 0.12f - textLeft
         if (textWidth <= 0f) return
         text.textAlign = Paint.Align.LEFT
-        valuePaint(h * 0.030f, medium)
+        valuePaint(h * 0.032f, medium)
         canvas.drawText(fit(title, textWidth), textLeft, top + mh * 0.36f, text)
         info.artist?.takeIf { it.isNotBlank() }?.let { artist ->
-            valuePaint(h * 0.024f, regular)
+            valuePaint(h * 0.026f, regular)
             text.color = secondary
             canvas.drawText(fit(artist, textWidth), textLeft, top + mh * 0.57f, text)
             text.color = Color.WHITE
