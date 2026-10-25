@@ -1382,3 +1382,8 @@ edit(root/'common/src/test/java/com/shilapi/xcertplay/CarPlayVpnConsentTest.kt',
 # Route metadata and HUD aperture regression coverage.
 (root/'common/src/test/java/com/shilapi/xcertplay/GwmAndroidAutoHudRenderTest.kt').write_text(Path('target/_integration/GwmAndroidAutoHudRenderTest.kt').read_text())
 (root/'android-auto/src/test/java/com/andrerinas/openheadunit/hud/BydNavigationMapperTest.kt').write_text(Path('target/_integration/BydNavigationMapperTest.kt').read_text())
+
+
+# Keep roundabout images, route-level arrival retention and the debug launcher label fixes.
+for patch in json.loads(Path('target/_integration/roundabout-arrival-patches.json').read_text()):
+    edit(root/patch['path'], (patch['old'], patch['new'], patch['count']))

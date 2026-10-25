@@ -75,6 +75,9 @@ jobs:
       # One Gradle task (or a small group) per step, so the Actions page shows which one failed
       # or ran long. Later checks still run after an earlier test or lint failure, but none run
       # once the APK itself has failed to compile.
+      - name: Check Android Auto roundabout and arrival mapping
+        timeout-minutes: 15
+        run: ./gradlew :android-auto:testDebugUnitTest --tests '*BydNavigationMapperTest' $GRADLE_ARGS
       - name: Render actual Android Auto cluster and check protected regions
         timeout-minutes: 15
         run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' $GRADLE_ARGS
@@ -225,3 +228,4 @@ jobs:
             common/build/reports/di-connect-home/
             **/build/reports/lint-results-debug.html
             build/reports/profile/
+

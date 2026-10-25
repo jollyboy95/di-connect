@@ -19,6 +19,41 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [33], manifest = Config.NONE, qualifiers = "en")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class GwmAndroidAutoHudRenderTest {
+    @Test fun roundaboutUsesItsExitNumberAndNormalTurnsKeepTheirDirections() {
+        val view = GwmAndroidAutoHeadUpView(RuntimeEnvironment.getApplication())
+        view.setAnchor(GwmAndroidAutoHeadUpView.Anchor.CENTRE)
+        view.setArrivalText("10:31 AM")
+        view.measure(View.MeasureSpec.makeMeasureSpec(480, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(240, View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, 480, 240)
+        fun render(icon: Int, exit: Int): Bitmap {
+            view.setGuidance(ClusterTurnGuidance(icon, exit, 300, "Next road"))
+            return Bitmap.createBitmap(480, 240, Bitmap.Config.ARGB_8888).also { view.draw(Canvas(it)) }
+        }
+        val first = render(17, 1)
+        val second = render(17, 2)
+        var changed = 0
+        for (y in 96 until 160) for (x in 0 until 60) {
+            if (first.getPixel(x, y) != second.getPixel(x, y)) changed++
+        }
+        assertTrue("Exit 1 and exit 2 must not share a fixed right-turn symbol", changed > 0)
+        for (y in 0 until 240) for (x in 0 until 480) {
+            if (x >= 144 || y < 96 || y >= 192) assertEquals(0, Color.alpha(second.getPixel(x, y)))
+        }
+        val output = File("build/reports/gwm-cluster").apply { mkdirs() }
+        File(output, "android-auto-hud-roundabout-exit2.png").outputStream().use {
+            second.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        render(2, 0).recycle()
+        assertEquals(com.shilapi.xcertplay.host.R.drawable.ic_turn_card_turn_left,
+            org.robolectric.util.ReflectionHelpers.getField<Int>(view, "glyphRes").toInt())
+        render(3, 0).recycle()
+        assertEquals(com.shilapi.xcertplay.host.R.drawable.ic_turn_card_turn_right,
+            org.robolectric.util.ReflectionHelpers.getField<Int>(view, "glyphRes").toInt())
+        first.recycle()
+        second.recycle()
+    }
+
     @Test fun formattedArrivalFitsTheMeasuredCarPlayHudWindow() {
         val view = GwmAndroidAutoHeadUpView(RuntimeEnvironment.getApplication())
         view.setAnchor(GwmAndroidAutoHeadUpView.Anchor.LEFT)
@@ -49,3 +84,4 @@ class GwmAndroidAutoHudRenderTest {
         bitmap.recycle()
     }
 }
+

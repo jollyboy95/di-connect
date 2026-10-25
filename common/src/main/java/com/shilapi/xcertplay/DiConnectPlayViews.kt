@@ -57,11 +57,13 @@ internal object DiConnectPlayViews {
 
     private class HudLayer(displayContext: Context, anchor: Int) : DiConnectViews.Layer {
         private val hud = GwmAndroidAutoHeadUpView(displayContext).apply {
+            setBackgroundColor(android.graphics.Color.BLACK)
             setAnchor(GwmAndroidAutoHeadUpView.Anchor.entries.getOrElse(anchor) { GwmAndroidAutoHeadUpView.Anchor.LEFT })
         }
         override val view: View get() = hud
         override fun setGuidance(guidance: DiConnectViews.Guidance?) {
             hud.setArrivalText(guidance?.arrivalText)
+            hud.setRoundaboutImage(guidance?.roundaboutImage)
             hud.setGuidance(guidance(guidance))
         }
         override fun release() = Unit

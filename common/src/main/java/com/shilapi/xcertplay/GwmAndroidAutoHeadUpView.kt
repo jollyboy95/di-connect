@@ -1,6 +1,11 @@
 package com.shilapi.xcertplay
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ColorFilter
+import android.graphics.PixelFormat
+import android.graphics.RectF
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -19,6 +24,26 @@ import java.util.Date
  */
 internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
     enum class Anchor { LEFT, CENTRE, RIGHT }
+
+    private val roundaboutGlyph = RoundaboutGlyph()
+    private var imageBytes: ByteArray? = null
+
+    fun setRoundaboutImage(bytes: ByteArray?) {
+        if (imageBytes?.contentEquals(bytes ?: byteArrayOf()) == true || (bytes == null && imageBytes == null)) return
+        imageBytes = bytes?.copyOf()
+        roundaboutGlyph.image?.recycle()
+        roundaboutGlyph.image = bytes?.takeIf { it.size <= 262144 }?.let {
+            runCatching {
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeByteArray(it, 0, it.size, bounds)
+                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@runCatching null
+                val options = BitmapFactory.Options().apply { inSampleSize = 1 }
+                while (maxOf(bounds.outWidth, bounds.outHeight) / options.inSampleSize > 256) options.inSampleSize *= 2
+                BitmapFactory.decodeByteArray(it, 0, it.size, options)
+            }.getOrNull()
+        }
+        invalidate()
+    }
 
     private var arrivalText: String? = null
 
@@ -85,8 +110,8 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         val gap = unit * 0.28f
         // A small, squarish HUD area (just the arrow window) gets the stacked layout instead.
         if (w < h * 2.2f) {
-            if (anchor == Anchor.LEFT) drawInNavWindow(canvas, next, distance, shownEta, w, h)
-            else drawStacked(canvas, next, distance, shownEta, w, h)
+            // H7's compact display is physically cropped to A3-C4, regardless of anchor preference.
+            drawInNavWindow(canvas, next, distance, shownEta, w, h)
             return
         }
         val textW = maxOf(distancePaint.measureText(distance), minOf(roadPaint.measureText(road), unit * 3.2f))
@@ -99,11 +124,7 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         }.coerceIn(0f, (w - rowW).coerceAtLeast(0f))
         val midY = h / 2f
 
-        val res = clusterTurnGlyphRes(next.icon)
-        if (res != glyphRes) {
-            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
-            glyphRes = res
-        }
+        glyph = glyphFor(next)
         glyph?.setBounds(left.toInt(), (midY - arrow / 2f).toInt(), (left + arrow).toInt(), (midY + arrow / 2f).toInt())
         glyph?.draw(canvas)
 
@@ -136,11 +157,7 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         val lineOne = if (eta != null) boxH * 0.64f else boxH
         val arrow = minOf(lineOne * 0.92f, boxW * 0.40f)
 
-        val res = clusterTurnGlyphRes(next.icon)
-        if (res != glyphRes) {
-            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
-            glyphRes = res
-        }
+        glyph = glyphFor(next)
         val arrowTop = top + (lineOne - arrow) / 2f
         glyph?.setBounds(left.toInt(), arrowTop.toInt(), (left + arrow).toInt(), (arrowTop + arrow).toInt())
         glyph?.draw(canvas)
@@ -194,11 +211,7 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         val total = arrow + unit * 0.75f + (if (eta != null) unit * 0.55f else 0f)
         var y = (h - total) / 2f
         val cx = regionLeft + regionWidth / 2f
-        val res = clusterTurnGlyphRes(next.icon)
-        if (res != glyphRes) {
-            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
-            glyphRes = res
-        }
+        glyph = glyphFor(next)
         glyph?.setBounds((cx - arrow / 2f).toInt(), y.toInt(), (cx + arrow / 2f).toInt(), (y + arrow).toInt())
         glyph?.draw(canvas)
         y += arrow
@@ -214,6 +227,59 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
             canvas.drawText(ellipsize("$etaLabel $it", regionWidth * 0.96f, etaPaint), cx, y + unit * 0.42f, etaPaint)
             etaPaint.textAlign = Paint.Align.LEFT
         }
+    }
+
+    private fun glyphFor(next: ClusterTurnGuidance): Drawable? {
+        if (next.icon in setOf(11, 12, 17, 18)) {
+            roundaboutGlyph.exitNumber = next.roundaboutExit
+            // Do not leave the roundabout drawable cached as a normal turn's resource.
+            glyphRes = 0
+            return roundaboutGlyph
+        }
+        val res = clusterTurnGlyphRes(next.icon)
+        if (res != glyphRes) {
+            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
+            glyphRes = res
+        }
+        return glyph
+    }
+
+    /** Prefer Google's exact image. Without one, show a numbered roundabout, never a false turn. */
+    private class RoundaboutGlyph : Drawable() {
+        var exitNumber = 0
+        var image: Bitmap? = null
+        private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(90, 200, 250)
+            strokeCap = Paint.Cap.ROUND
+        }
+        private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        private val number = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+        }
+        override fun draw(canvas: Canvas) {
+            val box = RectF(bounds)
+            image?.takeUnless { it.isRecycled }?.let {
+                canvas.drawBitmap(it, null, box, bitmapPaint)
+                return
+            }
+            val size = minOf(box.width(), box.height())
+            val cx = box.centerX()
+            val cy = box.top + size * .40f
+            val radius = size * .25f
+            ink.strokeWidth = size * .075f
+            ink.style = Paint.Style.STROKE
+            canvas.drawCircle(cx, cy, radius, ink)
+            canvas.drawLine(cx, cy + radius, cx, box.top + size * .88f, ink)
+            if (exitNumber in 1..10) {
+                number.textSize = size * .30f
+                canvas.drawText(exitNumber.toString(), cx, cy - (number.ascent() + number.descent()) / 2f, number)
+            }
+        }
+        override fun setAlpha(alpha: Int) { ink.alpha = alpha; number.alpha = alpha; bitmapPaint.alpha = alpha }
+        override fun setColorFilter(colorFilter: ColorFilter?) { bitmapPaint.colorFilter = colorFilter }
+        @Deprecated("Deprecated in Android") override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
     }
 
     private val etaLabel: String get() = context.getString(R.string.settings_gwm_hud_arrival)
@@ -234,4 +300,5 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         return text.take(end) + "…"
     }
 }
+
 

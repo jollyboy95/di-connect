@@ -19,7 +19,7 @@ internal object BydNavigationMapper {
         val type = modern?.type?.number ?: legacy?.takeIf { it.hasNextTurn() }?.let {
             legacyType(it.nextTurn.number, if (it.hasSide()) it.side.number else 3, it.turnNumber, leftHandTraffic)
         } ?: return null
-        val codes = codes(type, modern?.roundaboutExitNumber ?: legacy?.turnNumber ?: 0) ?: return null
+        val codes = codes(type, modern?.takeIf { it.hasRoundaboutExitNumber() }?.roundaboutExitNumber ?: legacy?.turnNumber ?: 0) ?: return null
         val position = snapshot.currentPosition?.payload
         val distance = position?.takeIf { it.hasStepDistance() && it.stepDistance.hasDistance() && it.stepDistance.distance.hasMeters() }
             ?.stepDistance?.distance?.meters
@@ -30,14 +30,24 @@ internal object BydNavigationMapper {
             ?: legacy?.road?.takeIf { it.isNotBlank() } ?: snapshot.currentStreet?.payload.orEmpty()
         val destination = position?.destinationDistancesList?.firstOrNull()
         val remaining = destination?.takeIf { it.hasDistance() && it.distance.hasMeters() }?.distance?.meters ?: -1
-        val seconds = destination?.takeIf { it.hasTimeToArrivalSeconds() }?.timeToArrivalSeconds
-            ?.coerceIn(0, Int.MAX_VALUE.toLong())?.toInt() ?: -1
+        val arrival = snapshot.arrival()
+        val arrivalAge = ((snapshot.currentPosition?.updatedAtElapsedRealtimeMs ?: 0L) -
+            (arrival?.updatedAtElapsedRealtimeMs ?: 0L)).coerceAtLeast(0L) / 1000L
+        val seconds = arrival?.payload?.takeIf { it.hasTimeToArrivalSeconds() && it.timeToArrivalSeconds >= 0 }
+            ?.timeToArrivalSeconds?.let { (it - arrivalAge).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt() } ?: -1
         // Some phones send the formatted ETA without a numeric remaining duration.
         // Preserve it verbatim instead of inventing a duration or dropping arrival from the HUD.
-        val arrivalText = destination?.takeIf { it.hasEstimatedTimeAtArrival() }
+        val arrivalText = arrival?.payload?.takeIf { it.hasEstimatedTimeAtArrival() }
             ?.estimatedTimeAtArrival?.trim()?.takeIf { it.isNotEmpty() }
         return BydGuidance(codes.cluster, codes.gaode, codes.arrow, codes.exit, distance, road, remaining, seconds,
-            arrivalText = arrivalText)
+            arrivalText = arrivalText,
+            roundaboutImage = legacy?.takeIf {
+                codes.cluster in setOf(11, 12, 17, 18) && it.hasImage() &&
+                    it.nextTurn.number in setOf(11, 12, 13) &&
+                    (snapshot.nextTurnDetail?.updatedAtElapsedRealtimeMs ?: -1L) >=
+                    (snapshot.navigationState?.updatedAtElapsedRealtimeMs ?: -1L) &&
+                    (codes.exit == 0 || !it.hasTurnNumber() || it.turnNumber == codes.exit)
+            }?.image?.takeIf { !it.isEmpty && it.size() <= 262144 })
     }
 
     data class Codes(val cluster: Int, val gaode: Int, val arrow: Int, val exit: Int = 0)

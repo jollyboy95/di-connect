@@ -248,7 +248,7 @@ internal object GwmOutputs {
         val view: android.view.View = dplay?.view
             ?: GwmHeadUpView(displayContext).apply { setAnchor(anchor); setArea(gwm.hudArea) }
         try {
-            windows.addView(view, overlayParams(opaque = false))
+            windows.addView(view, overlayParams(opaque = dplay != null))
         } catch (error: RuntimeException) {
             dplay?.release()
             hudStatus = "Display $target refused the overlay window: ${error.javaClass.simpleName}: ${error.message}"

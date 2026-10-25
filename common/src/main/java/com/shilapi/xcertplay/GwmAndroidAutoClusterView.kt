@@ -68,6 +68,12 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
     private var glyph: Drawable? = null
     private var glyphRes = 0
     private val tick = Runnable { invalidate() }
+    private val clockTick = object : Runnable {
+        override fun run() {
+            invalidate()
+            postDelayed(this, 60_000L - System.currentTimeMillis() % 60_000L)
+        }
+    }
 
     fun setSnapshot(next: GwmVehicleData.Snapshot?) {
         if (next == snapshot) return
@@ -93,6 +99,7 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        post(clockTick)
         stopMusic = ClusterMusicState.observe {
             music = it
             musicReceivedAt = SystemClock.elapsedRealtime()
@@ -104,6 +111,7 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         stopMusic?.invoke()
         stopMusic = null
         removeCallbacks(tick)
+        removeCallbacks(clockTick)
         super.onDetachedFromWindow()
     }
 
@@ -113,6 +121,11 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
         drawLowerRow(canvas, w, h)
+        // The car draws D/P at top-centre; put the live clock just to its right.
+        valuePaint(h * 0.032f, medium)
+        text.textAlign = Paint.Align.LEFT
+        canvas.drawText(android.text.format.DateFormat.getTimeFormat(context).format(Date()),
+            w * 0.54f, h * 0.07f, text)
         // Android Auto supplies its turn card in the phone video; never draw a duplicate.
         if (AirPlayPersistence.loadGwmMusicCard(context)) drawMusic(canvas, w, h)
     }
@@ -380,4 +393,5 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         const val FADE_TOP = 0.74f
     }
 }
+
 

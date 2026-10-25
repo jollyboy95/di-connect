@@ -17,6 +17,7 @@ object DiConnectViews {
         val remainingMeters: Int,
         val remainingSeconds: Int,
         val arrivalText: String? = null,
+        val roundaboutImage: ByteArray? = null,
     )
 
     data class Music(
@@ -45,6 +46,6 @@ object DiConnectViews {
     }
 
     internal fun from(guidance: BydGuidance?): Guidance? = guidance?.let {
-        Guidance(it.clusterIcon, it.roundaboutExit, it.distanceMeters, it.road, it.remainingMeters, it.remainingSeconds, it.arrivalText)
+        Guidance(it.clusterIcon, it.roundaboutExit, it.distanceMeters, it.road, it.remainingMeters, it.remainingSeconds, it.arrivalText, it.roundaboutImage?.toByteArray())
     }
 }

@@ -12,4 +12,5 @@ internal data class BydGuidance(
     val remainingSeconds: Int = -1,
     val updatedNs: Long = System.nanoTime(),
     val arrivalText: String? = null,
+    val roundaboutImage: com.google.protobuf.ByteString? = null,
 )

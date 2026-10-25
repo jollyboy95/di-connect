@@ -6,6 +6,40 @@ import com.andrerinas.openheadunit.aap.AapNavigationHelper
 import com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus as N
 
 class BydNavigationMapperTest {
+    @Test fun `distance only packets preserve arrival and count duration down`() {
+        val value = snapshot(300)
+        value.updatePosition(value.currentPosition!!.payload.toBuilder().addDestinationDistances(
+            N.NavigationDestinationDistance.newBuilder().setTimeToArrivalSeconds(600)
+                .setEstimatedTimeAtArrival("10:31 AM")).build(), 1000)
+        value.updatePosition(N.NavigationCurrentPosition.newBuilder().setStepDistance(
+            N.NavigationStepDistance.newBuilder().setDistance(N.NavigationDistance.newBuilder().setMeters(290))).build(), 11000)
+        val frame = BydNavigationMapper.from(value)!!
+        assertEquals(290, frame.distanceMeters)
+        assertEquals(590, frame.remainingSeconds)
+        assertEquals("10:31 AM", frame.arrivalText)
+        value.updatePosition(value.currentPosition!!.payload, 130001)
+        assertEquals(-1, BydNavigationMapper.from(value)!!.remainingSeconds)
+        assertNull(BydNavigationMapper.from(value)!!.arrivalText)
+        value.destinationArrival = null // same reset performed by route stop/start/reroute
+        assertNull(value.arrival())
+    }
+
+    @Test fun `modern roundabout without exit field retains explicit legacy exit`() {
+        val value = snapshot(300)
+        value.navigationState = AapNavigationHelper.TimedMessage(N.NavigationState.newBuilder().addSteps(
+            N.NavigationStep.newBuilder().setManeuver(N.NavigationManeuver.newBuilder()
+                .setType(N.NavigationManeuver.NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CW))).build(), 10)
+        value.nextTurnDetail = AapNavigationHelper.TimedMessage(N.NextTurnDetail.newBuilder().setRoad("Exit road")
+            .setNextTurn(N.NextTurnDetail.NextEvent.ROUNDABOUT_ENTER_AND_EXIT).setTurnNumber(2)
+            .setImage(com.google.protobuf.ByteString.copyFrom(byteArrayOf(1, 2, 3))).build(), 11)
+        val frame = BydNavigationMapper.from(value)!!
+        assertEquals(2, frame.roundaboutExit)
+        assertEquals(17, frame.clusterIcon)
+        assertNotNull(frame.roundaboutImage)
+        value.nextTurnDetail = value.nextTurnDetail!!.copy(updatedAtElapsedRealtimeMs = 9)
+        assertNull(BydNavigationMapper.from(value)!!.roundaboutImage)
+    }
+
     @Test fun `formatted arrival survives when phone omits numeric journey time`() {
         val value = snapshot(300)
         val position = value.currentPosition!!.payload.toBuilder().addDestinationDistances(
@@ -103,4 +137,5 @@ class BydNavigationMapperTest {
         }
     }
 }
+
 

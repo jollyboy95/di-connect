@@ -1,0 +1,98 @@
+[
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/aap/AapNavigationHelper.kt",
+    "old": "        var currentStreet: TimedMessage<String>? = null\n    )",
+    "new": "        var currentStreet: TimedMessage<String>? = null,\n        var destinationArrival: TimedMessage<NavigationStatus.NavigationDestinationDistance>? = null,\n    ) {\n        /** Position messages may update only distance. Keep ETA separately within this route. */\n        fun updatePosition(position: NavigationStatus.NavigationCurrentPosition, now: Long) {\n            currentPosition = TimedMessage(position, now)\n            position.destinationDistancesList.firstOrNull()?.takeIf {\n                it.hasTimeToArrivalSeconds() || (it.hasEstimatedTimeAtArrival() && it.estimatedTimeAtArrival.isNotBlank())\n            }?.let { destinationArrival = TimedMessage(it, now) }\n        }\n\n        fun arrival(): TimedMessage<NavigationStatus.NavigationDestinationDistance>? {\n            val position = currentPosition ?: return null\n            position.payload.destinationDistancesList.firstOrNull()?.takeIf {\n                it.hasTimeToArrivalSeconds() || (it.hasEstimatedTimeAtArrival() && it.estimatedTimeAtArrival.isNotBlank())\n            }?.let { return TimedMessage(it, position.updatedAtElapsedRealtimeMs) }\n            return destinationArrival?.takeIf {\n                position.updatedAtElapsedRealtimeMs - it.updatedAtElapsedRealtimeMs in 0L..120_000L\n            }\n        }\n    }",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/aap/AapNavigation.kt",
+    "old": "snapshot.currentPosition = AapNavigationHelper.TimedMessage(position, helper.nowElapsedRealtimeMs())",
+    "new": "snapshot.updatePosition(position, helper.nowElapsedRealtimeMs())",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/aap/AapNavigation.kt",
+    "old": "        snapshot.currentPosition = null",
+    "new": "        snapshot.currentPosition = null\n        snapshot.destinationArrival = null",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/hud/BydNavigationMapper.kt",
+    "old": "        val seconds = destination?.takeIf { it.hasTimeToArrivalSeconds() }?.timeToArrivalSeconds\n            ?.coerceIn(0, Int.MAX_VALUE.toLong())?.toInt() ?: -1",
+    "new": "        val arrival = snapshot.arrival()\n        val arrivalAge = ((snapshot.currentPosition?.updatedAtElapsedRealtimeMs ?: 0L) -\n            (arrival?.updatedAtElapsedRealtimeMs ?: 0L)).coerceAtLeast(0L) / 1000L\n        val seconds = arrival?.payload?.takeIf { it.hasTimeToArrivalSeconds() && it.timeToArrivalSeconds >= 0 }\n            ?.timeToArrivalSeconds?.let { (it - arrivalAge).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt() } ?: -1",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/hud/BydNavigationMapper.kt",
+    "old": "val arrivalText = destination?.takeIf { it.hasEstimatedTimeAtArrival() }",
+    "new": "val arrivalText = arrival?.payload?.takeIf { it.hasEstimatedTimeAtArrival() }",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/hud/BydNavigationMapper.kt",
+    "old": "            arrivalText = arrivalText)",
+    "new": "            arrivalText = arrivalText,\n            roundaboutImage = legacy?.takeIf {\n                codes.cluster in setOf(11, 12, 17, 18) && it.hasImage() &&\n                    it.nextTurn.number in setOf(11, 12, 13) &&\n                    (snapshot.nextTurnDetail?.updatedAtElapsedRealtimeMs ?: -1L) >=\n                    (snapshot.navigationState?.updatedAtElapsedRealtimeMs ?: -1L) &&\n                    (codes.exit == 0 || !it.hasTurnNumber() || it.turnNumber == codes.exit)\n            }?.image?.takeIf { !it.isEmpty && it.size() <= 262144 })",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/hud/BydGuidance.kt",
+    "old": "    val arrivalText: String? = null,",
+    "new": "    val arrivalText: String? = null,\n    val roundaboutImage: com.google.protobuf.ByteString? = null,",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/DiConnectViews.kt",
+    "old": "        val arrivalText: String? = null,",
+    "new": "        val arrivalText: String? = null,\n        val roundaboutImage: ByteArray? = null,",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/DiConnectViews.kt",
+    "old": "it.remainingSeconds, it.arrivalText)",
+    "new": "it.remainingSeconds, it.arrivalText, it.roundaboutImage?.toByteArray())",
+    "count": 1
+  },
+  {
+    "path": "common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt",
+    "old": "            hud.setArrivalText(guidance?.arrivalText)",
+    "new": "            hud.setArrivalText(guidance?.arrivalText)\n            hud.setRoundaboutImage(guidance?.roundaboutImage)",
+    "count": 1
+  },
+  {
+    "path": "mobile/src/debug/AndroidManifest.xml",
+    "old": "android:label=\"DiPlay HUD Test\"",
+    "new": "android:label=\"Di-Connect\"",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/hud/BydNavigationMapper.kt",
+    "old": "modern?.roundaboutExitNumber ?: legacy?.turnNumber ?: 0",
+    "new": "modern?.takeIf { it.hasRoundaboutExitNumber() }?.roundaboutExitNumber ?: legacy?.turnNumber ?: 0",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/gwm/GwmOutputs.kt",
+    "old": "windows.addView(view, overlayParams(opaque = false))\n        } catch (error: RuntimeException) {\n            dplay?.release()",
+    "new": "windows.addView(view, overlayParams(opaque = dplay != null))\n        } catch (error: RuntimeException) {\n            dplay?.release()",
+    "count": 1
+  },
+  {
+    "path": "common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt",
+    "old": "private val hud = GwmAndroidAutoHeadUpView(displayContext).apply {",
+    "new": "private val hud = GwmAndroidAutoHeadUpView(displayContext).apply {\n            setBackgroundColor(android.graphics.Color.BLACK)",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/aap/AapNavigation.kt",
+    "old": "\"distance=${bydFrame?.distanceMeters} icon=${bydFrame?.clusterIcon}\")",
+    "new": "\"distance=${mapped?.distanceMeters} icon=${mapped?.clusterIcon} \" +\n            \"roundaboutExit=${mapped?.roundaboutExit} arrivalSeconds=${mapped?.remainingSeconds} \" +\n            \"arrivalTextPresent=${!mapped?.arrivalText.isNullOrBlank()} \" +\n            \"destinationCount=${snapshot.currentPosition?.payload?.destinationDistancesCount}\")",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/aap/AapNavigation.kt",
+    "old": "                    snapshot.navigationState = AapNavigationHelper.TimedMessage(state, helper.nowElapsedRealtimeMs())",
+    "new": "                    val previousDestinations = snapshot.navigationState?.payload?.destinationsList\n                    if (!previousDestinations.isNullOrEmpty() && state.destinationsCount > 0 &&\n                        previousDestinations != state.destinationsList) snapshot.destinationArrival = null\n                    snapshot.navigationState = AapNavigationHelper.TimedMessage(state, helper.nowElapsedRealtimeMs())",
+    "count": 1
+  }
+]
