@@ -1392,3 +1392,10 @@ for patch in json.loads(Path('target/_integration/roundabout-arrival-patches.jso
 # Parked Android Auto HUD grid/sample tests and diagnostic data-presence snapshot.
 for patch in json.loads(Path('target/_integration/hud-test-pill-patches.json').read_text()):
     edit(root/patch['path'], (patch['old'], patch['new'], patch['count']))
+
+
+# Android 9 report export needs no DocumentsUI; the phone/QR report includes AA guidance logs.
+for patch in json.loads(Path('target/_integration/report-export-patches.json').read_text()):
+    edit(root/patch['path'], (patch['old'], patch['new'], patch['count']))
+(root/'android-auto/src/test/java/com/andrerinas/openheadunit/utils/PrivateDiagnosticExportTest.kt').write_text(
+    Path('target/_integration/PrivateDiagnosticExportTest.kt').read_text())

@@ -77,7 +77,7 @@ jobs:
       # once the APK itself has failed to compile.
       - name: Check Android Auto roundabout and arrival mapping
         timeout-minutes: 15
-        run: ./gradlew :android-auto:testDebugUnitTest --tests '*BydNavigationMapperTest' $GRADLE_ARGS
+        run: ./gradlew :android-auto:testDebugUnitTest --tests '*BydNavigationMapperTest' --tests '*PrivateDiagnosticExportTest' $GRADLE_ARGS
       - name: Render actual Android Auto cluster and check protected regions
         timeout-minutes: 15
         run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' $GRADLE_ARGS

@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.utils
 
+import android.content.Context
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.net.Uri
@@ -7,7 +8,9 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
+import java.io.File
 import java.io.IOException
+import androidx.core.content.FileProvider
 
 /** Saves an app-owned report without depending on an OEM's document-picker activity. */
 internal object DiagnosticExportStore {
@@ -33,6 +36,25 @@ internal object DiagnosticExportStore {
             runCatching { resolver.delete(uri, null, null) }
             throw error
         }
+    }
+
+    /** Android 9/OEM fallback: no document picker and no storage permission required. */
+    fun savePrivate(context: Context, fileName: String, report: String): Uri {
+        val file = writePrivateReport(context, fileName, report)
+        return FileProvider.getUriForFile(context, context.packageName + ".aa.fileprovider", file)
+    }
+
+    internal fun writePrivateReport(context: Context, fileName: String, report: String): File {
+        val directory = File(context.cacheDir, "diagnostic-reports")
+        if (!directory.isDirectory && !directory.mkdirs()) throw IOException("Could not create report directory")
+        val file = File(directory, fileName)
+        try {
+            file.bufferedWriter(Charsets.UTF_8).use { it.write(report) }
+        } catch (error: Exception) {
+            file.delete()
+            throw error
+        }
+        return file
     }
 
     fun write(resolver: ContentResolver, uri: Uri, report: String) {
