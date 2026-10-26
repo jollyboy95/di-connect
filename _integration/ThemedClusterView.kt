@@ -216,9 +216,16 @@ internal class ThemedClusterView(
 
     /** Some styles keep their panel even when a theme otherwise draws none (the directions card). */
     private fun cardPanel(canvas: Canvas, box: RectF, radius: Float) {
-        if (theme.panel == ClusterTheme.Panel.NONE || theme.panel == ClusterTheme.Panel.BONE) {
-            fill.shader = null; fill.color = Color.argb(205, 0, 0, 0); canvas.drawRoundRect(box, radius, radius, fill)
-        } else panel(canvas, box, radius)
+        when (theme.panel) {
+            ClusterTheme.Panel.NONE, ClusterTheme.Panel.BONE -> {
+                fill.shader = null; fill.color = Color.argb(205, 0, 0, 0); canvas.drawRoundRect(box, radius, radius, fill)
+            }
+            // A full capsule on a tall card would cut its corners away; keep Ember's black, softly rounded.
+            ClusterTheme.Panel.CAPSULE -> {
+                fill.shader = null; fill.color = theme.surface; canvas.drawRoundRect(box, radius * 1.6f, radius * 1.6f, fill)
+            }
+            else -> panel(canvas, box, radius)
+        }
     }
 
     private fun bone(canvas: Canvas, x0: Float, y0: Float, x1: Float, y1: Float, color: Int) {
