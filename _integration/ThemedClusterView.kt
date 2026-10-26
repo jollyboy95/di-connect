@@ -255,6 +255,14 @@ internal class ThemedClusterView(
 
     // ---- speed ----------------------------------------------------------------------------
 
+    /**
+     * Android Auto prints a small "Google Maps" label low on the left of its cluster video, about
+     * 70-76 % down. A panel that ended inside it cut the words in half, so on Android Auto panels
+     * that reach that far run on to [AA_LABEL_COVER] and hide it completely.
+     */
+    private fun coverBottom(normal: Float) =
+        if (connection == ClusterConnection.ANDROID_AUTO) maxOf(normal, AA_LABEL_COVER) else normal
+
     private val speedCard get() = theme.speed == ClusterTheme.Speed.HEADED || theme.speed == ClusterTheme.Speed.DOTS
 
     private fun drawSpeed(canvas: Canvas, w: Float, h: Float, speedKph: Float?) {
@@ -297,7 +305,7 @@ internal class ThemedClusterView(
                 type(.024f * h, theme.accent, 500, Paint.Align.CENTER, .2f); canvas.drawText("KM/H", cx, cy + .11f * h, text)
             }
             ClusterTheme.Speed.ITALIC -> {
-                rect.set(.07f * w, .255f * h, .255f * w, .715f * h)
+                rect.set(.07f * w, .255f * h, .255f * w, coverBottom(.715f) * h)
                 panel(canvas, rect, 0f)
                 type(.25f * h, theme.text, 900, Paint.Align.CENTER); text.textSkewX = -.2f
                 canvas.drawText(value, cx, .53f * h, text)
@@ -313,7 +321,7 @@ internal class ThemedClusterView(
                 type(.03f * h, theme.secondary, 400, Paint.Align.CENTER); canvas.drawText(unit, cx, .59f * h, text)
             }
             ClusterTheme.Speed.HEADED -> {
-                rect.set(.05f * w, .2f * h, .25f * w, .72f * h)
+                rect.set(.05f * w, .2f * h, .25f * w, coverBottom(.72f) * h)
                 panel(canvas, rect, .03f * h)
                 type(.022f * h, theme.secondary, 600); canvas.drawText(context.getString(R.string.di_connect_theme_speed), rect.left + 26f * s, rect.top + 38f * s, text)
                 type(.19f * h, theme.text, 800); canvas.drawText(value, rect.left + 24f * s, .5f * h, text)
@@ -330,7 +338,7 @@ internal class ThemedClusterView(
                 canvas.drawText("KM/H", rect.centerX(), rect.centerY() - (text.descent() + text.ascent()) / 2f, text)
             }
             ClusterTheme.Speed.DOTS -> {
-                rect.set(.05f * w, .2f * h, .25f * w, .72f * h)
+                rect.set(.05f * w, .2f * h, .25f * w, coverBottom(.72f) * h)
                 panel(canvas, rect, .03f * h)
                 line.color = Color.WHITE; line.strokeWidth = 3f * s
                 canvas.drawLine(rect.left + 22f * s, rect.top + 60f * s, rect.left + 22f * s, rect.top + 22f * s, line)
@@ -524,7 +532,7 @@ internal class ThemedClusterView(
                 left = "CHG"; right = "PWR"
             }
             ClusterTheme.Flow.PAWS -> {
-                rect.set(l - 30f * s, y - 30f * s, r + 30f * s, y + .09f * h)
+                rect.set(l - 30f * s, y - 30f * s, r + 30f * s, coverBottom(y / h + .09f) * h)
                 fill.color = theme.surface; canvas.drawRoundRect(rect, 24f * s, 24f * s, fill)
                 line.color = theme.edge; line.strokeWidth = 2f * s; canvas.drawRoundRect(rect, 24f * s, 24f * s, line)
                 val lit = (f * 4).roundToInt()
@@ -763,6 +771,7 @@ internal class ThemedClusterView(
         const val MUSIC_TOP = .125f
         const val MUSIC_BOTTOM = .379f
         /** CarPlay only: where Google's card sits in Android Auto. */
+        const val AA_LABEL_COVER = .775f
         const val CARD_LEFT = .755f
         const val CARD_RIGHT = .985f
         const val CARD_TOP = .41f
