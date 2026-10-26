@@ -92,7 +92,7 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         if (next == style) return
         style = next
         arrowTint = next.arrow
-        roundaboutGlyph.tint = next.arrow
+        roundaboutGlyph.inkColor = next.arrow
         glyphRes = 0
         distancePaint.color = next.text
         distancePaint.typeface = next.typeface
@@ -299,7 +299,7 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
             color = HudThemeStyle.PLAIN.arrow
             strokeCap = Paint.Cap.ROUND
         }
-        var tint: Int
+        var inkColor: Int
             get() = ink.color
             set(value) { ink.color = value }
         private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)

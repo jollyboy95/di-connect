@@ -1595,7 +1595,8 @@ internal class HudRoundaboutGlyph(tint: Int) : Drawable() {
         strokeCap = Paint.Cap.ROUND
         style = Paint.Style.STROKE
     }
-    var tint: Int
+    /** The ring's colour; not Drawable.setTint, which this glyph does not use. */
+    var inkColor: Int
         get() = ink.color
         set(value) { ink.color = value }
     private val number = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -2176,7 +2177,7 @@ edit(cphud,
         if (next == style) return
         style = next
         arrowTint = next.arrow
-        roundabout.tint = next.arrow
+        roundabout.inkColor = next.arrow
         glyphRes = 0
         distancePaint.color = next.text
         distancePaint.typeface = next.typeface

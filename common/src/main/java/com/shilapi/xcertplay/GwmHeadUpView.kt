@@ -59,7 +59,7 @@ internal class GwmHeadUpView(context: Context) : View(context) {
         if (next == style) return
         style = next
         arrowTint = next.arrow
-        roundabout.tint = next.arrow
+        roundabout.inkColor = next.arrow
         glyphRes = 0
         distancePaint.color = next.text
         distancePaint.typeface = next.typeface
