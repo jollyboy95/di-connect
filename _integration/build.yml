@@ -81,6 +81,29 @@ jobs:
       - name: Render actual Android Auto cluster and check protected regions
         timeout-minutes: 15
         run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' --tests '*ClusterThemesRenderTest' $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
+      - name: Share theme pictures for review
+        if: ${{ !cancelled() && github.event_name == 'push' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          # Small pictures of every theme on the theme-renders branch of the public releases repo,
+          # so a build's themes can be reviewed before anyone installs it. Never fails the build.
+          if [ -z "$GH_TOKEN" ] || ! ls common/build/reports/gwm-cluster/themes/*.png >/dev/null 2>&1; then exit 0; fi
+          remote="https://x-access-token:${GH_TOKEN}@github.com/jollyboy95/di-connect-releases.git"
+          dir="$RUNNER_TEMP/theme-renders"; rm -rf "$dir"
+          if ! git clone --quiet --depth 1 --branch theme-renders "$remote" "$dir" 2>/dev/null; then
+            git init --quiet "$dir"; git -C "$dir" checkout --quiet --orphan theme-renders; git -C "$dir" remote add origin "$remote"
+          fi
+          rm -f "$dir"/*.jpg "$dir"/*.png
+          for f in common/build/reports/gwm-cluster/themes/*.png; do
+            name="$(basename "${f%.png}")"
+            if command -v convert >/dev/null; then convert "$f" -resize 960x -quality 82 "$dir/$name.jpg"; else cp "$f" "$dir/$name.png"; fi
+          done
+          echo "Theme pictures from ${GITHUB_SHA}" > "$dir/README.md"
+          cd "$dir"; git add -A
+          git -c user.name="Di-Connect CI" -c user.email="ci@users.noreply.github.com" commit --quiet -m "Theme pictures for ${GITHUB_SHA::7}" || exit 0
+          git push --quiet origin HEAD:theme-renders
       - name: Upload actual cluster renders
         if: always()
         uses: actions/upload-artifact@v4
