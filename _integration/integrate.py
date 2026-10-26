@@ -1760,7 +1760,7 @@ edit(D,
     /** Co-Pilot photo: copied small into the app, so the original stays in the driver's gallery. */
     private val coPilotPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@registerForActivityResult
-        if (ClusterThemeStore.saveCoPilot(this, uri)) render()
+        if (ClusterThemeStore.saveCoPilot(this, uri)) { ClusterThemePreview.forget(ClusterThemes.CO_PILOT); render() }
         else android.widget.Toast.makeText(this, getString(R.string.di_connect_theme_photo_failed), android.widget.Toast.LENGTH_LONG).show()
     }
 
@@ -1789,10 +1789,6 @@ edit(D,
             render()
         }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
         val selected = ClusterThemeStore.selected(this, connection)
-        if (selected.id == ClusterThemes.CO_PILOT) {
-            content.addView(button(getString(R.string.di_connect_theme_choose_photo), true) { coPilotPicker.launch("image/*") },
-                matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
-        }
         val columns = when {
             compact -> 1
             resources.configuration.screenWidthDp >= 1100 -> 3
@@ -1852,6 +1848,13 @@ edit(D,
             addView(label(theme.name, 17, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
             if (selected) addView(label(getString(R.string.di_connect_theme_in_use), 14, ACCENT, true))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.
+        if (theme.id == ClusterThemes.CO_PILOT) {
+            card.addView(button(getString(R.string.di_connect_theme_choose_photo), true) {
+                ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
+                coPilotPicker.launch("image/*")
+            }, LinearLayout.LayoutParams(-1, dp(if (isCompactLayout) 48 else 56)).apply { topMargin = dp(8) })
+        }
         return card
     }
 

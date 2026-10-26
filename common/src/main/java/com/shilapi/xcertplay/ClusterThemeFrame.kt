@@ -86,6 +86,11 @@ internal object ClusterThemePreview {
     fun bitmap(context: Context, theme: ClusterTheme, connection: ClusterConnection, width: Int = 960, height: Int = 360): Bitmap =
         cache.getOrPut(theme.id to connection) { render(context, theme, connection, width, height) }
 
+    /** Drops a theme's cached pictures, for example after the Co-Pilot photo changes. */
+    fun forget(id: String) {
+        cache.keys.removeAll { it.first == id }
+    }
+
     fun render(context: Context, theme: ClusterTheme, connection: ClusterConnection, width: Int, height: Int): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
