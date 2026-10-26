@@ -1041,5 +1041,17 @@
     <string name="settings_di_connect_aa_phone_none">لم يُختر</string>
     <string name="settings_di_connect_aa_advanced">إعدادات Android Auto المتقدمة</string>
     <string name="settings_di_connect_open_with">الاتصال عند الفتح باستخدام</string>
+    <string name="di_connect_themes">السمات</string>
+    <string name="di_connect_restart">إعادة التشغيل</string>
+    <string name="di_connect_restart_title">إعادة تشغيل Di-Connect؟</string>
+    <string name="di_connect_restart_message">يوقف CarPlay وAndroid Auto ويغلق لوحة العدادات وشاشة العرض الأمامية ثم يفتح Di-Connect من جديد. استخدمه إذا توقف شيء عن الاستجابة.</string>
+    <string name="di_connect_carplay">CarPlay</string>
+    <string name="di_connect_themes_subtitle">اختر شكل لوحة العدادات لكل اتصال.</string>
+    <string name="di_connect_theme_in_use">✓ قيد الاستخدام</string>
+    <string name="di_connect_theme_modern">Modern</string>
+    <string name="di_connect_theme_modern_description">بأسلوب Android 17: كبسولات داكنة وشريط تدفق البطارية المباشر وتوهج كحلي خلف السرعة.</string>
+    <string name="di_connect_theme_glass">Glass</string>
+    <string name="di_connect_theme_glass_description">بأسلوب iOS: لوحات شفافة وبطاقة الاتجاهات الخاصة بـ Di-Connect.</string>
+    <string name="di_connect_themes_more">المزيد من السمات قادم. استخدام سمة واحدة لكليهما ومعاينة السمة على لوحة العدادات سيأتيان معها.</string>
     <string name="di_connect_update_wrong_signer">هذا التنزيل ليس إصدارًا من Di-Connect موقّعًا بمفتاحك، لذلك لم يُثبَّت.</string>
 </resources>

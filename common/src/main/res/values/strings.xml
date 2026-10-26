@@ -1095,5 +1095,17 @@
     <string name="settings_di_connect_aa_phone_none">Not chosen</string>
     <string name="settings_di_connect_aa_advanced">Advanced Android Auto settings</string>
     <string name="settings_di_connect_open_with">Connect on open with</string>
+    <string name="di_connect_themes">Themes</string>
+    <string name="di_connect_restart">Restart</string>
+    <string name="di_connect_restart_title">Restart Di-Connect?</string>
+    <string name="di_connect_restart_message">Stops CarPlay and Android Auto, closes the cluster and head-up display, and opens Di-Connect again. Use it if something stops responding.</string>
+    <string name="di_connect_carplay">CarPlay</string>
+    <string name="di_connect_themes_subtitle">Choose how the dash cluster looks for each connection.</string>
+    <string name="di_connect_theme_in_use">✓ In use</string>
+    <string name="di_connect_theme_modern">Modern</string>
+    <string name="di_connect_theme_modern_description">Android 17 style: dark pills, a live battery-flow bar and a navy glow behind the speed.</string>
+    <string name="di_connect_theme_glass">Glass</string>
+    <string name="di_connect_theme_glass_description">iOS style: frosted panels and Di-Connect\'s own directions card.</string>
+    <string name="di_connect_themes_more">More themes are on the way. Using one theme for both and previewing a theme on the cluster arrive with them.</string>
     <string name="di_connect_update_wrong_signer">This download isn\'t a Di-Connect build signed with your key, so it wasn\'t installed.</string>
 </resources>

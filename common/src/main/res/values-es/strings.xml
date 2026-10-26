@@ -992,5 +992,17 @@
     <string name="settings_di_connect_aa_phone_none">Sin elegir</string>
     <string name="settings_di_connect_aa_advanced">Ajustes avanzados de Android Auto</string>
     <string name="settings_di_connect_open_with">Conectar al abrir con</string>
+    <string name="di_connect_themes">Temas</string>
+    <string name="di_connect_restart">Reiniciar</string>
+    <string name="di_connect_restart_title">¿Reiniciar Di-Connect?</string>
+    <string name="di_connect_restart_message">Detiene CarPlay y Android Auto, cierra el cuadro de instrumentos y el head-up display, y vuelve a abrir Di-Connect. Úsalo si algo deja de responder.</string>
+    <string name="di_connect_carplay">CarPlay</string>
+    <string name="di_connect_themes_subtitle">Elige el aspecto del cuadro de instrumentos para cada conexión.</string>
+    <string name="di_connect_theme_in_use">✓ En uso</string>
+    <string name="di_connect_theme_modern">Modern</string>
+    <string name="di_connect_theme_modern_description">Estilo Android 17: píldoras oscuras, barra de flujo de batería en vivo y un brillo azul marino tras la velocidad.</string>
+    <string name="di_connect_theme_glass">Glass</string>
+    <string name="di_connect_theme_glass_description">Estilo iOS: paneles esmerilados y la tarjeta de indicaciones propia de Di-Connect.</string>
+    <string name="di_connect_themes_more">Pronto llegarán más temas. Usar un mismo tema para ambos y previsualizarlo en el cuadro llegarán con ellos.</string>
     <string name="di_connect_update_wrong_signer">Esta descarga no es una versión de Di-Connect firmada con tu clave, así que no se instaló.</string>
 </resources>

@@ -1682,6 +1682,192 @@ class GwmCarPlayHudWindowTest {
 }
 """)
 
+# Home-screen controls (Oct 2026), bottom of the right-hand column: Themes, which opens the theme
+# engine's screen (Android Auto | CarPlay tabs over one gallery), and a Restart kill switch. Restart asks first, stops CarPlay and Android Auto as far as they will stop, ends the
+# app's processes (which also removes the cluster and HUD windows) and opens Di-Connect again.
+(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectRestart.kt').write_text('''package com.shilapi.xcertplay
+
+import android.app.Activity
+import android.app.ActivityManager
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Intent
+import android.os.Handler
+import android.os.Looper
+import android.os.Process
+import android.os.SystemClock
+import android.util.Log
+
+/** The home screen's kill switch: a clean-as-possible stop, then a fresh start of Di-Connect. */
+internal object DiConnectRestart {
+    private const val TAG = "DiConnectRestart"
+    /** Long enough for the stop requests to go out; short enough that a hang cannot block the restart. */
+    private const val QUIT_AFTER_MS = 700L
+    private const val REOPEN_AFTER_MS = 1_500L
+
+    fun restart(activity: Activity) {
+        val app = activity.applicationContext
+        Log.w(TAG, "Restart requested from the home screen")
+        runCatching { CarPlayBackgroundSession.stop() }
+        runCatching { app.stopService(Intent(app, com.andrerinas.openheadunit.aap.AapService::class.java)) }
+        app.packageManager.getLaunchIntentForPackage(app.packageName)?.let { launch ->
+            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            val reopen = PendingIntent.getActivity(app, 7341, launch,
+                PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            app.getSystemService(AlarmManager::class.java)
+                ?.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + REOPEN_AFTER_MS, reopen)
+        }
+        Handler(Looper.getMainLooper()).postDelayed({
+            activity.finishAffinity()
+            val me = Process.myPid()
+            app.getSystemService(ActivityManager::class.java)?.runningAppProcesses
+                ?.filter { it.uid == Process.myUid() && it.pid != me }
+                ?.forEach { Process.killProcess(it.pid) }
+            Process.killProcess(me)
+        }, QUIT_AFTER_MS)
+    }
+}
+''')
+edit(D,
+    ('                "setup" -> setupGuide(content)\n',
+     '                "setup" -> setupGuide(content)\n                "themes" -> themes(content)\n'),
+    ('''        if (compact && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            val compactRight = column().apply {''',
+     '''        right.addView(row().apply {
+            gravity = Gravity.END
+            addView(homeButton(getString(R.string.di_connect_themes), false) { page = "themes"; render() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 46 else 52), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(homeButton(getString(R.string.di_connect_restart), false) { confirmRestart() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 46 else 52), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+        if (compact && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            val compactRight = column().apply {'''),
+    ('    private fun connect(wireless: Boolean) {\n',
+     '''    private fun confirmRestart() {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.di_connect_restart_title))
+            .setMessage(getString(R.string.di_connect_restart_message))
+            .setPositiveButton(getString(R.string.di_connect_restart)) { _, _ -> DiConnectRestart.restart(this) }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    private var themesTab = 0
+
+    /**
+     * The theme engine's screen: Android Auto and CarPlay tabs over one gallery. Each connection
+     * keeps its own theme; until more themes ship, each tab lists the one theme it has.
+     */
+    private fun themes(content: LinearLayout) {
+        val compact = isCompactLayout
+        content.addView(label(getString(R.string.di_connect_themes), if (compact) 24 else 32, TEXT, true))
+        content.addView(label(getString(R.string.di_connect_themes_subtitle), 16, MUTED).apply {
+            setPadding(0, dp(6), 0, dp(SETTINGS_BLOCK_GAP_DP))
+        })
+        content.addView(row().apply {
+            listOf(R.string.di_connect_android_auto, R.string.di_connect_carplay).forEachIndexed { index, title ->
+                if (index > 0) addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                addView(button(getString(title), themesTab == index) { themesTab = index; render() },
+                    LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            }
+        })
+        val (name, description) = if (themesTab == 0)
+            R.string.di_connect_theme_modern to R.string.di_connect_theme_modern_description
+        else R.string.di_connect_theme_glass to R.string.di_connect_theme_glass_description
+        val card = card()
+        card.addView(row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(label(getString(name), 22, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
+            addView(label(getString(R.string.di_connect_theme_in_use), 15, ACCENT, true))
+        })
+        card.addView(label(getString(description), 16, MUTED).apply { setPadding(0, dp(8), 0, 0) })
+        content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+        content.addView(label(getString(R.string.di_connect_themes_more), 15, MUTED).apply {
+            setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
+        })
+    }
+
+    private fun connect(wireless: Boolean) {
+'''))
+CONTROL_STRINGS={
+ 'di_connect_themes':['Themes','السمات','Temas','Temi','テーマ','Темы','Теми','主题','主題'],
+ 'di_connect_restart':['Restart','إعادة التشغيل','Reiniciar','Riavvia','再起動','Перезапуск','Перезапуск','重启','重新啟動'],
+ 'di_connect_restart_title':['Restart Di-Connect?','إعادة تشغيل Di-Connect؟','¿Reiniciar Di-Connect?','Riavviare Di-Connect?','Di-Connect を再起動しますか？','Перезапустить Di-Connect?','Перезапустити Di-Connect?','重启 Di-Connect？','重新啟動 Di-Connect？'],
+ 'di_connect_restart_message':[
+  'Stops CarPlay and Android Auto, closes the cluster and head-up display, and opens Di-Connect again. Use it if something stops responding.',
+  'يوقف CarPlay وAndroid Auto ويغلق لوحة العدادات وشاشة العرض الأمامية ثم يفتح Di-Connect من جديد. استخدمه إذا توقف شيء عن الاستجابة.',
+  'Detiene CarPlay y Android Auto, cierra el cuadro de instrumentos y el head-up display, y vuelve a abrir Di-Connect. Úsalo si algo deja de responder.',
+  "Interrompe CarPlay e Android Auto, chiude il quadro strumenti e l\\'head-up display e riapre Di-Connect. Usalo se qualcosa smette di rispondere.",
+  'CarPlay と Android Auto を停止し、メーターとヘッドアップディスプレイを閉じてから Di-Connect を開き直します。反応しなくなったときに使います。',
+  'Останавливает CarPlay и Android Auto, закрывает приборную панель и проекционный дисплей и снова открывает Di-Connect. Используйте, если что-то перестало отвечать.',
+  'Зупиняє CarPlay і Android Auto, закриває панель приладів і проєкційний дисплей та знову відкриває Di-Connect. Використовуйте, якщо щось перестало відповідати.',
+  '停止 CarPlay 和 Android Auto，关闭仪表盘和抬头显示，然后重新打开 Di-Connect。在某些功能无响应时使用。',
+  '停止 CarPlay 和 Android Auto，關閉儀表板和抬頭顯示器，然後重新開啟 Di-Connect。在某些功能沒有回應時使用。'],
+ 'di_connect_carplay':['CarPlay']*9,
+ 'di_connect_themes_subtitle':['Choose how the dash cluster looks for each connection.','اختر شكل لوحة العدادات لكل اتصال.','Elige el aspecto del cuadro de instrumentos para cada conexión.',"Scegli l\\'aspetto del quadro strumenti per ogni connessione.",'接続ごとにメーターの見た目を選びます。','Выберите вид приборной панели для каждого подключения.','Виберіть вигляд панелі приладів для кожного підключення.','为每种连接选择仪表盘外观。','為每種連線選擇儀表板外觀。'],
+ 'di_connect_theme_in_use':['✓ In use','✓ قيد الاستخدام','✓ En uso','✓ In uso','✓ 使用中','✓ Используется','✓ Використовується','✓ 使用中','✓ 使用中'],
+ 'di_connect_theme_modern':['Modern']*9,
+ 'di_connect_theme_modern_description':['Android 17 style: dark pills, a live battery-flow bar and a navy glow behind the speed.','بأسلوب Android 17: كبسولات داكنة وشريط تدفق البطارية المباشر وتوهج كحلي خلف السرعة.','Estilo Android 17: píldoras oscuras, barra de flujo de batería en vivo y un brillo azul marino tras la velocidad.',"Stile Android 17: pillole scure, barra del flusso della batteria in tempo reale e un alone blu notte dietro la velocità.",'Android 17 スタイル：ダークなピル、リアルタイムのバッテリーフローバー、速度の後ろのネイビーの光。','Стиль Android 17: тёмные плашки, полоса потока батареи в реальном времени и тёмно-синее свечение за скоростью.','Стиль Android 17: темні плашки, смуга потоку батареї в реальному часі та темно-синє світіння за швидкістю.','Android 17 风格：深色胶囊、实时电池能量流条，以及速度后的海军蓝光晕。','Android 17 風格：深色膠囊、即時電池能量流條，以及速度後方的海軍藍光暈。'],
+ 'di_connect_theme_glass':['Glass']*9,
+ 'di_connect_theme_glass_description':["iOS style: frosted panels and Di-Connect\\'s own directions card.",'بأسلوب iOS: لوحات شفافة وبطاقة الاتجاهات الخاصة بـ Di-Connect.','Estilo iOS: paneles esmerilados y la tarjeta de indicaciones propia de Di-Connect.',"Stile iOS: pannelli satinati e la scheda indicazioni di Di-Connect.",'iOS スタイル：すりガラス調のパネルと Di-Connect 独自の案内カード。','Стиль iOS: матовые панели и собственная карточка маршрута Di-Connect.','Стиль iOS: матові панелі та власна картка маршруту Di-Connect.','iOS 风格：磨砂面板和 Di-Connect 自带的导航卡片。','iOS 風格：霧面面板和 Di-Connect 自帶的導航卡片。'],
+ 'di_connect_themes_more':['More themes are on the way. Using one theme for both and previewing a theme on the cluster arrive with them.','المزيد من السمات قادم. استخدام سمة واحدة لكليهما ومعاينة السمة على لوحة العدادات سيأتيان معها.','Pronto llegarán más temas. Usar un mismo tema para ambos y previsualizarlo en el cuadro llegarán con ellos.',"Altri temi in arrivo. Usare un tema per entrambi e vederne l\\'anteprima sul quadro arriveranno con loro.",'テーマは今後追加されます。両方に同じテーマを使う機能とメーターでのプレビューも同時に追加されます。','Скоро появятся новые темы. Вместе с ними — одна тема для обоих и предпросмотр на приборной панели.','Незабаром з’являться нові теми. Разом із ними — одна тема для обох і попередній перегляд на панелі приладів.','更多主题即将推出，届时还会加入两者共用一个主题和在仪表盘上预览主题。','更多主題即將推出，屆時還會加入兩者共用一個主題和在儀表板上預覽主題。'],
+}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in CONTROL_STRINGS.items())+'</resources>'))
+
+(root/'common/src/test/java/com/shilapi/xcertplay/DiConnectThemesScreenTest.kt').write_text('''package com.shilapi.xcertplay
+
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import com.shilapi.xcertplay.host.R
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.Robolectric
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.util.ReflectionHelpers
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [29], qualifiers = "en-w1000dp-h700dp")
+class DiConnectThemesScreenTest {
+    private fun texts(activity: DiPlayActivity): List<String> {
+        val root = activity.findViewById<ViewGroup>(android.R.id.content)
+        fun walk(v: View): Sequence<View> = sequence { yield(v); if (v is ViewGroup) for (i in 0 until v.childCount) yieldAll(walk(v.getChildAt(i))) }
+        return walk(root).filterIsInstance<TextView>().map { it.text.toString() }.toList()
+    }
+
+    @Test fun homeHasThemesAndRestartAndTheTabsSwitchTheGallery() {
+        val controller = Robolectric.buildActivity(DiPlayActivity::class.java).setup()
+        val activity = controller.get()
+        try {
+            ReflectionHelpers.setField(activity, "page", "home")
+            ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")
+            val home = texts(activity)
+            assertTrue(activity.getString(R.string.di_connect_themes) in home)
+            assertTrue(activity.getString(R.string.di_connect_restart) in home)
+
+            ReflectionHelpers.setField(activity, "page", "themes")
+            ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")
+            var shown = texts(activity)
+            assertTrue(activity.getString(R.string.di_connect_android_auto) in shown)
+            assertTrue(activity.getString(R.string.di_connect_carplay) in shown)
+            assertTrue(activity.getString(R.string.di_connect_theme_modern) in shown)
+
+            ReflectionHelpers.setField(activity, "themesTab", 1)
+            ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")
+            shown = texts(activity)
+            assertTrue(activity.getString(R.string.di_connect_theme_glass) in shown)
+        } finally {
+            controller.pause().stop().destroy()
+        }
+    }
+}
+''')
+
 # Android Auto-only luxury cluster skin. Preserve the donor CarPlay renderer byte-for-byte.
 skin = Path('target/_integration/GwmAndroidAutoClusterView.kt')
 require(skin.is_file(), 'Missing Android Auto cluster skin')

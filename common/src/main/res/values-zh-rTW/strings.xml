@@ -1052,5 +1052,17 @@
     <string name="settings_di_connect_aa_phone_none">未選擇</string>
     <string name="settings_di_connect_aa_advanced">Android Auto 進階設定</string>
     <string name="settings_di_connect_open_with">開啟時連接</string>
+    <string name="di_connect_themes">主題</string>
+    <string name="di_connect_restart">重新啟動</string>
+    <string name="di_connect_restart_title">重新啟動 Di-Connect？</string>
+    <string name="di_connect_restart_message">停止 CarPlay 和 Android Auto，關閉儀表板和抬頭顯示器，然後重新開啟 Di-Connect。在某些功能沒有回應時使用。</string>
+    <string name="di_connect_carplay">CarPlay</string>
+    <string name="di_connect_themes_subtitle">為每種連線選擇儀表板外觀。</string>
+    <string name="di_connect_theme_in_use">✓ 使用中</string>
+    <string name="di_connect_theme_modern">Modern</string>
+    <string name="di_connect_theme_modern_description">Android 17 風格：深色膠囊、即時電池能量流條，以及速度後方的海軍藍光暈。</string>
+    <string name="di_connect_theme_glass">Glass</string>
+    <string name="di_connect_theme_glass_description">iOS 風格：霧面面板和 Di-Connect 自帶的導航卡片。</string>
+    <string name="di_connect_themes_more">更多主題即將推出，屆時還會加入兩者共用一個主題和在儀表板上預覽主題。</string>
     <string name="di_connect_update_wrong_signer">此下載不是用你的金鑰簽署的 Di-Connect 版本，因此未安裝。</string>
 </resources>

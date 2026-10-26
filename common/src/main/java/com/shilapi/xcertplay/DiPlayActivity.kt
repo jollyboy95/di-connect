@@ -974,6 +974,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             when (page) {
                 "connection" -> connectionSetup(content)
                 "setup" -> setupGuide(content)
+                "themes" -> themes(content)
                 "settings" -> settingsCategoryContent(content)
                 "backup" -> backup(content)
                 else -> home(content)
@@ -1326,6 +1327,14 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 setOnClickListener { openAvailableUpdate(release) }
             }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
         }
+        right.addView(row().apply {
+            gravity = Gravity.END
+            addView(homeButton(getString(R.string.di_connect_themes), false) { page = "themes"; render() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 46 else 52), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(homeButton(getString(R.string.di_connect_restart), false) { confirmRestart() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 46 else 52), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
         if (compact && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             val compactRight = column().apply {
                 addView(space(8))
@@ -6040,6 +6049,50 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         parent.addView(control, matchButton(0, 60))
         parent.addView(space(12))
+    }
+
+    private fun confirmRestart() {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.di_connect_restart_title))
+            .setMessage(getString(R.string.di_connect_restart_message))
+            .setPositiveButton(getString(R.string.di_connect_restart)) { _, _ -> DiConnectRestart.restart(this) }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    private var themesTab = 0
+
+    /**
+     * The theme engine's screen: Android Auto and CarPlay tabs over one gallery. Each connection
+     * keeps its own theme; until more themes ship, each tab lists the one theme it has.
+     */
+    private fun themes(content: LinearLayout) {
+        val compact = isCompactLayout
+        content.addView(label(getString(R.string.di_connect_themes), if (compact) 24 else 32, TEXT, true))
+        content.addView(label(getString(R.string.di_connect_themes_subtitle), 16, MUTED).apply {
+            setPadding(0, dp(6), 0, dp(SETTINGS_BLOCK_GAP_DP))
+        })
+        content.addView(row().apply {
+            listOf(R.string.di_connect_android_auto, R.string.di_connect_carplay).forEachIndexed { index, title ->
+                if (index > 0) addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                addView(button(getString(title), themesTab == index) { themesTab = index; render() },
+                    LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            }
+        })
+        val (name, description) = if (themesTab == 0)
+            R.string.di_connect_theme_modern to R.string.di_connect_theme_modern_description
+        else R.string.di_connect_theme_glass to R.string.di_connect_theme_glass_description
+        val card = card()
+        card.addView(row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(label(getString(name), 22, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
+            addView(label(getString(R.string.di_connect_theme_in_use), 15, ACCENT, true))
+        })
+        card.addView(label(getString(description), 16, MUTED).apply { setPadding(0, dp(8), 0, 0) })
+        content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+        content.addView(label(getString(R.string.di_connect_themes_more), 15, MUTED).apply {
+            setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
+        })
     }
 
     private fun connect(wireless: Boolean) {

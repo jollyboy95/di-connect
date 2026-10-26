@@ -1004,5 +1004,17 @@
     <string name="settings_di_connect_aa_phone_none">Не вибрано</string>
     <string name="settings_di_connect_aa_advanced">Додаткові налаштування Android Auto</string>
     <string name="settings_di_connect_open_with">Підключатися під час запуску через</string>
+    <string name="di_connect_themes">Теми</string>
+    <string name="di_connect_restart">Перезапуск</string>
+    <string name="di_connect_restart_title">Перезапустити Di-Connect?</string>
+    <string name="di_connect_restart_message">Зупиняє CarPlay і Android Auto, закриває панель приладів і проєкційний дисплей та знову відкриває Di-Connect. Використовуйте, якщо щось перестало відповідати.</string>
+    <string name="di_connect_carplay">CarPlay</string>
+    <string name="di_connect_themes_subtitle">Виберіть вигляд панелі приладів для кожного підключення.</string>
+    <string name="di_connect_theme_in_use">✓ Використовується</string>
+    <string name="di_connect_theme_modern">Modern</string>
+    <string name="di_connect_theme_modern_description">Стиль Android 17: темні плашки, смуга потоку батареї в реальному часі та темно-синє світіння за швидкістю.</string>
+    <string name="di_connect_theme_glass">Glass</string>
+    <string name="di_connect_theme_glass_description">Стиль iOS: матові панелі та власна картка маршруту Di-Connect.</string>
+    <string name="di_connect_themes_more">Незабаром з’являться нові теми. Разом із ними — одна тема для обох і попередній перегляд на панелі приладів.</string>
     <string name="di_connect_update_wrong_signer">Це завантаження не є збіркою Di-Connect, підписаною вашим ключем, тому його не встановлено.</string>
 </resources>
