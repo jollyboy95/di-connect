@@ -1407,6 +1407,112 @@ class GwmBatteryCurrentTest {
 }
 """)
 
+# Car hotspot robustness (Oct 2026). With the H7's AP band on "Both", Android bridges the two radios
+# as wifi_br0 and the name heuristic picked eth0.11; a stale manual override then waited forever for
+# an interface that no longer existed. Prefer the interface Android itself reports as tethering,
+# ignore an override that names a missing interface, and say plainly when the band is "Both".
+softap=dest/'src/main/java/com/andrerinas/openheadunit/connection/SoftApCredentialsProvider.kt'
+edit(softap,
+    ('    @Volatile private var reportedNoInterface = false\n',
+     '    @Volatile private var reportedNoInterface = false\n'
+     '    @Volatile private var reportedMissingOverride = false\n'
+     '    @Volatile private var reportedDualBand = false\n'),
+    ('        reportedNoInterface = false\n        resolveJob = scope.launch(',
+     '        reportedNoInterface = false\n        reportedMissingOverride = false\n        reportedDualBand = false\n        resolveJob = scope.launch('),
+    ("""            val match = candidates.firstOrNull { it.name.equals(named, ignoreCase = true) }
+            val picked = SoftApNetworkPolicy.pickApInterface(candidates, namedInterface = named)
+            when {
+                match == null ->
+                    AppLog.w("SoftApCredentials: Waiting for interface '$named'. Present: ${candidates.joinToString { it.name }}.")
+                picked == null ->
+                    AppLog.w("SoftApCredentials: Waiting for interface '$named' to be up with a private IPv4 address.")
+                else -> {
+                    AppLog.i("SoftApCredentials: Using '${picked.name}' (${picked.siteLocalIpv4}) as named in settings.")
+                    return ChosenInterface(picked, namedByUser = true)
+                }
+            }
+            return null
+        }
+""","""            val match = candidates.firstOrNull { it.name.equals(named, ignoreCase = true) }
+            if (match != null) {
+                val picked = SoftApNetworkPolicy.pickApInterface(candidates, namedInterface = named)
+                if (picked == null) {
+                    AppLog.w("SoftApCredentials: Waiting for interface '$named' to be up with a private IPv4 address.")
+                    return null
+                }
+                AppLog.i("SoftApCredentials: Using '${picked.name}' (${picked.siteLocalIpv4}) as named in settings.")
+                return ChosenInterface(picked, namedByUser = true)
+            }
+            // A name that does not exist at all is a stale setting (wifi_br0 after the band changed),
+            // not a hotspot that is still starting. Waiting for it can never succeed.
+            if (!reportedMissingOverride) {
+                reportedMissingOverride = true
+                AppLog.w("SoftApCredentials: Hotspot network interface '$named' does not exist on this device " +
+                    "(present: ${candidates.joinToString { it.name }}). Ignoring it and finding the hotspot automatically.")
+                showToastOnce("Hotspot network interface '$named' not found - finding the car hotspot automatically. " +
+                    "Clear it in Android Auto settings.")
+            }
+        }
+
+        tetheredAccessPoint(candidates)?.let { tethered ->
+            warnIfDualBand(tethered.name)
+            AppLog.i("SoftApCredentials: Using '${tethered.name}' (${tethered.siteLocalIpv4}), the interface Android reports as tethering.")
+            return ChosenInterface(tethered, namedByUser = false)
+        }
+"""),
+    ("""    /** Resolves the rest of the credentials for [iface] and hands them over. */""",
+     """    /**
+     * The access point Android itself reports as tethering, read from the sticky tether broadcast
+     * (the same evidence the CarPlay side uses). Name heuristics cannot see a bridge like wifi_br0.
+     */
+    private fun tetheredAccessPoint(candidates: List<ApInterfaceCandidate>): ApInterfaceCandidate? {
+        val tethered = try {
+            context.registerReceiver(null, IntentFilter("android.net.conn.TETHER_STATE_CHANGED"))
+                ?.getStringArrayListExtra("tetherArray").orEmpty()
+        } catch (e: Exception) {
+            emptyList<String>()
+        }
+        return tethered.asSequence()
+            .filterNot { name -> TETHER_NOT_WIFI.any { name.startsWith(it) } }
+            .mapNotNull { name -> candidates.firstOrNull { it.name == name } }
+            .firstOrNull { it.isUp && !it.isLoopback && it.siteLocalIpv4 != null }
+    }
+
+    /**
+     * A bridge over two or more radios is the car's "Both" band setting: one SSID per band behind
+     * one address. The phone is told one name and one radio address and does not join reliably,
+     * so ask for a single band instead of failing silently.
+     */
+    private fun warnIfDualBand(name: String) {
+        if (reportedDualBand) return
+        val radios = try {
+            val bridge = java.io.File("/sys/class/net/$name/brif")
+            if (!bridge.isDirectory) return
+            bridge.list().orEmpty().count { member ->
+                java.io.File("/sys/class/net/$member/wireless").exists() || member.startsWith("wlan")
+            }
+        } catch (e: Exception) {
+            return
+        }
+        if (radios < 2) return
+        reportedDualBand = true
+        AppLog.w("SoftApCredentials: '$name' bridges $radios radios - the car hotspot band is set to Both. " +
+            "Android Auto needs one band: set AP Band to 2.4 GHz or 5 GHz in the car's hotspot settings.")
+        showToastOnce("Car hotspot is on both bands. Set AP Band to 2.4 GHz or 5 GHz in the car's hotspot settings for Android Auto.")
+    }
+
+    private fun showToastOnce(message: String) {
+        Handler(Looper.getMainLooper()).post {
+            ToastUtils.showToast(context, message, Toast.LENGTH_LONG, force = true)
+        }
+    }
+
+    /** Resolves the rest of the credentials for [iface] and hands them over. */"""),
+    ('\n    companion object {\n',
+     '\n    companion object {\n'
+     '        /** Tethering that is not the car hotspot: USB, Bluetooth PAN and Ethernet sharing. */\n'
+     '        private val TETHER_NOT_WIFI = listOf("rndis", "usb", "ncm", "bt-pan", "bnep")\n'))
+
 # Android Auto-only luxury cluster skin. Preserve the donor CarPlay renderer byte-for-byte.
 skin = Path('target/_integration/GwmAndroidAutoClusterView.kt')
 require(skin.is_file(), 'Missing Android Auto cluster skin')

@@ -57,6 +57,8 @@ class SoftApCredentialsProvider(
 ) {
 
     companion object {
+        /** Tethering that is not the car hotspot: USB, Bluetooth PAN and Ethernet sharing. */
+        private val TETHER_NOT_WIFI = listOf("rndis", "usb", "ncm", "bt-pan", "bnep")
         /** How often to look for the access point while waiting for it to come up. */
         private const val POLL_INTERVAL_MS = 1_000L
 
@@ -96,6 +98,8 @@ class SoftApCredentialsProvider(
 
     /** So the once-per-second poll reports "nothing here" once, not thirty times. */
     @Volatile private var reportedNoInterface = false
+    @Volatile private var reportedMissingOverride = false
+    @Volatile private var reportedDualBand = false
 
     /**
      * When [start] was called, so the budget below measures the run rather than one look.
@@ -231,6 +235,8 @@ class SoftApCredentialsProvider(
         // sending the cached eth0 details again while this job looks for ap0.
         onInvalidated?.invoke()
         reportedNoInterface = false
+        reportedMissingOverride = false
+        reportedDualBand = false
         resolveJob = scope.launch(Dispatchers.IO + CoroutineName("SoftApCredentials-Resolve")) {
             val deadline = System.currentTimeMillis() + RESOLVE_BUDGET_MS
 
@@ -342,18 +348,30 @@ class SoftApCredentialsProvider(
         val named = settings.hotspotInterface.trim()
         if (named.isNotEmpty()) {
             val match = candidates.firstOrNull { it.name.equals(named, ignoreCase = true) }
-            val picked = SoftApNetworkPolicy.pickApInterface(candidates, namedInterface = named)
-            when {
-                match == null ->
-                    AppLog.w("SoftApCredentials: Waiting for interface '$named'. Present: ${candidates.joinToString { it.name }}.")
-                picked == null ->
+            if (match != null) {
+                val picked = SoftApNetworkPolicy.pickApInterface(candidates, namedInterface = named)
+                if (picked == null) {
                     AppLog.w("SoftApCredentials: Waiting for interface '$named' to be up with a private IPv4 address.")
-                else -> {
-                    AppLog.i("SoftApCredentials: Using '${picked.name}' (${picked.siteLocalIpv4}) as named in settings.")
-                    return ChosenInterface(picked, namedByUser = true)
+                    return null
                 }
+                AppLog.i("SoftApCredentials: Using '${picked.name}' (${picked.siteLocalIpv4}) as named in settings.")
+                return ChosenInterface(picked, namedByUser = true)
             }
-            return null
+            // A name that does not exist at all is a stale setting (wifi_br0 after the band changed),
+            // not a hotspot that is still starting. Waiting for it can never succeed.
+            if (!reportedMissingOverride) {
+                reportedMissingOverride = true
+                AppLog.w("SoftApCredentials: Hotspot network interface '$named' does not exist on this device " +
+                    "(present: ${candidates.joinToString { it.name }}). Ignoring it and finding the hotspot automatically.")
+                showToastOnce("Hotspot network interface '$named' not found - finding the car hotspot automatically. " +
+                    "Clear it in Android Auto settings.")
+            }
+        }
+
+        tetheredAccessPoint(candidates)?.let { tethered ->
+            warnIfDualBand(tethered.name)
+            AppLog.i("SoftApCredentials: Using '${tethered.name}' (${tethered.siteLocalIpv4}), the interface Android reports as tethering.")
+            return ChosenInterface(tethered, namedByUser = false)
         }
 
         val stationIpv4 = NetworkAddresses.stationIpv4(context)
@@ -382,6 +400,52 @@ class SoftApCredentialsProvider(
             )
         }
         return ChosenInterface(picked, namedByUser = false)
+    }
+
+    /**
+     * The access point Android itself reports as tethering, read from the sticky tether broadcast
+     * (the same evidence the CarPlay side uses). Name heuristics cannot see a bridge like wifi_br0.
+     */
+    private fun tetheredAccessPoint(candidates: List<ApInterfaceCandidate>): ApInterfaceCandidate? {
+        val tethered = try {
+            context.registerReceiver(null, IntentFilter("android.net.conn.TETHER_STATE_CHANGED"))
+                ?.getStringArrayListExtra("tetherArray").orEmpty()
+        } catch (e: Exception) {
+            emptyList<String>()
+        }
+        return tethered.asSequence()
+            .filterNot { name -> TETHER_NOT_WIFI.any { name.startsWith(it) } }
+            .mapNotNull { name -> candidates.firstOrNull { it.name == name } }
+            .firstOrNull { it.isUp && !it.isLoopback && it.siteLocalIpv4 != null }
+    }
+
+    /**
+     * A bridge over two or more radios is the car's "Both" band setting: one SSID per band behind
+     * one address. The phone is told one name and one radio address and does not join reliably,
+     * so ask for a single band instead of failing silently.
+     */
+    private fun warnIfDualBand(name: String) {
+        if (reportedDualBand) return
+        val radios = try {
+            val bridge = java.io.File("/sys/class/net/$name/brif")
+            if (!bridge.isDirectory) return
+            bridge.list().orEmpty().count { member ->
+                java.io.File("/sys/class/net/$member/wireless").exists() || member.startsWith("wlan")
+            }
+        } catch (e: Exception) {
+            return
+        }
+        if (radios < 2) return
+        reportedDualBand = true
+        AppLog.w("SoftApCredentials: '$name' bridges $radios radios - the car hotspot band is set to Both. " +
+            "Android Auto needs one band: set AP Band to 2.4 GHz or 5 GHz in the car's hotspot settings.")
+        showToastOnce("Car hotspot is on both bands. Set AP Band to 2.4 GHz or 5 GHz in the car's hotspot settings for Android Auto.")
+    }
+
+    private fun showToastOnce(message: String) {
+        Handler(Looper.getMainLooper()).post {
+            ToastUtils.showToast(context, message, Toast.LENGTH_LONG, force = true)
+        }
     }
 
     /** Resolves the rest of the credentials for [iface] and hands them over. */
