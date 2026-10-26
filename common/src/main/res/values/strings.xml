@@ -1095,4 +1095,5 @@
     <string name="settings_di_connect_aa_phone_none">Not chosen</string>
     <string name="settings_di_connect_aa_advanced">Advanced Android Auto settings</string>
     <string name="settings_di_connect_open_with">Connect on open with</string>
+    <string name="di_connect_update_wrong_signer">This download isn\'t a Di-Connect build signed with your key, so it wasn\'t installed.</string>
 </resources>

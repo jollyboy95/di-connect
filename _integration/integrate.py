@@ -485,7 +485,9 @@ shutil.copy2(src/'LICENSE',root/'LICENSE')
 
 (root/'common/src/test/java/com/shilapi/xcertplay/DiConnectHomeScreenshotsTest.kt').write_text('package com.shilapi.xcertplay\n\nimport android.graphics.Bitmap\nimport android.graphics.Canvas\nimport android.view.View\nimport android.view.ViewGroup\nimport android.widget.TextView\nimport com.shilapi.xcertplay.host.R\nimport java.io.File\nimport org.junit.Assert.assertEquals\nimport org.junit.Assert.assertTrue\nimport org.junit.Test\nimport org.junit.runner.RunWith\nimport org.robolectric.Robolectric\nimport org.robolectric.RobolectricTestRunner\nimport org.robolectric.RuntimeEnvironment\nimport org.robolectric.annotation.Config\nimport org.robolectric.annotation.GraphicsMode\nimport org.robolectric.util.ReflectionHelpers\n\n@RunWith(RobolectricTestRunner::class)\n@GraphicsMode(GraphicsMode.Mode.NATIVE)\nclass DiConnectHomeScreenshotsTest {\n    @Test @Config(sdk = [29], qualifiers = "en-w320dp-h700dp")\n    fun compactHomeAtLargeFont() = capture("compact-en")\n\n    @Test @Config(sdk = [29], qualifiers = "en-w1000dp-h700dp")\n    fun fullHomeAtLargeFont() = capture("full-en")\n\n    @Test @Config(sdk = [29], qualifiers = "ar-ldrtl-w320dp-h700dp")\n    fun compactRtlHomeAtLargeFont() = capture("compact-ar")\n\n    private fun capture(name: String) {\n        RuntimeEnvironment.setFontScale(1.5f)\n        val controller = Robolectric.buildActivity(DiPlayActivity::class.java).setup()\n        val activity = controller.get()\n        try {\n            ReflectionHelpers.setField(activity, "page", "home")\n            ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")\n            val root = activity.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)\n            val metrics = activity.resources.displayMetrics\n            val width = (activity.resources.configuration.screenWidthDp * metrics.density).toInt()\n            root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),\n                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))\n            root.layout(0, 0, width, root.measuredHeight)\n            val aa = descendants(root).filterIsInstance<TextView>().single {\n                it.text.toString() == activity.getString(R.string.di_connect_connect_android_auto)\n            }\n            assertTrue("Android Auto entry must be laid out", aa.width > 0 && aa.height > 0)\n            val layout = aa.layout\n            if (layout != null) for (line in 0 until layout.lineCount) {\n                assertEquals("Android Auto label must fit", 0, layout.getEllipsisCount(line))\n            }\n            val image = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)\n            try {\n                root.draw(Canvas(image))\n                val file = File("build/reports/di-connect-home/$name.png")\n                file.parentFile.mkdirs()\n                file.outputStream().use { assertTrue(image.compress(Bitmap.CompressFormat.PNG, 100, it)) }\n            } finally { image.recycle() }\n        } finally {\n            controller.pause().stop().destroy()\n            RuntimeEnvironment.setFontScale(1f)\n        }\n    }\n\n    private fun descendants(view: View): Sequence<View> = sequence {\n        yield(view)\n        if (view is ViewGroup) for (i in 0 until view.childCount) yieldAll(descendants(view.getChildAt(i)))\n    }\n}\n')
 
-edit(root/'common/src/main/java/com/shilapi/xcertplay/update/UpdateClient.kt',('repos/shihabal3amri/DiPlay/releases','repos/jollyboy95/di-connect/releases'))
+# Updates come from the public APK-only releases repository; the source repository stays private, and a
+# private repository's releases cannot be read by the car without a stored GitHub credential.
+edit(root/'common/src/main/java/com/shilapi/xcertplay/update/UpdateClient.kt',('repos/shihabal3amri/DiPlay/releases','repos/jollyboy95/di-connect-releases/releases'))
 # The donor's prebuilt APK belongs to D-Play; avoid presenting it as a Di-Connect build.
 for name in ['DiPlay-GWM-H7-arm64-debug.apk','DiPlay-GWM-H7-arm64-debug.apk.sha256']:
     (root/name).unlink(missing_ok=True)
@@ -1399,3 +1401,135 @@ for patch in json.loads(Path('target/_integration/report-export-patches.json').r
     edit(root/patch['path'], (patch['old'], patch['new'], patch['count']))
 (root/'android-auto/src/test/java/com/andrerinas/openheadunit/utils/PrivateDiagnosticExportTest.kt').write_text(
     Path('target/_integration/PrivateDiagnosticExportTest.kt').read_text())
+
+
+# ---- Built-in updater for Di-Connect preview builds ------------------------------------------------
+# Preview builds share versionName 0.1.0 and differ by the CI revision (".r<revision>", also in the
+# versionCode). A newer revision of the same version is an update.
+edit(root/'common/src/main/java/com/shilapi/xcertplay/update/UpdateVersion.kt',
+    ("""    private val TRIPLE = Regex("(\\\\d+)\\\\.(\\\\d+)\\\\.(\\\\d+)")
+""","""    private val TRIPLE = Regex("(\\\\d+)\\\\.(\\\\d+)\\\\.(\\\\d+)")
+    /** Di-Connect preview revision, as in 0.1.0-preview.r25625761. */
+    private val REVISION = Regex("[.-]r(\\\\d+)\\\\b")
+
+    internal fun revision(value: String): Long? = REVISION.find(value)?.groupValues?.get(1)?.toLongOrNull()
+"""),
+    ("""        return target.third > current.third
+""","""        if (target.third != current.third) return target.third > current.third
+        // Same version: a later Di-Connect preview revision is newer; without revisions it is the same.
+        val remoteRevision = revision(remote) ?: return false
+        val installedRevision = revision(installed) ?: return false
+        return remoteRevision > installedRevision
+"""))
+(root/'common/src/main/java/com/shilapi/xcertplay/update/UpdateSignature.kt').write_text("""package com.shilapi.xcertplay.update
+
+import android.content.Context
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
+import android.os.Build
+import java.io.File
+import java.security.MessageDigest
+
+/**
+ * A downloaded update is installed only when it is this app (same package) signed by this app's own
+ * key, so an update can never replace Di-Connect with a different app or a differently signed build,
+ * and Android keeps the settings when it installs over the top.
+ */
+internal object UpdateSignature {
+    fun matchesInstalled(context: Context, apk: File): Boolean {
+        val pm = context.packageManager
+        val archive = archiveInfo(pm, apk) ?: return false
+        if (archive.packageName != context.packageName) return false
+        val installed = installedInfo(pm, context.packageName) ?: return false
+        return sameSigners(signers(archive), signers(installed))
+    }
+
+    /** SHA-256 digests of each signing certificate; equal non-empty sets mean the same key. */
+    internal fun sameSigners(update: Set<String>, installed: Set<String>): Boolean =
+        update.isNotEmpty() && update == installed
+
+    @Suppress("DEPRECATION")
+    private fun archiveInfo(pm: PackageManager, apk: File): PackageInfo? {
+        val flags = if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
+        return pm.getPackageArchiveInfo(apk.path, flags)?.takeIf { signers(it).isNotEmpty() }
+            ?: pm.getPackageArchiveInfo(apk.path, PackageManager.GET_SIGNATURES)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun installedInfo(pm: PackageManager, packageName: String): PackageInfo? = runCatching {
+        val flags = if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
+        pm.getPackageInfo(packageName, flags)
+    }.getOrNull()
+
+    @Suppress("DEPRECATION")
+    private fun signers(info: PackageInfo): Set<String> {
+        val certificates = if (Build.VERSION.SDK_INT >= 28 && info.signingInfo != null) {
+            val signing = info.signingInfo!!
+            if (signing.hasMultipleSigners()) signing.apkContentsSigners else signing.signingCertificateHistory
+        } else info.signatures
+        return certificates.orEmpty().mapNotNull { it?.toByteArray() }.map(::sha256).toSet()
+    }
+
+    private fun sha256(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+}
+""")
+edit(D,("""                if (!UpdateChecksums.matches(expected, release.apkName, actual)) {
+                    throw IOException("Checksum mismatch for ${release.apkName}")
+                }
+""","""                if (!UpdateChecksums.matches(expected, release.apkName, actual)) {
+                    throw IOException("Checksum mismatch for ${release.apkName}")
+                }
+                // Same app, same signing key: anything else is refused before the installer opens.
+                if (!UpdateSignature.matchesInstalled(applicationContext, apkFile)) {
+                    throw IOException(getString(R.string.di_connect_update_wrong_signer))
+                }
+"""))
+UPDATE_SIGNER_TEXT={
+ 'values':"This download isn\\'t a Di-Connect build signed with your key, so it wasn\\'t installed.",
+ 'values-ar':'هذا التنزيل ليس إصدارًا من Di-Connect موقّعًا بمفتاحك، لذلك لم يُثبَّت.',
+ 'values-es':'Esta descarga no es una versión de Di-Connect firmada con tu clave, así que no se instaló.',
+ 'values-it':"Questo download non è una build di Di-Connect firmata con la tua chiave, quindi non è stato installato.",
+ 'values-ja':'このダウンロードはあなたの鍵で署名された Di-Connect ではないため、インストールしませんでした。',
+ 'values-ru':'Эта загрузка не является сборкой Di-Connect, подписанной вашим ключом, поэтому она не установлена.',
+ 'values-uk':'Це завантаження не є збіркою Di-Connect, підписаною вашим ключем, тому його не встановлено.',
+ 'values-zh-rCN':'此下载不是用你的密钥签名的 Di-Connect 版本，因此未安装。',
+ 'values-zh-rTW':'此下載不是用你的金鑰簽署的 Di-Connect 版本，因此未安裝。',
+}
+require(sorted(UPDATE_SIGNER_TEXT)==sorted(p.parent.name for p in STRINGS),'D-Play locales changed')
+for p in STRINGS:
+    edit(p,('</resources>',f'    <string name="di_connect_update_wrong_signer">{UPDATE_SIGNER_TEXT[p.parent.name]}</string>\n</resources>'))
+(root/'common/src/test/java/com/shilapi/xcertplay/update/DiConnectUpdateTest.kt').write_text("""package com.shilapi.xcertplay.update
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class DiConnectUpdateTest {
+    @Test fun aLaterPreviewRevisionIsAnUpdate() {
+        assertTrue(UpdateVersion.isNewer("v0.1.0-preview.r25700000", "0.1.0-preview.r25625761"))
+    }
+
+    @Test fun theSameOrAnEarlierRevisionIsNot() {
+        assertFalse(UpdateVersion.isNewer("v0.1.0-preview.r25625761", "0.1.0-preview.r25625761"))
+        assertFalse(UpdateVersion.isNewer("v0.1.0-preview.r25600000", "0.1.0-preview.r25625761"))
+    }
+
+    @Test fun aHigherVersionStillWinsWhateverTheRevision() {
+        assertTrue(UpdateVersion.isNewer("v0.2.0-preview.r1", "0.1.0-preview.r25625761"))
+        assertFalse(UpdateVersion.isNewer("v0.1.0-preview.r99999999", "0.2.0-preview.r1"))
+    }
+
+    @Test fun releaseCandidatesAreNotRevisions() {
+        assertEquals(null, UpdateVersion.revision("0.2.14-rc.1"))
+        assertFalse(UpdateVersion.isNewer("0.2.14-rc.1", "0.2.14"))
+    }
+
+    @Test fun onlyTheSameSigningKeyMatches() {
+        assertTrue(UpdateSignature.sameSigners(setOf("aa"), setOf("aa")))
+        assertFalse(UpdateSignature.sameSigners(setOf("bb"), setOf("aa")))
+        assertFalse(UpdateSignature.sameSigners(emptySet(), emptySet()))
+    }
+}
+""")

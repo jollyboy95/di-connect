@@ -1094,4 +1094,5 @@
     <string name="settings_di_connect_aa_phone_none">未選択</string>
     <string name="settings_di_connect_aa_advanced">Android Auto の詳細設定</string>
     <string name="settings_di_connect_open_with">起動時に接続する方式</string>
+    <string name="di_connect_update_wrong_signer">このダウンロードはあなたの鍵で署名された Di-Connect ではないため、インストールしませんでした。</string>
 </resources>

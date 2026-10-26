@@ -1052,4 +1052,5 @@
     <string name="settings_di_connect_aa_phone_none">未選擇</string>
     <string name="settings_di_connect_aa_advanced">Android Auto 進階設定</string>
     <string name="settings_di_connect_open_with">開啟時連接</string>
+    <string name="di_connect_update_wrong_signer">此下載不是用你的金鑰簽署的 Di-Connect 版本，因此未安裝。</string>
 </resources>

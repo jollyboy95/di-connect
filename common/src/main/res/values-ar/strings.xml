@@ -1041,4 +1041,5 @@
     <string name="settings_di_connect_aa_phone_none">لم يُختر</string>
     <string name="settings_di_connect_aa_advanced">إعدادات Android Auto المتقدمة</string>
     <string name="settings_di_connect_open_with">الاتصال عند الفتح باستخدام</string>
+    <string name="di_connect_update_wrong_signer">هذا التنزيل ليس إصدارًا من Di-Connect موقّعًا بمفتاحك، لذلك لم يُثبَّت.</string>
 </resources>

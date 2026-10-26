@@ -992,4 +992,5 @@
     <string name="settings_di_connect_aa_phone_none">Sin elegir</string>
     <string name="settings_di_connect_aa_advanced">Ajustes avanzados de Android Auto</string>
     <string name="settings_di_connect_open_with">Conectar al abrir con</string>
+    <string name="di_connect_update_wrong_signer">Esta descarga no es una versión de Di-Connect firmada con tu clave, así que no se instaló.</string>
 </resources>

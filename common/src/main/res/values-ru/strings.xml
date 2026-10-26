@@ -992,4 +992,5 @@
     <string name="settings_di_connect_aa_phone_none">Не выбран</string>
     <string name="settings_di_connect_aa_advanced">Дополнительные настройки Android Auto</string>
     <string name="settings_di_connect_open_with">Подключаться при запуске через</string>
+    <string name="di_connect_update_wrong_signer">Эта загрузка не является сборкой Di-Connect, подписанной вашим ключом, поэтому она не установлена.</string>
 </resources>
