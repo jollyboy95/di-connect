@@ -83,5 +83,25 @@ class GwmAndroidAutoHudRenderTest {
         assertEquals(0, Color.alpha(bitmap.getPixel(60, 170)))
         bitmap.recycle()
     }
+
+    @Test fun withoutArrivalTheArrowAndDistanceFillTheWindow() {
+        val view = GwmAndroidAutoHeadUpView(RuntimeEnvironment.getApplication())
+        view.setAnchor(GwmAndroidAutoHeadUpView.Anchor.LEFT)
+        view.setGuidance(ClusterTurnGuidance(3, 0, 300, ""))
+        view.measure(View.MeasureSpec.makeMeasureSpec(480, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(240, View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, 480, 240)
+        val bitmap = Bitmap.createBitmap(480, 240, Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(Color.TRANSPARENT)
+        view.draw(Canvas(bitmap))
+        var top = 240; var bottom = 0
+        for (y in 0 until 240) for (x in 0 until 480) {
+            val alpha = Color.alpha(bitmap.getPixel(x, y))
+            if (x >= 120 || y < 100 || y >= 188) assertEquals("Outside HUD aperture $x,$y", 0, alpha)
+            if (alpha > 0) { top = minOf(top, y); bottom = maxOf(bottom, y) }
+        }
+        assertTrue("arrow and distance should use most of the window height, used ${bottom - top}", bottom - top > 60)
+        bitmap.recycle()
+    }
 }
 
