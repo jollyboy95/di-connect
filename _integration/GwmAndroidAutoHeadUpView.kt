@@ -156,13 +156,14 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         val boxH = bottom - top
         if (eta == null) {
             // Nothing for a second line: give the whole window to a large arrow over a large distance.
-            val big = minOf(boxH * 0.6f, boxW * 0.62f)
+            val big = minOf(boxH * 0.55f, boxW * 0.62f)
             glyph = glyphFor(next)
             val gx = left + (boxW - big) / 2f
             glyph?.setBounds(gx.toInt(), top.toInt(), (gx + big).toInt(), (top + big).toInt())
             glyph?.draw(canvas)
             distancePaint.textAlign = Paint.Align.CENTER
-            distancePaint.textSize = (boxH - big) * 0.92f
+            // Digits are about 0.7 of the type size tall, so this fills the space under the arrow.
+            distancePaint.textSize = (boxH - big) * 1.25f
             while (distancePaint.textSize > 8f && distancePaint.measureText(distance) > boxW) distancePaint.textSize *= 0.92f
             val lineTop = top + big
             canvas.drawText(distance, left + boxW / 2f, lineTop + (bottom - lineTop) / 2f - (distancePaint.descent() + distancePaint.ascent()) / 2f, distancePaint)
