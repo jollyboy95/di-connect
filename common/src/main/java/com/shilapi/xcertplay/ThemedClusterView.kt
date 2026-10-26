@@ -108,9 +108,12 @@ internal class ThemedClusterView(
         if (w <= 0f || h <= 0f) return
         if (theme.dim > 0) canvas.drawColor(Color.argb(theme.dim, 0, 0, 0))
         val showMusic = preview || AirPlayPersistence.loadGwmMusicCard(context)
-        if (theme.layout == ClusterTheme.Layout.MONO_LINE) {
-            drawMonoLine(canvas, w, h, showMusic)
-        } else {
+        when (theme.layout) {
+            ClusterTheme.Layout.MONO_LINE -> drawMonoLine(canvas, w, h, showMusic)
+            ClusterTheme.Layout.TWIN_DIALS -> drawTwinDials(canvas, w, h, showMusic)
+            ClusterTheme.Layout.SIDEBAR -> drawSidebar(canvas, w, h, showMusic)
+            ClusterTheme.Layout.DECK -> drawDeck(canvas, w, h, showMusic)
+            ClusterTheme.Layout.CLASSIC -> {
             drawHeader(canvas, w, h)
             snapshot?.let { data ->
                 drawSpeed(canvas, w, h, data.speedKph)
@@ -118,6 +121,7 @@ internal class ThemedClusterView(
                 drawBottomRow(canvas, w, h, data)
             } ?: drawFlow(canvas, w, h, null)
             if (showMusic) drawMusic(canvas, w, h)
+            }
         }
         if (connection == ClusterConnection.CARPLAY) guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it) }
     }
@@ -207,6 +211,11 @@ internal class ThemedClusterView(
                 canvas.restore()
                 line.color = theme.edge; line.strokeWidth = 1f * s; canvas.drawRoundRect(box, radius, radius, line)
             }
+            ClusterTheme.Panel.LCD -> {
+                val r = radius * .5f
+                fill.color = theme.surface; canvas.drawRoundRect(box, r, r, fill)
+                line.color = theme.edge; line.strokeWidth = 3f * s; canvas.drawRoundRect(box, r, r, line)
+            }
             ClusterTheme.Panel.BONE -> {
                 bone(canvas, box.left - 2f * s, box.top - 2f * s, box.right + 2f * s, box.bottom + 2f * s, theme.edge)
                 bone(canvas, box.left, box.top, box.right, box.bottom, theme.surface)
@@ -263,7 +272,8 @@ internal class ThemedClusterView(
     private fun coverBottom(normal: Float) =
         if (connection == ClusterConnection.ANDROID_AUTO) maxOf(normal, AA_LABEL_COVER) else normal
 
-    private val speedCard get() = theme.speed == ClusterTheme.Speed.HEADED || theme.speed == ClusterTheme.Speed.DOTS
+    private val speedCard get() = theme.speed == ClusterTheme.Speed.HEADED || theme.speed == ClusterTheme.Speed.DOTS ||
+        theme.speed == ClusterTheme.Speed.SEGMENT
 
     private fun drawSpeed(canvas: Canvas, w: Float, h: Float, speedKph: Float?) {
         val s = h / 720f
@@ -347,6 +357,12 @@ internal class ThemedClusterView(
                 val p = .024f * h
                 dotDigits(canvas, value, cx - (value.length * 6 - 1) * p / 2f, .27f * h, p, theme.text)
                 type(.024f * h, theme.secondary, 400, Paint.Align.CENTER); canvas.drawText("KM/H", cx, .5f * h, text)
+            }
+            ClusterTheme.Speed.SEGMENT -> {
+                rect.set(.05f * w, .2f * h, .25f * w, coverBottom(.72f) * h)
+                panel(canvas, rect, .03f * h)
+                segmentDigits(canvas, value.replace('—', '-'), cx, .25f * h, .2f * h)
+                type(.024f * h, theme.secondary, 700, Paint.Align.CENTER, .2f); canvas.drawText("KM/H", cx, .51f * h, text)
             }
             ClusterTheme.Speed.DOG_TAG -> {
                 val ty = .43f * h
@@ -531,6 +547,20 @@ internal class ThemedClusterView(
                 }
                 left = "CHG"; right = "PWR"
             }
+            ClusterTheme.Flow.SEGMENT -> {
+                val n = 16
+                val seg = (r - l) / n
+                val lit = (f * n / 2f).roundToInt()
+                val ghost = Color.argb(30, Color.red(theme.text), Color.green(theme.text), Color.blue(theme.text))
+                for (i in 0 until n) {
+                    val off = i - n / 2
+                    val on = kw != null && ((lit > 0 && off in 0 until lit) || (lit < 0 && off in lit until 0))
+                    fill.color = if (on) theme.text else ghost
+                    canvas.drawRect(l + i * seg + 2f * s, y - 10f * s, l + (i + 1) * seg - 2f * s, y + 10f * s, fill)
+                }
+                fill.color = theme.text; canvas.drawRect(mid - 1.5f * s, y - 16f * s, mid + 1.5f * s, y + 16f * s, fill)
+                left = "CHG"; right = "PWR"
+            }
             ClusterTheme.Flow.PAWS -> {
                 rect.set(l - 30f * s, y - 30f * s, r + 30f * s, coverBottom(y / h + .09f) * h)
                 fill.color = theme.surface; canvas.drawRoundRect(rect, 24f * s, 24f * s, fill)
@@ -709,6 +739,275 @@ internal class ThemedClusterView(
         }
     }
 
+    // ---- twin dials ------------------------------------------------------------------------
+
+    /** Two round instruments on the left, a speedometer and a charge/power meter, like a classic cluster. */
+    private fun drawTwinDials(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        val s = h / 720f
+        drawHeader(canvas, w, h)
+        val data = snapshot
+        // Speedometer: 0-200 over 240 degrees.
+        val scx = .125f * w
+        val scy = .41f * h
+        val sr = .24f * h
+        dialFace(canvas, scx, scy, sr)
+        val speed = data?.speedKph
+        val a0 = Math.toRadians(150.0)
+        val sweep = Math.toRadians(240.0)
+        for (v in 0..200 step 10) {
+            val a = a0 + sweep * v / 200.0
+            val major = v % 20 == 0
+            line.shader = null; line.color = if (speed != null && v <= speed) theme.accent else theme.secondary
+            line.strokeWidth = (if (major) 3f else 1.5f) * s
+            val outer = sr - 12f * s
+            val inner = outer - (if (major) 22f else 12f) * s
+            canvas.drawLine(scx + cos(a).toFloat() * outer, scy + sin(a).toFloat() * outer,
+                scx + cos(a).toFloat() * inner, scy + sin(a).toFloat() * inner, line)
+            if (major && v % 40 == 0) {
+                type(.026f * h, theme.secondary, 500, Paint.Align.CENTER)
+                val tr = inner - 22f * s
+                canvas.drawText(v.toString(), scx + cos(a).toFloat() * tr, scy + sin(a).toFloat() * tr + .009f * h, text)
+            }
+        }
+        needle(canvas, scx, scy, sr - 20f * s, a0 + sweep * ((speed ?: 0f).coerceIn(0f, 200f) / 200f))
+        type(.075f * h, theme.text, 700, Paint.Align.CENTER)
+        canvas.drawText(speed?.roundToInt()?.toString() ?: "—", scx, scy + .14f * h, text)
+        type(.02f * h, theme.secondary, 600, Paint.Align.CENTER, .15f)
+        canvas.drawText("KM/H", scx, scy + .175f * h, text)
+
+        // Charge / power meter: needle up at zero, left for charge, right for power.
+        val pcx = .29f * w
+        val pcy = .47f * h
+        val pr = .155f * h
+        dialFace(canvas, pcx, pcy, pr)
+        val kw = data?.batteryCurrentA?.let { GwmAndroidAutoClusterView.batteryKw(it) }
+        val f = ((kw ?: 0f) / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f)
+        val up = Math.toRadians(270.0)
+        val half = Math.toRadians(110.0)
+        line.shader = null; line.strokeWidth = 7f * s; line.strokeCap = Paint.Cap.BUTT
+        val arc = RectF(pcx - pr + 18f * s, pcy - pr + 18f * s, pcx + pr - 18f * s, pcy + pr - 18f * s)
+        line.color = Color.argb(60, Color.red(theme.charge), Color.green(theme.charge), Color.blue(theme.charge))
+        canvas.drawArc(arc, 160f, 110f, false, line)
+        line.color = Color.argb(60, Color.red(theme.accent), Color.green(theme.accent), Color.blue(theme.accent))
+        canvas.drawArc(arc, 270f, 110f, false, line)
+        if (kw != null && f != 0f) {
+            line.color = if (f > 0) theme.accent else theme.charge
+            canvas.drawArc(arc, 270f, (110f * f), false, line)
+        }
+        line.strokeCap = Paint.Cap.ROUND
+        needle(canvas, pcx, pcy, pr - 26f * s, up + half * f)
+        type(.017f * h, theme.charge, 700, Paint.Align.LEFT, .12f)
+        canvas.drawText("CHG", pcx - pr + 26f * s, pcy + .07f * h, text)
+        type(.017f * h, theme.accent, 700, Paint.Align.RIGHT, .12f)
+        canvas.drawText("PWR", pcx + pr - 26f * s, pcy + .07f * h, text)
+        type(.03f * h, theme.text, 700, Paint.Align.CENTER)
+        canvas.drawText(kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", pcx, pcy + .1f * h, text)
+        data?.let { drawBottomRow(canvas, w, h, it) }
+        if (showMusic) drawMusic(canvas, w, h)
+    }
+
+    private fun dialFace(canvas: Canvas, cx: Float, cy: Float, r: Float) {
+        val s = height / 720f
+        fill.shader = RadialGradient(cx, cy - r * .3f, r * 1.2f, theme.surface,
+            Color.argb(Color.alpha(theme.surface), 0, 0, 0), Shader.TileMode.CLAMP)
+        canvas.drawCircle(cx, cy, r, fill); fill.shader = null
+        line.shader = null; line.color = theme.edge; line.strokeWidth = 3f * s; canvas.drawCircle(cx, cy, r, line)
+        line.strokeWidth = 1f * s; canvas.drawCircle(cx, cy, r - 7f * s, line)
+    }
+
+    private fun needle(canvas: Canvas, cx: Float, cy: Float, length: Float, angle: Double) {
+        val s = height / 720f
+        val tx = cx + cos(angle).toFloat() * length
+        val ty = cy + sin(angle).toFloat() * length
+        line.shader = null
+        line.color = Color.argb(70, Color.red(theme.accent), Color.green(theme.accent), Color.blue(theme.accent))
+        line.strokeWidth = 10f * s; canvas.drawLine(cx, cy, tx, ty, line)
+        line.color = theme.accent; line.strokeWidth = 4f * s; canvas.drawLine(cx, cy, tx, ty, line)
+        fill.shader = null; fill.color = theme.text; canvas.drawCircle(cx, cy, 9f * s, fill)
+        fill.color = theme.surface; canvas.drawCircle(cx, cy, 4f * s, fill)
+    }
+
+    // ---- sidebar ---------------------------------------------------------------------------
+
+    /** One solid column down the left edge holds everything; the rest of the screen is map. */
+    private fun drawSidebar(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        val s = h / 720f
+        val right = SIDEBAR_RIGHT * w
+        fill.shader = LinearGradient(0f, 0f, right, 0f, theme.surface,
+            Color.argb(Color.alpha(theme.surface), Color.red(theme.surface) * 3 / 4, Color.green(theme.surface) * 3 / 4,
+                Color.blue(theme.surface) * 3 / 4), Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, 0f, right, h, fill); fill.shader = null
+        fill.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(Color.TRANSPARENT, theme.accent, Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
+        canvas.drawRect(right - 3f * s, 0f, right, h, fill); fill.shader = null
+        val left = .02f * w
+        val inner = right - .02f * w
+        val data = snapshot
+        // Time and temperature.
+        type(.05f * h, theme.text, 600); canvas.drawText(SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()), left, .09f * h, text)
+        data?.outsideTempC?.let { type(.032f * h, theme.secondary, 500, Paint.Align.RIGHT); canvas.drawText("${it.roundToInt()}°C", inner, .09f * h, text) }
+        divider(canvas, left, inner, .125f * h)
+        // Speed.
+        sideLabel(canvas, context.getString(R.string.di_connect_theme_speed), left, .175f * h)
+        type(.17f * h, theme.text, 800)
+        val speed = data?.speedKph?.roundToInt()?.toString() ?: "—"
+        canvas.drawText(speed, left - 4f * s, .335f * h, text)
+        val sw = text.measureText(speed)
+        type(.03f * h, theme.secondary, 600); canvas.drawText("km/h", left + sw + 6f * s, .335f * h, text)
+        divider(canvas, left, inner, .375f * h)
+        // Power.
+        val kw = data?.batteryCurrentA?.let { GwmAndroidAutoClusterView.batteryKw(it) }
+        sideLabel(canvas, "POWER", left, .425f * h)
+        type(.036f * h, when { kw == null -> theme.secondary; kw >= 0 -> theme.accent; else -> theme.charge }, 700, Paint.Align.RIGHT)
+        canvas.drawText(kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", inner, .43f * h, text)
+        val mid = (left + inner) / 2f
+        rect.set(left, .465f * h, inner, .465f * h + 10f * s); fill.color = Color.argb(46, 255, 255, 255)
+        canvas.drawRoundRect(rect, 5f * s, 5f * s, fill)
+        if (kw != null) {
+            val fx = mid + (inner - left) / 2f * (kw / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f)
+            rect.set(minOf(mid, fx), .465f * h, maxOf(mid, fx), .465f * h + 10f * s)
+            fill.color = if (kw >= 0) theme.accent else theme.charge; canvas.drawRoundRect(rect, 5f * s, 5f * s, fill)
+        }
+        fill.color = theme.text; canvas.drawRect(mid - 1.5f * s, .455f * h, mid + 1.5f * s, .465f * h + 20f * s, fill)
+        divider(canvas, left, inner, .53f * h)
+        // Fuel and range.
+        sideLabel(canvas, "FUEL", left, .58f * h)
+        val fuel = data?.fuelPercent
+        type(.036f * h, theme.text, 700, Paint.Align.RIGHT)
+        canvas.drawText(listOfNotNull(fuel?.let { "${it.roundToInt()}%" }, data?.rangeKm?.let { "${it.roundToInt()} km" })
+            .joinToString("  ").ifEmpty { "—" }, inner, .585f * h, text)
+        rect.set(left, .62f * h, inner, .62f * h + 10f * s); fill.color = Color.argb(46, 255, 255, 255)
+        canvas.drawRoundRect(rect, 5f * s, 5f * s, fill)
+        if (fuel != null) {
+            rect.right = left + (inner - left) * (fuel / 100f).coerceIn(.03f, 1f)
+            fill.color = if (fuel < 15f) Color.rgb(255, 159, 10) else theme.charge; canvas.drawRoundRect(rect, 5f * s, 5f * s, fill)
+        }
+        data?.odometerKm?.let {
+            type(.024f * h, theme.secondary, 500)
+            canvas.drawText("ODO  " + NumberFormat.getIntegerInstance().format(it.roundToInt()) + " km", left, .69f * h, text)
+        }
+        divider(canvas, left, inner, .735f * h)
+        // Now playing.
+        if (showMusic) music.info.title?.takeIf { it.isNotBlank() }?.let { title ->
+            val side = .15f * h
+            rect.set(left, .77f * h, left + side, .77f * h + side)
+            val cover = music.artwork?.takeUnless(Bitmap::isRecycled)
+            canvas.save(); path.reset(); path.addRoundRect(rect, 10f * s, 10f * s, Path.Direction.CW); canvas.clipPath(path)
+            if (cover != null) canvas.drawBitmap(cover, null, rect, art) else { fill.color = Color.argb(60, 255, 255, 255); canvas.drawRect(rect, fill) }
+            canvas.restore()
+            val tx = left + side + .012f * w
+            val tw = inner - tx
+            type(.03f * h, theme.text, 700); canvas.drawText(fit(title, tw), tx, .82f * h, text)
+            music.info.artist?.takeIf { it.isNotBlank() }?.let { type(.024f * h, theme.secondary, 500); canvas.drawText(fit(it, tw), tx, .865f * h, text) }
+            progress()?.let { done ->
+                rect.set(tx, .895f * h, inner, .895f * h + 4f * s); fill.color = Color.argb(50, 255, 255, 255); canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
+                rect.right = tx + tw * done; fill.color = theme.accent; canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
+            }
+        }
+    }
+
+    private fun divider(canvas: Canvas, left: Float, right: Float, y: Float) {
+        fill.shader = null; fill.color = theme.edge; canvas.drawRect(left, y, right, y + height / 720f, fill)
+    }
+
+    private fun sideLabel(canvas: Canvas, label: String, x: Float, y: Float) {
+        type(.019f * height, theme.secondary, 700, Paint.Align.LEFT, .18f); canvas.drawText(label.uppercase(), x, y, text)
+    }
+
+    // ---- bottom deck -----------------------------------------------------------------------
+
+    /** A console along the bottom edge with a raised centre for the speed; the top stays map. */
+    private fun drawDeck(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        val s = h / 720f
+        val top = DECK_TOP * h
+        val hump = DECK_HUMP * h
+        path.reset()
+        path.moveTo(0f, top); path.lineTo(.33f * w, top)
+        path.cubicTo(.36f * w, top, .36f * w, hump, .39f * w, hump)
+        path.lineTo(.61f * w, hump)
+        path.cubicTo(.64f * w, hump, .64f * w, top, .67f * w, top)
+        path.lineTo(w, top); path.lineTo(w, h); path.lineTo(0f, h); path.close()
+        fill.shader = LinearGradient(0f, hump, 0f, h, theme.surface,
+            Color.argb(Color.alpha(theme.surface), Color.red(theme.surface) / 2, Color.green(theme.surface) / 2, Color.blue(theme.surface) / 2),
+            Shader.TileMode.CLAMP)
+        canvas.drawPath(path, fill); fill.shader = null
+        line.shader = LinearGradient(0f, 0f, w, 0f, intArrayOf(Color.TRANSPARENT, theme.accent, theme.accent, Color.TRANSPARENT),
+            floatArrayOf(0f, .3f, .7f, 1f), Shader.TileMode.CLAMP)
+        line.strokeWidth = 2.5f * s; canvas.drawPath(path, line); line.shader = null
+        val data = snapshot
+        // Speed in the raised centre.
+        type(.13f * h, theme.text, 800, Paint.Align.CENTER)
+        canvas.drawText(data?.speedKph?.roundToInt()?.toString() ?: "—", .5f * w, .89f * h, text)
+        type(.022f * h, theme.secondary, 600, Paint.Align.CENTER, .2f); canvas.drawText("KM/H", .5f * w, .94f * h, text)
+        // Left wing: power, then fuel.
+        val rowOne = .9f * h
+        val rowTwo = .96f * h
+        val kw = data?.batteryCurrentA?.let { GwmAndroidAutoClusterView.batteryKw(it) }
+        val l = .03f * w
+        val r = .2f * w
+        val mid = (l + r) / 2f
+        rect.set(l, rowOne - 12f * s, r, rowOne - 4f * s); fill.color = Color.argb(46, 255, 255, 255); canvas.drawRoundRect(rect, 4f * s, 4f * s, fill)
+        if (kw != null) {
+            val fx = mid + (r - l) / 2f * (kw / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f)
+            rect.set(minOf(mid, fx), rowOne - 12f * s, maxOf(mid, fx), rowOne - 4f * s)
+            fill.color = if (kw >= 0) theme.accent else theme.charge; canvas.drawRoundRect(rect, 4f * s, 4f * s, fill)
+        }
+        fill.color = theme.text; canvas.drawRect(mid - 1f * s, rowOne - 18f * s, mid + 1f * s, rowOne + 2f * s, fill)
+        type(.03f * h, when { kw == null -> theme.secondary; kw >= 0 -> theme.accent; else -> theme.charge }, 700)
+        canvas.drawText(kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", r + .012f * w, rowOne, text)
+        drawPump(canvas, l, rowTwo - .03f * h, .03f * h)
+        type(.03f * h, theme.text, 600)
+        canvas.drawText(listOfNotNull(data?.fuelPercent?.let { "${it.roundToInt()}%" }, data?.rangeKm?.let { "${it.roundToInt()} km" })
+            .joinToString("  ·  ").ifEmpty { "—" }, l + .03f * h, rowTwo, text)
+        // Right wing: now playing, then clock, temperature and odometer.
+        val rl = .7f * w
+        val rr = .97f * w
+        if (showMusic) music.info.title?.takeIf { it.isNotBlank() }?.let { title ->
+            type(.03f * h, theme.text, 700)
+            val shown = fit(listOfNotNull(title, music.info.artist?.takeIf { it.isNotBlank() }).joinToString(" — "), rr - rl)
+            canvas.drawText(shown, rl, rowOne, text)
+        }
+        type(.026f * h, theme.secondary, 500)
+        val info = listOfNotNull(SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()),
+            data?.outsideTempC?.let { "${it.roundToInt()}°C" },
+            data?.odometerKm?.let { "ODO " + NumberFormat.getIntegerInstance().format(it.roundToInt()) + " km" }).joinToString("   ")
+        canvas.drawText(fit(info, rr - rl), rl, rowTwo, text)
+    }
+
+    // ---- segment display -------------------------------------------------------------------
+
+    /** Seven-segment digits with faint unlit segments behind them, like an old LCD or VFD. */
+    private fun segmentDigits(canvas: Canvas, value: String, cx: Float, top: Float, digitH: Float) {
+        val dw = digitH * .52f
+        val gap = digitH * .14f
+        val t = digitH * .11f
+        val total = value.length * dw + (value.length - 1) * gap
+        var x = cx - total / 2f
+        val ghost = Color.argb(30, Color.red(theme.text), Color.green(theme.text), Color.blue(theme.text))
+        for (c in value) {
+            val lit = SEGMENTS[c] ?: ""
+            for (seg in "abcdefg") segment(canvas, seg, x, top, dw, digitH, t, if (seg in lit) theme.text else ghost)
+            x += dw + gap
+        }
+    }
+
+    private fun segment(canvas: Canvas, seg: Char, x: Float, y: Float, w: Float, h: Float, t: Float, color: Int) {
+        val half = h / 2f
+        val skew = h * .06f
+        fun sx(px: Float, py: Float) = px + skew * (1f - (py - y) / h)
+        val (x0, y0, x1, y1) = when (seg) {
+            'a' -> listOf(x + t, y, x + w - t, y + t)
+            'b' -> listOf(x + w - t, y + t * .6f, x + w, y + half - t * .4f)
+            'c' -> listOf(x + w - t, y + half + t * .4f, x + w, y + h - t * .6f)
+            'd' -> listOf(x + t, y + h - t, x + w - t, y + h)
+            'e' -> listOf(x, y + half + t * .4f, x + t, y + h - t * .6f)
+            'f' -> listOf(x, y + t * .6f, x + t, y + half - t * .4f)
+            else -> listOf(x + t, y + half - t / 2f, x + w - t, y + half + t / 2f)
+        }
+        path.reset()
+        path.moveTo(sx(x0, y0), y0); path.lineTo(sx(x1, y0), y0); path.lineTo(sx(x1, y1), y1); path.lineTo(sx(x0, y1), y1); path.close()
+        fill.shader = null; fill.color = color; canvas.drawPath(path, fill)
+    }
+
     // ---- CarPlay directions card ----------------------------------------------------------
 
     private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance) {
@@ -770,12 +1069,20 @@ internal class ThemedClusterView(
         const val MUSIC_RIGHT = .884f
         const val MUSIC_TOP = .125f
         const val MUSIC_BOTTOM = .379f
-        /** CarPlay only: where Google's card sits in Android Auto. */
         const val AA_LABEL_COVER = .775f
+        const val SIDEBAR_RIGHT = .205f
+        const val DECK_TOP = .84f
+        const val DECK_HUMP = .75f
+        /** CarPlay only: where Google's card sits in Android Auto. */
         const val CARD_LEFT = .755f
         const val CARD_RIGHT = .985f
         const val CARD_TOP = .41f
         const val CARD_BOTTOM = .70f
+
+        private val SEGMENTS = mapOf(
+            '0' to "abcdef", '1' to "bc", '2' to "abdeg", '3' to "abcdg", '4' to "bcfg",
+            '5' to "acdfg", '6' to "acdefg", '7' to "abc", '8' to "abcdefg", '9' to "abcdfg", '-' to "g",
+        )
 
         private val DIGITS = mapOf(
             '0' to listOf("01110", "10001", "10011", "10101", "11001", "10001", "01110"),
