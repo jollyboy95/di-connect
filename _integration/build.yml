@@ -82,7 +82,7 @@ jobs:
         timeout-minutes: 15
         run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' --tests '*ClusterThemesRenderTest' $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Share theme pictures for review
-        if: ${{ !cancelled() && github.event_name == 'push' }}
+        if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
