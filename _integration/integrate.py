@@ -1799,11 +1799,8 @@ edit(D,
             render()
         }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
         val selected = ClusterThemeStore.selected(this, connection)
-        val columns = when {
-            compact -> 1
-            resources.configuration.screenWidthDp >= 1100 -> 3
-            else -> 2
-        }
+        // Two across at most: three made each preview too small to tell the themes apart.
+        val columns = if (compact) 1 else 2
         ThemeCategory.entries.forEach { category ->
             val themes = ClusterThemes.availableFor(connection).filter { it.category == category }
             if (themes.isEmpty()) return@forEach

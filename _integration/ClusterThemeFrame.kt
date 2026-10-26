@@ -114,26 +114,47 @@ internal object ClusterThemePreview {
         return bitmap
     }
 
-    /** A plain night map: water, a few roads, the route, and Google's card on Android Auto. */
+    /**
+     * A quiet night map: dark water and land, faint streets, the route and, on Android Auto, a dim
+     * stand-in for Google's card. Kept dark on purpose so each theme's own instruments stand out.
+     */
     private fun drawMap(canvas: Canvas, w: Float, h: Float, connection: ClusterConnection) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.shader = LinearGradient(0f, 0f, w, h, Color.rgb(18, 58, 120), Color.rgb(22, 96, 150), Shader.TileMode.CLAMP)
+        paint.shader = LinearGradient(0f, 0f, w, h, Color.rgb(16, 22, 32), Color.rgb(22, 30, 42), Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
+        // Water.
+        paint.color = Color.rgb(12, 26, 46)
+        val water = android.graphics.Path().apply {
+            moveTo(w * .55f, 0f); cubicTo(w * .62f, h * .3f, w * .78f, h * .2f, w, h * .38f)
+            lineTo(w, 0f); close()
+        }
+        canvas.drawPath(water, paint)
+        // Parks.
+        paint.color = Color.rgb(24, 40, 34)
+        canvas.drawRoundRect(w * .3f, h * .58f, w * .4f, h * .8f, h * .03f, h * .03f, paint)
+        canvas.drawRoundRect(w * .62f, h * .7f, w * .72f, h * .92f, h * .03f, h * .03f, paint)
+        // Streets.
         paint.style = Paint.Style.STROKE
-        paint.color = Color.argb(70, 210, 230, 255)
-        paint.strokeWidth = h * .006f
-        for (i in 0 until 9) canvas.drawLine(w * (.05f + i * .11f), 0f, w * (.2f + i * .09f), h, paint)
-        for (i in 0 until 5) canvas.drawLine(0f, h * (.15f + i * .2f), w, h * (.1f + i * .19f), paint)
-        paint.color = Color.rgb(80, 220, 255)
-        paint.strokeWidth = h * .018f
-        canvas.drawLine(w * .4f, h, w * .42f, h * .1f, paint)
+        paint.color = Color.argb(46, 200, 214, 235)
+        paint.strokeWidth = h * .004f
+        for (i in 0 until 14) canvas.drawLine(w * (.02f + i * .075f), 0f, w * (.08f + i * .07f), h, paint)
+        for (i in 0 until 7) canvas.drawLine(0f, h * (.08f + i * .15f), w, h * (.04f + i * .15f), paint)
+        // Route.
+        paint.color = Color.argb(90, 80, 200, 255)
+        paint.strokeWidth = h * .03f
+        canvas.drawLine(w * .44f, h, w * .47f, h * .12f, paint)
+        paint.color = Color.rgb(80, 200, 255)
+        paint.strokeWidth = h * .012f
+        canvas.drawLine(w * .44f, h, w * .47f, h * .12f, paint)
+        paint.style = Paint.Style.FILL
+        paint.color = Color.WHITE
+        canvas.drawCircle(w * .448f, h * .72f, h * .018f, paint)
         if (connection == ClusterConnection.ANDROID_AUTO) {
-            paint.style = Paint.Style.FILL
-            paint.color = Color.rgb(32, 190, 160)
-            canvas.drawRoundRect(w * .757f, h * .42f, w * .935f, h * .56f, h * .02f, h * .02f, paint)
-            paint.color = Color.rgb(24, 26, 30)
-            canvas.drawRoundRect(w * .757f, h * .55f, w * .935f, h * .63f, h * .02f, h * .02f, paint)
+            paint.color = Color.rgb(28, 92, 72)
+            canvas.drawRoundRect(w * .772f, h * .44f, w * .95f, h * .56f, h * .02f, h * .02f, paint)
+            paint.color = Color.rgb(26, 28, 32)
+            canvas.drawRoundRect(w * .772f, h * .55f, w * .95f, h * .63f, h * .02f, h * .02f, paint)
         }
     }
 }
