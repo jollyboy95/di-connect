@@ -21,8 +21,9 @@ internal object DiConnectRestart {
     fun restart(activity: Activity) {
         val app = activity.applicationContext
         Log.w(TAG, "Restart requested from the home screen")
-        runCatching { CarPlayBackgroundSession.stop() }
-        runCatching { app.stopService(Intent(app, com.andrerinas.openheadunit.aap.AapService::class.java)) }
+        // No polite service stops: stopping Android Auto's service runs its teardown, which
+        // switches the car hotspot off (seen in the car, Oct 2026). Ending the process drops the
+        // sessions and the cluster and HUD windows without touching the hotspot.
         app.packageManager.getLaunchIntentForPackage(app.packageName)?.let { launch ->
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             val reopen = PendingIntent.getActivity(app, 7341, launch,

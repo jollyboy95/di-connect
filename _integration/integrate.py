@@ -1683,8 +1683,9 @@ class GwmCarPlayHudWindowTest {
 """)
 
 # Home-screen controls (Oct 2026), bottom of the right-hand column: Themes, which opens the theme
-# engine's screen (Android Auto | CarPlay tabs over one gallery), and a Restart kill switch. Restart asks first, stops CarPlay and Android Auto as far as they will stop, ends the
+# engine's screen (Android Auto | CarPlay tabs over one gallery), and a Restart kill switch. Restart asks first, ends the
 # app's processes (which also removes the cluster and HUD windows) and opens Di-Connect again.
+# It never stops the services politely: Android Auto's teardown switches the car hotspot off.
 (root/'common/src/main/java/com/shilapi/xcertplay/DiConnectRestart.kt').write_text('''package com.shilapi.xcertplay
 
 import android.app.Activity
@@ -1708,8 +1709,9 @@ internal object DiConnectRestart {
     fun restart(activity: Activity) {
         val app = activity.applicationContext
         Log.w(TAG, "Restart requested from the home screen")
-        runCatching { CarPlayBackgroundSession.stop() }
-        runCatching { app.stopService(Intent(app, com.andrerinas.openheadunit.aap.AapService::class.java)) }
+        // No polite service stops: stopping Android Auto's service runs its teardown, which
+        // switches the car hotspot off (seen in the car, Oct 2026). Ending the process drops the
+        // sessions and the cluster and HUD windows without touching the hotspot.
         app.packageManager.getLaunchIntentForPackage(app.packageName)?.let { launch ->
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             val reopen = PendingIntent.getActivity(app, 7341, launch,
