@@ -49,6 +49,7 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
     private val shade = Paint(Paint.ANTI_ALIAS_FLAG)
     private val hairline = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(46, 255, 255, 255) }
     private val fade = Paint()
+    private val speedShade = Paint(Paint.ANTI_ALIAS_FLAG)
     private val bandSheen = Paint()
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
     private val track = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(64, 255, 255, 255) }
@@ -88,6 +89,9 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
+        speedShade.shader = android.graphics.RadialGradient(0f, 0f, w * SPEED_SHADE_RADIUS,
+            intArrayOf(Color.argb(77, 0, 0, 0), Color.argb(36, 0, 0, 0), Color.argb(0, 0, 0, 0)),
+            floatArrayOf(0f, .6f, 1f), Shader.TileMode.CLAMP)
         // Frosted dark band: mutes the map quickly so the lower row reads clearly.
         fade.shader = LinearGradient(0f, h * FADE_TOP, 0f, h.toFloat(),
             intArrayOf(Color.argb(0, 6, 10, 18), Color.argb(170, 6, 10, 18), Color.argb(212, 6, 10, 18), Color.argb(228, 6, 10, 18)),
@@ -127,10 +131,10 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
 
     // ---- glass ----------------------------------------------------------------------------
 
-    /** Frosted card: soft shadow, translucent body, top sheen, hairline edge and top highlight. */
+    /** Every module uses the same neutral near-black as the strip under Google's directions card. */
     private fun drawGlass(canvas: Canvas, box: RectF, radius: Float) {
         body.shader = null
-        body.color = Color.rgb(17, 24, 32)
+        body.color = SURFACE
         canvas.drawRoundRect(box, radius, radius, body)
     }
 
@@ -151,28 +155,34 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
 
     /** One header surface behind the fixed factory gear; never redraw the gear itself. */
     private fun drawHeaderPills(canvas: Canvas, w: Float, h: Float) {
-        val box = RectF(w * .405f, h * .012f, w * .655f, h * .104f)
-        drawGlass(canvas, box, box.height() / 2f)
-        val baseline = box.centerY() - run {
-            valuePaint(h * .032f, medium)
-            (text.ascent() + text.descent()) / 2f
-        }
-        text.textAlign = Paint.Align.LEFT
+        valuePaint(h * .032f, medium)
         val temperature = snapshot?.outsideTempC?.let {
             String.format(Locale.getDefault(), "%d°C", it.roundToInt())
         } ?: "—°C"
-        canvas.drawText(temperature, w * .42f, baseline, text)
-        text.textAlign = Paint.Align.RIGHT
         val time = android.text.format.DateFormat.getTimeFormat(context).format(Date())
-        canvas.drawText(time, w * .64f, baseline, text)
+        val gear = w * GEAR_X
+        val gap = w * .052f
+        // Symmetric about the gear so the temperature and time sit the same distance from it.
+        val half = maxOf(text.measureText(temperature), text.measureText(time)) + gap + w * .018f
+        val box = RectF(gear - half, h * .012f, gear + half, h * .104f)
+        drawGlass(canvas, box, box.height() / 2f)
+        val baseline = box.centerY() - (text.ascent() + text.descent()) / 2f
+        text.textAlign = Paint.Align.RIGHT
+        canvas.drawText(temperature, gear - gap, baseline, text)
+        text.textAlign = Paint.Align.LEFT
+        canvas.drawText(time, gear + gap, baseline, text)
     }
 
     /** Panels clear all factory telltales, including ECO at 79% and READY at the bottom centre. */
     private fun drawLowerRow(canvas: Canvas, w: Float, h: Float) {
         val data = snapshot ?: return
-        val baseline = h * .89f
         val size = h * .035f
         data.speedKph?.let { speed ->
+            canvas.save()
+            canvas.translate(w * .15f, h * .455f)
+            canvas.scale(1f, .78f)
+            canvas.drawCircle(0f, 0f, w * SPEED_SHADE_RADIUS, speedShade)
+            canvas.restore()
             valuePaint(h * .22f, medium)
             text.textAlign = Paint.Align.CENTER
             canvas.drawText(speed.roundToInt().toString(), w * .15f, h * .53f, text)
@@ -197,9 +207,10 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         text.textAlign = Paint.Align.CENTER
         canvas.drawText("—", meter.centerX(), h*.683f, text)
 
-        val fuel = RectF(w*.23f, h*.835f, w*.465f, h*.91f)
+        val baseline = h * BOTTOM_BASELINE
+        val fuel = RectF(w*.045f, h*BOTTOM_TOP, w*.255f, h*BOTTOM_BOTTOM)
         drawGlass(canvas, fuel, fuel.height()/2f)
-        val icon = h*.038f
+        val icon = h*.034f
         val pumpX = fuel.left + h*.047f
         drawPump(canvas, pumpX, baseline-icon*.94f, icon)
         val triangle = Path().apply {
@@ -210,7 +221,7 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         }
         canvas.drawPath(triangle, fill)
         val barLeft = pumpX+icon*1.15f
-        val barWidth = w*.057f
+        val barWidth = w*.05f
         val barY = baseline-icon*.42f
         rect.set(barLeft, barY-h*.004f, barLeft+barWidth, barY+h*.004f)
         canvas.drawRoundRect(rect, h*.004f, h*.004f, track)
@@ -225,15 +236,21 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         text.textAlign=Paint.Align.RIGHT
         canvas.drawText(data.rangeKm?.let { "${it.roundToInt()} km" } ?: "— km",
             fuel.right-h*.025f,baseline,text)
+        text.textAlign=Paint.Align.LEFT
 
-        // The car owns the drive mode at x79%. Keep its area entirely clear.
-        val odo = RectF(w*.835f,h*.835f,w*.988f,h*.91f)
+        // The car owns the drive mode (ECO, NORMAL, SPORT) between 75 % and 82 %. Start right of it.
+        val odoValue = data.odometerKm?.let { "${NumberFormat.getIntegerInstance().format(it.roundToInt())} km" } ?: "— km"
+        labelPaint(h*.022f)
+        val odoLabel = text.measureText("ODO")
+        valuePaint(size)
+        val odoWidth = h*.044f + odoLabel + w*.012f + text.measureText(odoValue)
+        val odo = RectF(w*.825f, h*BOTTOM_TOP, w*.825f + odoWidth, h*BOTTOM_BOTTOM)
         drawGlass(canvas,odo,odo.height()/2f)
-        valuePaint(h*.030f)
-        text.textAlign=Paint.Align.RIGHT
-        canvas.drawText(data.odometerKm?.let {
-            "ODO  ${NumberFormat.getIntegerInstance().format(it.roundToInt())} km"
-        } ?: "ODO  — km",odo.right-h*.024f,baseline,text)
+        labelPaint(h*.022f)
+        text.textAlign=Paint.Align.LEFT
+        canvas.drawText("ODO", odo.left + h*.022f, baseline, text)
+        valuePaint(size)
+        canvas.drawText(odoValue, odo.left + h*.022f + odoLabel + w*.012f, baseline, text)
         text.letterSpacing=0f
     }
 
@@ -284,50 +301,47 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
     private fun drawMusic(canvas: Canvas, w: Float, h: Float) {
         val info = music.info
         val title = info.title?.takeIf { it.isNotBlank() } ?: return
-        val mw = w * 0.185f
-        val mh = h * 0.23f
-        val left = w * 0.70f // ends at 88.5%, before fixed factory warnings
-        val top = h * 0.14f // bottom 37%, clear of Google's fixed card below
-        val box = RectF(left, top, left + mw, top + mh)
-        drawGlass(canvas, box, mh * 0.14f)
-
-        val side = mh * 0.55f
-        val ax = left + mh * 0.14f
-        val ay = top + (mh - side) / 2f
-        music.artwork?.takeUnless(Bitmap::isRecycled)?.let { bitmap ->
-            rect.set(ax, ay, ax + side, ay + side)
-            canvas.save()
-            clip.reset()
-            clip.addRoundRect(rect, side * 0.14f, side * 0.14f, Path.Direction.CW)
-            canvas.clipPath(clip)
-            canvas.drawBitmap(bitmap, null, rect, art)
-            canvas.restore()
+        val box = RectF(w * MUSIC_LEFT, h * .125f, w * MUSIC_RIGHT, h * .379f)
+        drawGlass(canvas, box, h * .039f)
+        val side = h * .125f
+        val ax = box.centerX() - side / 2f
+        val ay = h * .148f
+        rect.set(ax, ay, ax + side, ay + side)
+        val bitmap = music.artwork?.takeUnless(Bitmap::isRecycled)
+        canvas.save()
+        clip.reset()
+        clip.addRoundRect(rect, side * .12f, side * .12f, Path.Direction.CW)
+        canvas.clipPath(clip)
+        if (bitmap != null) canvas.drawBitmap(bitmap, null, rect, art) else canvas.drawRect(rect, track)
+        canvas.restore()
+        val inner = box.width() - h * .05f
+        val barTop = ay + side + h * .011f
+        val barH = h * .006f
+        rect.set(ax, barTop, ax + side, barTop + barH)
+        canvas.drawRoundRect(rect, barH, barH, track)
+        val duration = info.durationMillis?.takeIf { it > 0 }
+        var elapsed = info.elapsedMillis
+        if (duration != null && elapsed != null) {
+            if (info.playing) {
+                elapsed += SystemClock.elapsedRealtime() - musicReceivedAt
+                removeCallbacks(tick)
+                postDelayed(tick, 1_000L)
+            }
+            rect.right = ax + side * (elapsed.toFloat() / duration).coerceIn(0f, 1f)
+            canvas.drawRoundRect(rect, barH, barH, accentFill)
         }
-        val textLeft = ax + side + mh * 0.13f
-        val textWidth = left + mw - mh * 0.12f - textLeft
-        if (textWidth <= 0f) return
-        text.textAlign = Paint.Align.LEFT
-        valuePaint(h * 0.032f, medium)
-        canvas.drawText(fit(title, textWidth), textLeft, top + mh * 0.36f, text)
+        text.textAlign = Paint.Align.CENTER
+        valuePaint(h * .034f, medium)
+        canvas.drawText(fit(title, inner), box.centerX(), barTop + h * .047f, text)
         info.artist?.takeIf { it.isNotBlank() }?.let { artist ->
-            valuePaint(h * 0.026f, regular)
+            valuePaint(h * .022f, regular)
+            text.letterSpacing = .03f
             text.color = secondary
-            canvas.drawText(fit(artist, textWidth), textLeft, top + mh * 0.57f, text)
+            canvas.drawText(fit(artist.uppercase(Locale.getDefault()), inner), box.centerX(), barTop + h * .08f, text)
+            text.letterSpacing = 0f
             text.color = Color.WHITE
         }
-        val duration = info.durationMillis?.takeIf { it > 0 } ?: return
-        var elapsed = info.elapsedMillis ?: return
-        if (info.playing) {
-            elapsed += SystemClock.elapsedRealtime() - musicReceivedAt
-            removeCallbacks(tick)
-            postDelayed(tick, 1_000L)
-        }
-        val barH = mh * 0.028f
-        val barTop = top + mh * 0.76f
-        rect.set(textLeft, barTop, textLeft + textWidth, barTop + barH)
-        canvas.drawRoundRect(rect, barH, barH, track)
-        rect.right = textLeft + textWidth * (elapsed.toFloat() / duration).coerceIn(0f, 1f)
-        canvas.drawRoundRect(rect, barH, barH, accentFill)
+        text.textAlign = Paint.Align.LEFT
     }
 
     // ---- helpers --------------------------------------------------------------------------
@@ -378,6 +392,18 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
     private companion object {
         /** Where the lower fade starts, as a fraction of the panel height. */
         const val FADE_TOP = 0.74f
+        /** Neutral near-black matching the strip under Google's directions card. */
+        val SURFACE = Color.rgb(22, 23, 25)
+        /** Centre of the factory gear indicator, which the car draws above this layer. */
+        const val GEAR_X = .501f
+        const val SPEED_SHADE_RADIUS = .072f
+        /** One row with the factory READY and drive mode, below the EV / limit / lane lamps (end 87 %). */
+        const val BOTTOM_TOP = .905f
+        const val BOTTOM_BOTTOM = .975f
+        const val BOTTOM_BASELINE = .952f
+        /** Left edge of Google's directions card; right edge clear of the factory warnings from 89 %. */
+        const val MUSIC_LEFT = .758f
+        const val MUSIC_RIGHT = .884f
     }
 }
 

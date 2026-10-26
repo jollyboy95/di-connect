@@ -59,16 +59,20 @@ class GwmAndroidAutoClusterRenderTest {
             }
             unchanged(.75f, .40f, .99f, .75f) // Google's unmodifiable directions card
             unchanged(.89f, .17f, .99f, .40f) // factory door and assistance warnings
-            unchanged(.05f, .82f, .20f, .93f) // factory speed-limit and lane symbols
+            // Factory EV, speed-limit and lane lamps: measured on the H7 between 80.8 % and 87.4 %.
+            unchanged(.05f, .80f, .20f, .895f)
             unchanged(.76f, .92f, .82f, .99f) // factory drive mode
             unchanged(.44f, .92f, .55f, .99f) // factory READY below the information row
-            val charcoal = Color.rgb(17, 24, 32)
+            val charcoal = Color.rgb(22, 23, 25) // the strip under Google's directions card
             assertEquals(charcoal, bitmap.getPixel((width*.50f).toInt(), (height*.06f).toInt()))
             assertEquals(charcoal, bitmap.getPixel((width*.535f).toInt(), (height*.055f).toInt()))
-            assertEquals(charcoal, bitmap.getPixel((width*.24f).toInt(), (height*.85f).toInt()))
+            assertEquals(charcoal, bitmap.getPixel((width*.05f).toInt(), (height*.94f).toInt())) // fuel, below the lamps
             assertEquals(charcoal, bitmap.getPixel((width*.88f).toInt(), (height*.22f).toInt()))
             assertEquals(background, bitmap.getPixel((width*.03f).toInt(), (height*.49f).toInt()))
             unchanged(.48f, .80f, .70f, .91f) // open map between compact modules
+            unchanged(.758f, .385f, .884f, .40f) // gap above Google's card, so it can grow
+            // Fuel, READY, drive mode and odometer share one row.
+            assertEquals(charcoal, bitmap.getPixel((width*.83f).toInt(), (height*.94f).toInt()))
             bitmap.recycle()
             cover.recycle()
         }
