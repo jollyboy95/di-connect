@@ -6093,6 +6093,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             ClusterThemeStore.setSameForBoth(this, !same)
             render()
         }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        val hudFollows = ClusterThemeStore.hudFollowsTheme(this)
+        content.addView(button("${getString(R.string.di_connect_theme_hud)} · " +
+            getString(if (hudFollows) R.string.di_connect_on else R.string.di_connect_off), false) {
+            ClusterThemeStore.setHudFollowsTheme(this, !hudFollows)
+            render()
+        }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
         val selected = ClusterThemeStore.selected(this, connection)
         val columns = when {
             compact -> 1

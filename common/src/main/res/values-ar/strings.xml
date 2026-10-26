@@ -1054,6 +1054,7 @@
     <string name="di_connect_theme_glass_description">بأسلوب iOS: لوحات شفافة وبطاقة الاتجاهات الخاصة بـ Di-Connect.</string>
     <string name="di_connect_themes_more">التخطيطات بملء الشاشة مع خريطة داخل إطار قادمة قريبًا.</string>
     <string name="di_connect_theme_speed">السرعة</string>
+    <string name="di_connect_theme_hud">شاشة HUD تطابق السمة</string>
     <string name="di_connect_themes_same">سمة واحدة لكليهما</string>
     <string name="di_connect_on">تشغيل</string>
     <string name="di_connect_off">إيقاف</string>

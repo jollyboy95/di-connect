@@ -39,7 +39,35 @@ internal class GwmHeadUpView(context: Context) : View(context) {
         color = Color.rgb(160, 172, 188)
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
-    private val arrowTint = Color.rgb(90, 200, 250)
+    private var arrowTint = HudThemeStyle.PLAIN.arrow
+    private var style: HudThemeStyle? = null
+    private var stopObserving: (() -> Unit)? = null
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        stopObserving = ClusterThemeStore.observe(context) { post { invalidate() } }
+    }
+
+    override fun onDetachedFromWindow() {
+        stopObserving?.invoke()
+        stopObserving = null
+        super.onDetachedFromWindow()
+    }
+
+    /** Takes the CarPlay cluster theme's colour and digits (see [HudThemeStyle]). */
+    private fun applyStyle(next: HudThemeStyle) {
+        if (next == style) return
+        style = next
+        arrowTint = next.arrow
+        roundabout.tint = next.arrow
+        glyphRes = 0
+        distancePaint.color = next.text
+        distancePaint.typeface = next.typeface
+        etaPaint.color = next.text
+        etaPaint.typeface = next.typeface
+        roadPaint.color = next.muted
+        etaLabelPaint.color = next.muted
+    }
     private var glyph: Drawable? = null
     private var glyphRes = 0
     private val roundabout = HudRoundaboutGlyph(arrowTint)
@@ -76,6 +104,7 @@ internal class GwmHeadUpView(context: Context) : View(context) {
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
+        applyStyle(HudThemeStyle.of(context, ClusterConnection.CARPLAY))
 
         val unit = h * 0.5f
         distancePaint.textSize = unit * 0.62f

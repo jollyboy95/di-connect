@@ -1595,6 +1595,9 @@ internal class HudRoundaboutGlyph(tint: Int) : Drawable() {
         strokeCap = Paint.Cap.ROUND
         style = Paint.Style.STROKE
     }
+    var tint: Int
+        get() = ink.color
+        set(value) { ink.color = value }
     private val number = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textAlign = Paint.Align.CENTER
@@ -1788,6 +1791,12 @@ edit(D,
             ClusterThemeStore.setSameForBoth(this, !same)
             render()
         }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        val hudFollows = ClusterThemeStore.hudFollowsTheme(this)
+        content.addView(button("${getString(R.string.di_connect_theme_hud)} · " +
+            getString(if (hudFollows) R.string.di_connect_on else R.string.di_connect_off), false) {
+            ClusterThemeStore.setHudFollowsTheme(this, !hudFollows)
+            render()
+        }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
         val selected = ClusterThemeStore.selected(this, connection)
         val columns = when {
             compact -> 1
@@ -1883,6 +1892,7 @@ CONTROL_STRINGS={
  'di_connect_theme_glass_description':["iOS style: frosted panels and Di-Connect\\'s own directions card.",'بأسلوب iOS: لوحات شفافة وبطاقة الاتجاهات الخاصة بـ Di-Connect.','Estilo iOS: paneles esmerilados y la tarjeta de indicaciones propia de Di-Connect.',"Stile iOS: pannelli satinati e la scheda indicazioni di Di-Connect.",'iOS スタイル：すりガラス調のパネルと Di-Connect 独自の案内カード。','Стиль iOS: матовые панели и собственная карточка маршрута Di-Connect.','Стиль iOS: матові панелі та власна картка маршруту Di-Connect.','iOS 风格：磨砂面板和 Di-Connect 自带的导航卡片。','iOS 風格：霧面面板和 Di-Connect 自帶的導航卡片。'],
  'di_connect_themes_more':['Full-screen layouts with a framed map are coming next.', 'التخطيطات بملء الشاشة مع خريطة داخل إطار قادمة قريبًا.', 'Pronto llegarán diseños a pantalla completa con el mapa enmarcado.', 'In arrivo i layout a schermo intero con la mappa incorniciata.', '地図を枠に収めた全画面レイアウトを次に追加予定です。', 'Скоро — полноэкранные макеты с картой в рамке.', 'Незабаром — повноекранні макети з картою в рамці.', '带框地图的全屏布局即将推出。', '帶框地圖的全螢幕版面即將推出。'],
  'di_connect_theme_speed':['Speed', 'السرعة', 'Velocidad', 'Velocità', '速度', 'Скорость', 'Швидкість', '速度', '速度'],
+ 'di_connect_theme_hud':['HUD matches theme', 'شاشة HUD تطابق السمة', 'HUD a juego con el tema', "HUD abbinato al tema", 'HUDをテーマに合わせる', 'HUD в стиле темы', 'HUD у стилі теми', 'HUD 跟随主题', 'HUD 跟隨主題'],
  'di_connect_themes_same':['One theme for both', 'سمة واحدة لكليهما', 'Un tema para ambos', 'Un tema per entrambi', '両方に同じテーマ', 'Одна тема для обоих', 'Одна тема для обох', '两者使用同一主题', '兩者使用同一主題'],
  'di_connect_on':['On', 'تشغيل', 'Activado', 'Attivo', 'オン', 'Вкл.', 'Увімк.', '开', '開'],
  'di_connect_off':['Off', 'إيقاف', 'Desactivado', 'Disattivo', 'オフ', 'Выкл.', 'Вимк.', '关', '關'],
@@ -2126,7 +2136,7 @@ class DiConnectUpdateTest {
 # Theme engine (Oct 2026): every cluster theme is data drawn by one renderer, picked per connection
 # on the Themes screen and swapped live. Modern (Android Auto) and Glass (CarPlay) are the original
 # renderers. Android Auto's and CarPlay's cluster layers become a ClusterThemeFrame.
-for name in ['ClusterThemes.kt', 'ThemedClusterView.kt', 'ClusterThemeFrame.kt']:
+for name in ['ClusterThemes.kt', 'ThemedClusterView.kt', 'ClusterThemeFrame.kt', 'HudThemeStyle.kt']:
     source = Path('target/_integration')/name
     require(source.is_file(), f'Missing theme engine source {name}')
     (root/'common/src/main/java/com/shilapi/xcertplay'/name).write_text(source.read_text())
@@ -2141,3 +2151,46 @@ edit(host,
 test = Path('target/_integration/ClusterThemesRenderTest.kt')
 require(test.is_file(), 'Missing theme engine render test')
 (root/'common/src/test/java/com/shilapi/xcertplay/ClusterThemesRenderTest.kt').write_text(test.read_text())
+
+# HUD follows the cluster theme (Oct 2026): the CarPlay windscreen HUD takes the CarPlay theme's
+# accent on the arrow and its digit style, like Android Auto's HUD. HudThemeStyle keeps it readable.
+cphud=root/'common/src/main/java/com/shilapi/xcertplay/GwmHeadUpView.kt'
+edit(cphud,
+    ('    private val arrowTint = Color.rgb(90, 200, 250)\n', '''    private var arrowTint = HudThemeStyle.PLAIN.arrow
+    private var style: HudThemeStyle? = null
+    private var stopObserving: (() -> Unit)? = null
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        stopObserving = ClusterThemeStore.observe(context) { post { invalidate() } }
+    }
+
+    override fun onDetachedFromWindow() {
+        stopObserving?.invoke()
+        stopObserving = null
+        super.onDetachedFromWindow()
+    }
+
+    /** Takes the CarPlay cluster theme's colour and digits (see [HudThemeStyle]). */
+    private fun applyStyle(next: HudThemeStyle) {
+        if (next == style) return
+        style = next
+        arrowTint = next.arrow
+        roundabout.tint = next.arrow
+        glyphRes = 0
+        distancePaint.color = next.text
+        distancePaint.typeface = next.typeface
+        etaPaint.color = next.text
+        etaPaint.typeface = next.typeface
+        roadPaint.color = next.muted
+        etaLabelPaint.color = next.muted
+    }
+'''),
+    ('''        if (w <= 0f || h <= 0f) return
+
+        val unit = h * 0.5f
+''', '''        if (w <= 0f || h <= 0f) return
+        applyStyle(HudThemeStyle.of(context, ClusterConnection.CARPLAY))
+
+        val unit = h * 0.5f
+'''))

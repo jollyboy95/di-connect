@@ -1108,6 +1108,7 @@
     <string name="di_connect_theme_glass_description">iOS style: frosted panels and Di-Connect\'s own directions card.</string>
     <string name="di_connect_themes_more">Full-screen layouts with a framed map are coming next.</string>
     <string name="di_connect_theme_speed">Speed</string>
+    <string name="di_connect_theme_hud">HUD matches theme</string>
     <string name="di_connect_themes_same">One theme for both</string>
     <string name="di_connect_on">On</string>
     <string name="di_connect_off">Off</string>

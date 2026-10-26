@@ -1107,6 +1107,7 @@
     <string name="di_connect_theme_glass_description">iOS スタイル：すりガラス調のパネルと Di-Connect 独自の案内カード。</string>
     <string name="di_connect_themes_more">地図を枠に収めた全画面レイアウトを次に追加予定です。</string>
     <string name="di_connect_theme_speed">速度</string>
+    <string name="di_connect_theme_hud">HUDをテーマに合わせる</string>
     <string name="di_connect_themes_same">両方に同じテーマ</string>
     <string name="di_connect_on">オン</string>
     <string name="di_connect_off">オフ</string>

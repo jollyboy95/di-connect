@@ -21,6 +21,9 @@ internal class HudRoundaboutGlyph(tint: Int) : Drawable() {
         strokeCap = Paint.Cap.ROUND
         style = Paint.Style.STROKE
     }
+    var tint: Int
+        get() = ink.color
+        set(value) { ink.color = value }
     private val number = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textAlign = Paint.Align.CENTER

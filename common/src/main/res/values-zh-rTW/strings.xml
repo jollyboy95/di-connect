@@ -1065,6 +1065,7 @@
     <string name="di_connect_theme_glass_description">iOS 風格：霧面面板和 Di-Connect 自帶的導航卡片。</string>
     <string name="di_connect_themes_more">帶框地圖的全螢幕版面即將推出。</string>
     <string name="di_connect_theme_speed">速度</string>
+    <string name="di_connect_theme_hud">HUD 跟隨主題</string>
     <string name="di_connect_themes_same">兩者使用同一主題</string>
     <string name="di_connect_on">開</string>
     <string name="di_connect_off">關</string>

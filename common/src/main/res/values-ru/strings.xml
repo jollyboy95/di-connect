@@ -1005,6 +1005,7 @@
     <string name="di_connect_theme_glass_description">Стиль iOS: матовые панели и собственная карточка маршрута Di-Connect.</string>
     <string name="di_connect_themes_more">Скоро — полноэкранные макеты с картой в рамке.</string>
     <string name="di_connect_theme_speed">Скорость</string>
+    <string name="di_connect_theme_hud">HUD в стиле темы</string>
     <string name="di_connect_themes_same">Одна тема для обоих</string>
     <string name="di_connect_on">Вкл.</string>
     <string name="di_connect_off">Выкл.</string>

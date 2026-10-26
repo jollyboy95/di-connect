@@ -1065,6 +1065,7 @@
     <string name="di_connect_theme_glass_description">iOS 风格：磨砂面板和 Di-Connect 自带的导航卡片。</string>
     <string name="di_connect_themes_more">带框地图的全屏布局即将推出。</string>
     <string name="di_connect_theme_speed">速度</string>
+    <string name="di_connect_theme_hud">HUD 跟随主题</string>
     <string name="di_connect_themes_same">两者使用同一主题</string>
     <string name="di_connect_on">开</string>
     <string name="di_connect_off">关</string>

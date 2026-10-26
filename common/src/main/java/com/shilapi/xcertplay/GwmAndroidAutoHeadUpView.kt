@@ -72,7 +72,35 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         color = Color.rgb(160, 172, 188)
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
-    private val arrowTint = Color.rgb(90, 200, 250)
+    private var arrowTint = HudThemeStyle.PLAIN.arrow
+    private var style: HudThemeStyle? = null
+    private var stopObserving: (() -> Unit)? = null
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        stopObserving = ClusterThemeStore.observe(context) { post { invalidate() } }
+    }
+
+    override fun onDetachedFromWindow() {
+        stopObserving?.invoke()
+        stopObserving = null
+        super.onDetachedFromWindow()
+    }
+
+    /** Takes the Android Auto cluster theme's colour and digits (see [HudThemeStyle]). */
+    private fun applyStyle(next: HudThemeStyle) {
+        if (next == style) return
+        style = next
+        arrowTint = next.arrow
+        roundaboutGlyph.tint = next.arrow
+        glyphRes = 0
+        distancePaint.color = next.text
+        distancePaint.typeface = next.typeface
+        etaPaint.color = next.text
+        etaPaint.typeface = next.typeface
+        roadPaint.color = next.muted
+        etaLabelPaint.color = next.muted
+    }
     private var glyph: Drawable? = null
     private var glyphRes = 0
 
@@ -93,6 +121,7 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
+        applyStyle(HudThemeStyle.of(context, ClusterConnection.ANDROID_AUTO))
 
         val unit = h * 0.5f
         distancePaint.textSize = unit * 0.62f
@@ -267,9 +296,12 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         var exitNumber = 0
         var image: Bitmap? = null
         private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(90, 200, 250)
+            color = HudThemeStyle.PLAIN.arrow
             strokeCap = Paint.Cap.ROUND
         }
+        var tint: Int
+            get() = ink.color
+            set(value) { ink.color = value }
         private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         private val number = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE

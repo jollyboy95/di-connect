@@ -82,4 +82,46 @@ class ClusterThemesRenderTest {
             preview.recycle()
         }
     }
+
+    @Test fun theHudTakesEachThemesColourButStaysReadable() {
+        for (theme in ClusterThemes.all) {
+            val style = HudThemeStyle.forTheme(theme)
+            for (color in listOf(style.arrow, style.text)) {
+                val hsv = FloatArray(3)
+                Color.colorToHSV(color, hsv)
+                assertEquals("${theme.id} must be opaque on the HUD", 255, Color.alpha(color))
+                assertTrue("${theme.id} is too dim for the HUD", hsv[2] >= HudThemeStyle.MIN_BRIGHTNESS - 0.01f)
+            }
+        }
+        assertEquals(HudThemeStyle.PLAIN, HudThemeStyle.forTheme(ClusterThemes.byId(ClusterThemes.MODERN)!!))
+        val nightOps = HudThemeStyle.forTheme(ClusterThemes.byId("night-ops")!!)
+        assertTrue(Color.red(nightOps.arrow) > 200 && Color.green(nightOps.arrow) < 120)
+    }
+
+    @Test fun theDriverCanTurnTheHudThemeOff() {
+        ClusterThemeStore.select(context, ClusterConnection.ANDROID_AUTO, "ember")
+        assertTrue(ClusterThemeStore.hudFollowsTheme(context))
+        assertNotEquals(HudThemeStyle.PLAIN, HudThemeStyle.of(context, ClusterConnection.ANDROID_AUTO))
+        ClusterThemeStore.setHudFollowsTheme(context, false)
+        assertEquals(HudThemeStyle.PLAIN, HudThemeStyle.of(context, ClusterConnection.ANDROID_AUTO))
+        ClusterThemeStore.setHudFollowsTheme(context, true)
+    }
+
+    @Test fun androidAutosHudArrowIsDrawnInTheThemeColour() {
+        ClusterThemeStore.select(context, ClusterConnection.ANDROID_AUTO, "ember")
+        val hud = GwmAndroidAutoHeadUpView(context)
+        hud.setGuidance(ClusterTurnGuidance(3, 0, 300, "Pacific Hwy"))
+        hud.measure(View.MeasureSpec.makeMeasureSpec(480, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(240, View.MeasureSpec.EXACTLY))
+        hud.layout(0, 0, 480, 240)
+        val bitmap = Bitmap.createBitmap(480, 240, Bitmap.Config.ARGB_8888)
+        hud.draw(Canvas(bitmap))
+        var amber = 0
+        for (y in 0 until 240) for (x in 0 until 480) {
+            val p = bitmap.getPixel(x, y)
+            if (Color.red(p) > 200 && Color.green(p) in 60..170 && Color.blue(p) < 70) amber++
+        }
+        bitmap.recycle()
+        assertTrue("Ember's HUD arrow should be amber", amber > 40)
+    }
 }

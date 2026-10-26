@@ -108,6 +108,7 @@ internal object ClusterThemeStore {
     private const val KEY_ANDROID_AUTO = "cluster_theme_android_auto"
     private const val KEY_CARPLAY = "cluster_theme_carplay"
     private const val KEY_SAME = "cluster_theme_same_for_both"
+    private const val KEY_HUD = "cluster_theme_hud_follows"
     private const val CO_PILOT_FILE = "co_pilot_photo.png"
     private const val CO_PILOT_SIZE = 384
 
@@ -140,11 +141,18 @@ internal object ClusterThemeStore {
         edit.apply()
     }
 
+    /** The windscreen HUD takes the theme's colour and digits unless the driver turns it off. */
+    fun hudFollowsTheme(context: Context) = prefs(context).getBoolean(KEY_HUD, true)
+
+    fun setHudFollowsTheme(context: Context, follows: Boolean) {
+        prefs(context).edit().putBoolean(KEY_HUD, follows).apply()
+    }
+
     /** Calls [changed] on the main thread whenever a theme choice changes; returns the unsubscribe. */
     fun observe(context: Context, changed: () -> Unit): () -> Unit {
         val prefs = prefs(context)
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == KEY_ANDROID_AUTO || key == KEY_CARPLAY || key == KEY_SAME || key == CO_PILOT_FILE) changed()
+            if (key == KEY_ANDROID_AUTO || key == KEY_CARPLAY || key == KEY_SAME || key == KEY_HUD || key == CO_PILOT_FILE) changed()
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
         return { prefs.unregisterOnSharedPreferenceChangeListener(listener) }

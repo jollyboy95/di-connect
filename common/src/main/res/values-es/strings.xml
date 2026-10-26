@@ -1005,6 +1005,7 @@
     <string name="di_connect_theme_glass_description">Estilo iOS: paneles esmerilados y la tarjeta de indicaciones propia de Di-Connect.</string>
     <string name="di_connect_themes_more">Pronto llegarán diseños a pantalla completa con el mapa enmarcado.</string>
     <string name="di_connect_theme_speed">Velocidad</string>
+    <string name="di_connect_theme_hud">HUD a juego con el tema</string>
     <string name="di_connect_themes_same">Un tema para ambos</string>
     <string name="di_connect_on">Activado</string>
     <string name="di_connect_off">Desactivado</string>
