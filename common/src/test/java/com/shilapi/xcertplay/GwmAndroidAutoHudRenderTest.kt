@@ -38,7 +38,7 @@ class GwmAndroidAutoHudRenderTest {
         }
         assertTrue("Exit 1 and exit 2 must not share a fixed right-turn symbol", changed > 0)
         for (y in 0 until 240) for (x in 0 until 480) {
-            if (x >= 144 || y < 96 || y >= 192) assertEquals(0, Color.alpha(second.getPixel(x, y)))
+            if (x >= 120 || y < 100 || y >= 188) assertEquals(0, Color.alpha(second.getPixel(x, y)))
         }
         val output = File("build/reports/gwm-cluster").apply { mkdirs() }
         File(output, "android-auto-hud-roundabout-exit2.png").outputStream().use {
@@ -68,7 +68,7 @@ class GwmAndroidAutoHudRenderTest {
         var arrivalPixels = 0
         for (y in 0 until 240) for (x in 0 until 480) {
             val alpha = Color.alpha(bitmap.getPixel(x, y))
-            if (x >= 144 || y < 96 || y >= 192) assertEquals("Outside HUD aperture $x,$y", 0, alpha)
+            if (x >= 120 || y < 100 || y >= 188) assertEquals("Outside HUD aperture $x,$y", 0, alpha)
             if (y in 160..191 && alpha > 0) arrivalPixels++
         }
         assertTrue("Formatted ETA must draw the second row", arrivalPixels > 30)

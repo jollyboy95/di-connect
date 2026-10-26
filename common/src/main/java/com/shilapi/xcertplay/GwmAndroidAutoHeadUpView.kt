@@ -143,7 +143,7 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
     /** Arrow on top, distance under it, arrival time last; everything centred and sized to fit. */
     /**
      * The H7 HUD shows display 3 (480x240) only through its nav-arrow window, measured with a
-     * 10x5 grid as cells A3-C4: x 0-30 %, y 40-80 % (144x96 px). Arrow and distance on one line,
+     * 10x5 grid as cells A3-C4, with column C only half visible: x 0-25 %, y 42-78 % (120x86 px). Arrow and distance on one line,
      * arrival time below, all inside that window with a small margin.
      */
     private fun drawInNavWindow(canvas: Canvas, next: ClusterTurnGuidance, distance: String, eta: String?, w: Float, h: Float) {
@@ -192,9 +192,11 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
 
     private companion object {
         const val NAV_WINDOW_LEFT = 0f
-        const val NAV_WINDOW_RIGHT = 0.30f
-        const val NAV_WINDOW_TOP = 0.40f
-        const val NAV_WINDOW_BOTTOM = 0.80f
+        // Re-measured on the windscreen: column C is only half visible, so the window ends near
+        // 25 %, and the 40 % / 80 % edges sit right on the boundary. Keep a margin inside both.
+        const val NAV_WINDOW_RIGHT = 0.25f
+        const val NAV_WINDOW_TOP = 0.42f
+        const val NAV_WINDOW_BOTTOM = 0.78f
     }
 
     private fun drawStacked(canvas: Canvas, next: ClusterTurnGuidance, distance: String, eta: String?, w: Float, h: Float) {

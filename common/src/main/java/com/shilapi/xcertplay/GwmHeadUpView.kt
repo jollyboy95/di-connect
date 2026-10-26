@@ -42,6 +42,22 @@ internal class GwmHeadUpView(context: Context) : View(context) {
     private val arrowTint = Color.rgb(90, 200, 250)
     private var glyph: Drawable? = null
     private var glyphRes = 0
+    private val roundabout = HudRoundaboutGlyph(arrowTint)
+
+    /** Roundabouts get the neutral numbered roundabout; everything else the usual turn arrow. */
+    private fun glyphFor(next: ClusterTurnGuidance): Drawable? {
+        if (next.icon in HudRoundaboutGlyph.ICONS) {
+            roundabout.exitNumber = next.roundaboutExit
+            glyphRes = 0
+            return roundabout
+        }
+        val res = clusterTurnGlyphRes(next.icon)
+        if (res != glyphRes) {
+            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
+            glyphRes = res
+        }
+        return glyph
+    }
 
     fun setGuidance(next: ClusterTurnGuidance?) {
         if (next == guidance) return
@@ -90,11 +106,7 @@ internal class GwmHeadUpView(context: Context) : View(context) {
         }.coerceIn(0f, (w - rowW).coerceAtLeast(0f))
         val midY = h / 2f
 
-        val res = clusterTurnGlyphRes(next.icon)
-        if (res != glyphRes) {
-            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
-            glyphRes = res
-        }
+        glyph = glyphFor(next)
         glyph?.setBounds(left.toInt(), (midY - arrow / 2f).toInt(), (left + arrow).toInt(), (midY + arrow / 2f).toInt())
         glyph?.draw(canvas)
 
@@ -127,11 +139,7 @@ internal class GwmHeadUpView(context: Context) : View(context) {
         val lineOne = if (eta != null) boxH * 0.64f else boxH
         val arrow = minOf(lineOne * 0.92f, boxW * 0.40f)
 
-        val res = clusterTurnGlyphRes(next.icon)
-        if (res != glyphRes) {
-            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
-            glyphRes = res
-        }
+        glyph = glyphFor(next)
         val arrowTop = top + (lineOne - arrow) / 2f
         glyph?.setBounds(left.toInt(), arrowTop.toInt(), (left + arrow).toInt(), (arrowTop + arrow).toInt())
         glyph?.draw(canvas)
@@ -166,9 +174,10 @@ internal class GwmHeadUpView(context: Context) : View(context) {
 
     private companion object {
         const val NAV_WINDOW_LEFT = 0f
-        const val NAV_WINDOW_RIGHT = 0.30f
-        const val NAV_WINDOW_TOP = 0.40f
-        const val NAV_WINDOW_BOTTOM = 0.80f
+        // Measured on the windscreen with the parked grid: visible to ~25 % across, 40-80 % down.
+        const val NAV_WINDOW_RIGHT = 0.25f
+        const val NAV_WINDOW_TOP = 0.42f
+        const val NAV_WINDOW_BOTTOM = 0.78f
     }
 
     private fun drawStacked(canvas: Canvas, next: ClusterTurnGuidance, distance: String, eta: String?, w: Float, h: Float) {
@@ -185,11 +194,7 @@ internal class GwmHeadUpView(context: Context) : View(context) {
         val total = arrow + unit * 0.75f + (if (eta != null) unit * 0.55f else 0f)
         var y = (h - total) / 2f
         val cx = regionLeft + regionWidth / 2f
-        val res = clusterTurnGlyphRes(next.icon)
-        if (res != glyphRes) {
-            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
-            glyphRes = res
-        }
+        glyph = glyphFor(next)
         glyph?.setBounds((cx - arrow / 2f).toInt(), y.toInt(), (cx + arrow / 2f).toInt(), (y + arrow).toInt())
         glyph?.draw(canvas)
         y += arrow

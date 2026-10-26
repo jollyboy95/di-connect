@@ -1531,6 +1531,157 @@ edit(AAP,
                 AppLog.i("USB attach: ${nonAccessoryDevices.size} Android devices in normal mode; not choosing one automatically.")
             }"""))
 
+# HUD window and CarPlay roundabout (Oct 2026). The parked grid on the H7 windscreen shows the
+# visible window ending about halfway through column C (~25 %), not at 30 %: the right of "300 m"
+# and of column C were cut. Row 3's top edge (40 %) is right on the boundary, which clipped the top
+# line on CarPlay. Keep a margin inside 42-78 % x 0-25 % for both the CarPlay and Android Auto HUDs.
+# CarPlay roundabouts used one fixed right-hand roundabout picture; show the same neutral numbered
+# roundabout as Android Auto instead, so it never points the wrong way.
+cphud=root/'common/src/main/java/com/shilapi/xcertplay/GwmHeadUpView.kt'
+glyph_block='''        val res = clusterTurnGlyphRes(next.icon)
+        if (res != glyphRes) {
+            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
+            glyphRes = res
+        }
+'''
+edit(cphud,
+    (glyph_block, '        glyph = glyphFor(next)\n', 3),
+    ('''        const val NAV_WINDOW_RIGHT = 0.30f
+        const val NAV_WINDOW_TOP = 0.40f
+        const val NAV_WINDOW_BOTTOM = 0.80f''','''        // Measured on the windscreen with the parked grid: visible to ~25 % across, 40-80 % down.
+        const val NAV_WINDOW_RIGHT = 0.25f
+        const val NAV_WINDOW_TOP = 0.42f
+        const val NAV_WINDOW_BOTTOM = 0.78f'''),
+    ('    private var glyphRes = 0\n','''    private var glyphRes = 0
+    private val roundabout = HudRoundaboutGlyph(arrowTint)
+
+    /** Roundabouts get the neutral numbered roundabout; everything else the usual turn arrow. */
+    private fun glyphFor(next: ClusterTurnGuidance): Drawable? {
+        if (next.icon in HudRoundaboutGlyph.ICONS) {
+            roundabout.exitNumber = next.roundaboutExit
+            glyphRes = 0
+            return roundabout
+        }
+        val res = clusterTurnGlyphRes(next.icon)
+        if (res != glyphRes) {
+            glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(arrowTint) }
+            glyphRes = res
+        }
+        return glyph
+    }
+'''))
+require(cphud.read_text().index('private val arrowTint') < cphud.read_text().index('HudRoundaboutGlyph(arrowTint)'),
+    'GwmHeadUpView: arrowTint must be declared before the roundabout glyph')
+(root/'common/src/main/java/com/shilapi/xcertplay/HudRoundaboutGlyph.kt').write_text('''package com.shilapi.xcertplay
+
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.Paint
+import android.graphics.PixelFormat
+import android.graphics.RectF
+import android.graphics.Typeface
+import android.graphics.drawable.Drawable
+
+/**
+ * A roundabout with its exit number and no direction: the ring, the approach and the number.
+ * Used where the source gives a roundabout code but no reliable picture, so the HUD never shows
+ * a turn in the wrong direction, as one fixed roundabout picture for every exit can.
+ */
+internal class HudRoundaboutGlyph(tint: Int) : Drawable() {
+    var exitNumber = 0
+    private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = tint
+        strokeCap = Paint.Cap.ROUND
+        style = Paint.Style.STROKE
+    }
+    private val number = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create("sans-serif", Typeface.BOLD)
+    }
+
+    override fun draw(canvas: Canvas) {
+        val box = RectF(bounds)
+        val size = minOf(box.width(), box.height())
+        val cx = box.centerX()
+        val cy = box.top + size * .40f
+        val radius = size * .25f
+        ink.strokeWidth = size * .075f
+        canvas.drawCircle(cx, cy, radius, ink)
+        canvas.drawLine(cx, cy + radius, cx, box.top + size * .88f, ink)
+        if (exitNumber in 1..10) {
+            number.textSize = size * .30f
+            canvas.drawText(exitNumber.toString(), cx, cy - (number.ascent() + number.descent()) / 2f, number)
+        }
+    }
+
+    override fun setAlpha(alpha: Int) { ink.alpha = alpha; number.alpha = alpha }
+    override fun setColorFilter(colorFilter: ColorFilter?) { ink.colorFilter = colorFilter }
+    @Deprecated("Deprecated in Android") override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+
+    companion object {
+        /** AMap roundabout codes as mapped by clusterTurnGlyphRes. */
+        val ICONS = setOf(11, 12, 17, 18)
+    }
+}
+''')
+
+(root/'common/src/test/java/com/shilapi/xcertplay/GwmCarPlayHudWindowTest.kt').write_text("""package com.shilapi.xcertplay
+
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.view.View
+import com.shilapi.xcertplay.hud.ClusterTurnGuidance
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33], manifest = Config.NONE)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class GwmCarPlayHudWindowTest {
+    private fun render(guidance: ClusterTurnGuidance): Bitmap {
+        val view = GwmHeadUpView(RuntimeEnvironment.getApplication())
+        view.setAnchor(GwmHeadUpView.Anchor.LEFT)
+        view.setGuidance(guidance)
+        view.measure(View.MeasureSpec.makeMeasureSpec(480, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(240, View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, 480, 240)
+        return Bitmap.createBitmap(480, 240, Bitmap.Config.ARGB_8888).also {
+            it.eraseColor(Color.TRANSPARENT)
+            view.draw(Canvas(it))
+        }
+    }
+
+    @Test fun carPlayGuidanceStaysInsideTheVisibleWindscreenWindow() {
+        val arrival = System.currentTimeMillis() / 1000L + 600L
+        val bitmap = render(ClusterTurnGuidance(3, 0, 300, "Next road", arrivalEpochSeconds = arrival))
+        var drawn = 0
+        for (y in 0 until 240) for (x in 0 until 480) {
+            val alpha = Color.alpha(bitmap.getPixel(x, y))
+            if (x >= 120 || y < 100 || y >= 188) assertEquals("Outside HUD window $x,$y", 0, alpha)
+            if (alpha > 0) drawn++
+        }
+        assertTrue("guidance must draw", drawn > 200)
+    }
+
+    @Test fun roundaboutExitsAreNumberedNotOneFixedPicture() {
+        val first = render(ClusterTurnGuidance(11, 1, 300, ""))
+        val second = render(ClusterTurnGuidance(11, 2, 300, ""))
+        var changed = 0
+        for (y in 0 until 240) for (x in 0 until 480) if (first.getPixel(x, y) != second.getPixel(x, y)) changed++
+        assertTrue("exit 1 and exit 2 must differ", changed > 0)
+    }
+}
+""")
+
 # Android Auto-only luxury cluster skin. Preserve the donor CarPlay renderer byte-for-byte.
 skin = Path('target/_integration/GwmAndroidAutoClusterView.kt')
 require(skin.is_file(), 'Missing Android Auto cluster skin')
