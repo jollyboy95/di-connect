@@ -39,7 +39,7 @@ internal data class ClusterTheme(
     /** Drawn by an original renderer rather than [ThemedClusterView]. */
     val native: ClusterConnection? = null,
 ) {
-    enum class Panel { PILL, GOLD_LINE, CARBON, BRACKET, AURORA, WIDGET, CARD, CAPSULE, DOT_GRID, BONE, LCD, NONE }
+    enum class Panel { PILL, GOLD_LINE, CARBON, BRACKET, AURORA, WIDGET, CARD, CAPSULE, DOT_GRID, BONE, LCD, FROST, NONE }
     enum class Speed { PLAIN, DIAL, ITALIC, TAPE, GLOW, HEADED, CONDENSED, DOTS, SEGMENT, DOG_TAG }
     enum class Flow { BAR, HAIRLINE, LED, LADDER, ORB, DOTS, SEGMENT, PAWS }
     /**
@@ -47,7 +47,7 @@ internal data class ClusterTheme(
      * cluster on the left, one solid sidebar, or a console along the bottom edge. All keep Google's
      * card on Android Auto (the right, 42-74 % down) clear.
      */
-    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK }
+    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE }
     enum class Face { SANS, SERIF, MONO }
 
     fun availableFor(connection: ClusterConnection) = native == null || native == connection
@@ -91,6 +91,14 @@ internal object ClusterThemes {
         ClusterTheme("coastline", "Coastline", ThemeCategory.EVERYDAY, layout = ClusterTheme.Layout.DECK,
             text = Color.rgb(232, 252, 248), secondary = Color.argb(180, 190, 235, 228), accent = Color.rgb(0, 214, 190),
             charge = Color.rgb(255, 196, 90), surface = Color.argb(238, 4, 32, 38)),
+        ClusterTheme("vector", "Vector", ThemeCategory.TECH, panel = ClusterTheme.Panel.FROST, layout = ClusterTheme.Layout.ARCS,
+            accent = Color.rgb(70, 160, 255), charge = Color.rgb(60, 230, 170), surface = Color.argb(170, 10, 16, 30)),
+        ClusterTheme("solar", "Solar", ThemeCategory.TECH, panel = ClusterTheme.Panel.FROST, layout = ClusterTheme.Layout.ARCS,
+            text = Color.rgb(255, 244, 228), accent = Color.rgb(255, 170, 40), charge = Color.rgb(90, 200, 255),
+            surface = Color.argb(170, 24, 14, 6)),
+        ClusterTheme("orbit", "Orbit", ThemeCategory.LUXURY, panel = ClusterTheme.Panel.FROST, layout = ClusterTheme.Layout.ORBIT,
+            face = ClusterTheme.Face.SERIF, text = Color.rgb(246, 244, 240), accent = Color.rgb(255, 190, 120),
+            charge = Color.rgb(120, 220, 255), surface = Color.argb(150, 12, 16, 24)),
         ClusterTheme("chronograph", "Chronograph", ThemeCategory.LUXURY, panel = ClusterTheme.Panel.GOLD_LINE,
             speed = ClusterTheme.Speed.DIAL, flow = ClusterTheme.Flow.HAIRLINE, face = ClusterTheme.Face.SERIF,
             text = Color.rgb(244, 236, 220), secondary = Color.argb(205, 217, 184, 120), accent = Color.rgb(217, 184, 120),
@@ -105,6 +113,12 @@ internal object ClusterThemes {
         ClusterTheme("twin-turbo", "Twin Turbo", ThemeCategory.SPORT, panel = ClusterTheme.Panel.CARBON,
             layout = ClusterTheme.Layout.TWIN_DIALS, accent = Color.rgb(255, 40, 40), charge = Color.rgb(60, 170, 255),
             surface = Color.argb(240, 16, 16, 19), edge = Color.argb(110, 255, 255, 255)),
+        ClusterTheme("ribbon", "Ribbon", ThemeCategory.SPORT, panel = ClusterTheme.Panel.FROST, layout = ClusterTheme.Layout.RIBBONS,
+            accent = Color.rgb(255, 184, 64), charge = Color.rgb(64, 170, 255), surface = Color.argb(170, 10, 16, 30)),
+        ClusterTheme("redline", "Redline", ThemeCategory.SPORT, panel = ClusterTheme.Panel.FROST, layout = ClusterTheme.Layout.PERFORMANCE,
+            accent = Color.rgb(255, 60, 40), charge = Color.rgb(60, 170, 255), surface = Color.argb(200, 12, 12, 14)),
+        ClusterTheme("circuit", "Circuit", ThemeCategory.SPORT, panel = ClusterTheme.Panel.CARBON, layout = ClusterTheme.Layout.PERFORMANCE,
+            accent = Color.rgb(255, 214, 0), charge = Color.rgb(0, 200, 255), surface = Color.argb(232, 18, 18, 20)),
         ClusterTheme("aviator", "Aviator", ThemeCategory.SPORT, panel = ClusterTheme.Panel.BRACKET,
             speed = ClusterTheme.Speed.TAPE, flow = ClusterTheme.Flow.LADDER, face = ClusterTheme.Face.MONO,
             text = Color.rgb(125, 255, 176), secondary = Color.argb(190, 125, 255, 176), accent = Color.rgb(125, 255, 176),
@@ -116,6 +130,10 @@ internal object ClusterThemes {
             speed = ClusterTheme.Speed.PLAIN, flow = ClusterTheme.Flow.HAIRLINE, text = Color.rgb(255, 59, 48),
             secondary = Color.argb(150, 255, 59, 48), accent = Color.rgb(255, 59, 48), charge = Color.rgb(255, 150, 140),
             dim = 158),
+        ClusterTheme("neon-ribbon", "Neon Ribbon", ThemeCategory.NIGHT, panel = ClusterTheme.Panel.FROST, layout = ClusterTheme.Layout.RIBBONS,
+            accent = Color.rgb(255, 70, 200), charge = Color.rgb(60, 240, 255), surface = Color.argb(170, 14, 8, 30)),
+        ClusterTheme("halo", "Halo", ThemeCategory.NIGHT, panel = ClusterTheme.Panel.FROST, layout = ClusterTheme.Layout.ORBIT,
+            accent = Color.rgb(170, 140, 255), charge = Color.rgb(110, 240, 210), surface = Color.argb(160, 10, 10, 22)),
         ClusterTheme("command", "Command", ThemeCategory.NIGHT, layout = ClusterTheme.Layout.SIDEBAR,
             text = Color.rgb(255, 176, 64), secondary = Color.argb(170, 255, 176, 64), accent = Color.rgb(255, 176, 64),
             charge = Color.rgb(120, 200, 255), surface = Color.argb(248, 6, 6, 8), edge = Color.argb(60, 255, 176, 64), dim = 110),
