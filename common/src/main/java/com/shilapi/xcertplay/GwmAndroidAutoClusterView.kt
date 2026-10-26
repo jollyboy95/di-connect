@@ -54,6 +54,7 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
     private val track = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(64, 255, 255, 255) }
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(235, 255, 255, 255) }
+    private val flow = Paint(Paint.ANTI_ALIAS_FLAG)
     private val accentFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent }
     private val low = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(255, 159, 10) }
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -90,8 +91,8 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         speedShade.shader = android.graphics.RadialGradient(0f, 0f, w * SPEED_SHADE_RADIUS,
-            intArrayOf(Color.argb(77, 0, 0, 0), Color.argb(36, 0, 0, 0), Color.argb(0, 0, 0, 0)),
-            floatArrayOf(0f, .6f, 1f), Shader.TileMode.CLAMP)
+            intArrayOf(Color.argb(224, 6, 22, 70), Color.argb(158, 8, 30, 92), Color.argb(0, 8, 30, 92)),
+            floatArrayOf(0f, .55f, 1f), Shader.TileMode.CLAMP)
         // Frosted dark band: mutes the map quickly so the lower row reads clearly.
         fade.shader = LinearGradient(0f, h * FADE_TOP, 0f, h.toFloat(),
             intArrayOf(Color.argb(0, 6, 10, 18), Color.argb(170, 6, 10, 18), Color.argb(212, 6, 10, 18), Color.argb(228, 6, 10, 18)),
@@ -175,7 +176,8 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
 
     /** Panels clear all factory telltales, including ECO at 79% and READY at the bottom centre. */
     private fun drawLowerRow(canvas: Canvas, w: Float, h: Float) {
-        val data = snapshot ?: return
+        // Stale or stopped telemetry: say "unavailable" on the battery bar rather than hide it.
+        val data = snapshot ?: return drawBatteryFlow(canvas, null, w, h)
         val size = h * .035f
         data.speedKph?.let { speed ->
             canvas.save()
@@ -190,22 +192,7 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
             canvas.drawText("km/h", w * .15f, h * .59f, text)
         }
 
-        // No guessed adapter keys or simulated live power. A dash explicitly means unavailable.
-        // Replace this state only after the H7's signed hybrid power signal is verified.
-        val meter = RectF(w * .065f, h * .625f, w * .235f, h * .643f)
-        drawGlass(canvas, RectF(meter.left - h*.012f, meter.top - h*.012f,
-            meter.right + h*.012f, meter.bottom + h*.012f), h*.018f)
-        canvas.drawRoundRect(meter, h*.009f, h*.009f, track)
-        canvas.drawLine(meter.centerX(), meter.top-h*.004f, meter.centerX(),
-            meter.bottom+h*.004f, stroke.apply { strokeWidth = h*.002f })
-        valuePaint(h*.018f)
-        text.color = secondary
-        text.textAlign = Paint.Align.LEFT
-        canvas.drawText("CHARGE", meter.left, h*.683f, text)
-        text.textAlign = Paint.Align.RIGHT
-        canvas.drawText("POWER", meter.right, h*.683f, text)
-        text.textAlign = Paint.Align.CENTER
-        canvas.drawText("—", meter.centerX(), h*.683f, text)
+        drawBatteryFlow(canvas, data.batteryCurrentA, w, h)
 
         val baseline = h * BOTTOM_BASELINE
         val fuel = RectF(w*.045f, h*BOTTOM_TOP, w*.255f, h*BOTTOM_BOTTOM)
@@ -379,6 +366,49 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
     }
 
     /** A thin fuel-pump outline: body, window and nozzle hose. */
+    /**
+     * Battery flow, centred on zero: blue to the right while the hybrid battery drives the car,
+     * green to the left while regen or the engine charges it. This is battery flow, not the stock
+     * "Energy output" gauge: with the engine driving and charging, it reads charging.
+     * kW = live current × assumed 340 V, so it is labelled approximate. When the current stops
+     * arriving the bar empties and shows "—" (unavailable), never the last value.
+     */
+    private fun drawBatteryFlow(canvas: Canvas, currentA: Float?, w: Float, h: Float) {
+        val meter = RectF(w * .065f, h * .627f, w * .235f, h * .641f)
+        drawGlass(canvas, RectF(meter.left - h*.014f, meter.top - h*.014f,
+            meter.right + h*.014f, meter.bottom + h*.014f), h*.02f)
+        canvas.drawRoundRect(meter, h*.007f, h*.007f, track)
+        val kw = currentA?.let { batteryKw(it) }
+        if (kw != null) {
+            val fraction = (kw / BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f)
+            val end = meter.centerX() + fraction * meter.width() / 2f
+            val colour = if (fraction >= 0f) DISCHARGE else CHARGE
+            flow.shader = LinearGradient(meter.centerX(), 0f, end, 0f,
+                Color.argb(140, Color.red(colour), Color.green(colour), Color.blue(colour)), colour, Shader.TileMode.CLAMP)
+            rect.set(minOf(meter.centerX(), end), meter.top, maxOf(meter.centerX(), end), meter.bottom)
+            if (rect.width() >= 1f) canvas.drawRoundRect(rect, h*.007f, h*.007f, flow)
+        }
+        canvas.drawLine(meter.centerX(), meter.top-h*.006f, meter.centerX(),
+            meter.bottom+h*.006f, stroke.apply { strokeWidth = h*.003f })
+        valuePaint(h*.018f, medium)
+        text.color = label
+        text.letterSpacing = .12f
+        text.textAlign = Paint.Align.LEFT
+        canvas.drawText("CHARGE", meter.left, h*.684f, text)
+        text.textAlign = Paint.Align.RIGHT
+        canvas.drawText("POWER", meter.right, h*.684f, text)
+        text.letterSpacing = 0f
+        valuePaint(h*.024f, medium)
+        text.textAlign = Paint.Align.CENTER
+        text.color = when {
+            kw == null -> secondary
+            kw >= 0f -> DISCHARGE_TEXT
+            else -> CHARGE_TEXT
+        }
+        canvas.drawText(kw?.let { formatKw(it) } ?: "—", meter.centerX(), h*.687f, text)
+        text.color = Color.WHITE
+    }
+
     private fun drawPump(canvas: Canvas, left: Float, top: Float, size: Float) {
         stroke.strokeWidth = size * 0.09f
         rect.set(left, top, left + size * 0.62f, top + size)
@@ -389,14 +419,41 @@ internal class GwmAndroidAutoClusterView(context: Context) : View(context) {
         canvas.drawLine(left + size * 0.86f, top + size * 0.46f, left + size * 0.86f, top + size * 0.86f, stroke)
     }
 
-    private companion object {
+    internal companion object {
         /** Where the lower fade starts, as a fraction of the panel height. */
         const val FADE_TOP = 0.74f
         /** Neutral near-black matching the strip under Google's directions card. */
         val SURFACE = Color.rgb(22, 23, 25)
         /** Centre of the factory gear indicator, which the car draws above this layer. */
         const val GEAR_X = .501f
-        const val SPEED_SHADE_RADIUS = .072f
+        /** Deep navy fade kept tight behind the speed digits, soft at the edge. */
+        const val SPEED_SHADE_RADIUS = .078f
+        /**
+         * Assumed pack voltage (334-341 V measured). The live HV voltage has no verified adapter key
+         * yet, so every kW figure is shown as approximate ("≈") until it does.
+         */
+        const val PACK_VOLTS = 340f
+        /**
+         * Provisional display scale only, from one drive (+188 A ≈ 64 kW on a hill climb). It is not
+         * the battery's confirmed limit; readings beyond it pin the bar at the end.
+         */
+        const val BATTERY_FULL_SCALE_KW = 65f
+        val DISCHARGE = Color.rgb(90, 170, 255)
+        val CHARGE = Color.rgb(70, 225, 150)
+        val DISCHARGE_TEXT = Color.rgb(120, 185, 255)
+        val CHARGE_TEXT = Color.rgb(90, 230, 160)
+
+        fun batteryKw(currentA: Float): Float = currentA * PACK_VOLTS / 1000f
+
+        /** Approximate whole kW with an explicit sign; under 0.5 kW reads ≈ 0 kW. */
+        fun formatKw(kw: Float): String {
+            val whole = kotlin.math.round(kw).toInt()
+            return when {
+                whole > 0 -> "\u2248 +$whole kW"
+                whole < 0 -> "\u2248 \u2212${-whole} kW"
+                else -> "\u2248 0 kW"
+            }
+        }
         /** One row with the factory READY and drive mode, below the EV / limit / lane lamps (end 87 %). */
         const val BOTTOM_TOP = .905f
         const val BOTTOM_BOTTOM = .975f

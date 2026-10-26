@@ -1361,6 +1361,52 @@ edit(dest/'src/main/java/com/andrerinas/openheadunit/utils/Settings.kt',
 edit(dest/'src/main/java/com/andrerinas/openheadunit/connection/LocalHotspotCredentialsProvider.kt',
     ('"DiAuto-${UUID.randomUUID().toString().take(6)}"','"Di-Connect-${UUID.randomUUID().toString().take(6)}"'))
 
+# Hybrid battery current for the Android Auto battery-flow bar. Verified live on the H7 (Oct 2026):
+# GWM_BMS_PackCurr through car.ev_info.cur_charge_current, amps, positive while the battery drives
+# the car (+188 A pulling up a hill) and negative while regen or the engine charges it (-105 A).
+# Motor power (car.ev_info.motor_power) only ever answered the -1001 sentinel, so it is not used.
+vehicle=root/'common/src/main/java/com/shilapi/xcertplay/GwmVehicleData.kt'
+edit(vehicle,
+    ('    const val ODOMETER = "car.basic.odometer"\n',
+     '    const val ODOMETER = "car.basic.odometer"\n'
+     '    /** Hybrid battery pack current in amps; positive = discharging, negative = charging. */\n'
+     '    const val BATTERY_CURRENT = "car.ev_info.cur_charge_current"\n'
+     '    /** The adapter\'s "unavailable" answer; never a real reading. */\n'
+     '    private const val UNAVAILABLE = -1001f\n'),
+    ('arrayOf(SPEED, GEAR_STATUS, CURRENT_GEAR, FUEL_PERCENT, RANGE_KM, OUTSIDE_TEMP, TOTAL_ODOMETER, ODOMETER)',
+     'arrayOf(SPEED, GEAR_STATUS, CURRENT_GEAR, FUEL_PERCENT, RANGE_KM, OUTSIDE_TEMP, TOTAL_ODOMETER, ODOMETER, BATTERY_CURRENT)'),
+    ('        val odometerKm: Float? = null,\n    ) {',
+     '        val odometerKm: Float? = null,\n        val batteryCurrentA: Float? = null,\n    ) {'),
+    ('            ?.takeIf { it in 0f..2_000_000f },\n    )',
+     '            ?.takeIf { it in 0f..2_000_000f },\n'
+     '        batteryCurrentA = number(values[BATTERY_CURRENT])?.takeIf { it != UNAVAILABLE && it in -1000f..1000f },\n    )'),
+    ('range=${snapshot.rangeKm} km outside=${snapshot.outsideTempC} °C odo=${snapshot.odometerKm} km")',
+     'range=${snapshot.rangeKm} km outside=${snapshot.outsideTempC} °C odo=${snapshot.odometerKm} km ")\n'
+     '            append("battery=${snapshot.batteryCurrentA} A")'))
+(root/'common/src/test/java/com/shilapi/xcertplay/GwmBatteryCurrentTest.kt').write_text("""package com.shilapi.xcertplay
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class GwmBatteryCurrentTest {
+    private fun current(raw: String) =
+        GwmVehicleData.snapshotFrom(mapOf(GwmVehicleData.BATTERY_CURRENT to raw), 0L).batteryCurrentA
+
+    @Test fun readsSignedAmpsAsLogged() {
+        assertEquals(188.0f, current("188.0"))
+        assertEquals(-104.8f, current("-104.8"))
+        assertEquals(2.2f, current("2.2"))
+    }
+
+    @Test fun theUnavailableSentinelIsNotAReading() {
+        assertNull(current("-1001"))
+        assertNull(current(""))
+        assertNull(current("5000"))
+    }
+}
+""")
+
 # Android Auto-only luxury cluster skin. Preserve the donor CarPlay renderer byte-for-byte.
 skin = Path('target/_integration/GwmAndroidAutoClusterView.kt')
 require(skin.is_file(), 'Missing Android Auto cluster skin')

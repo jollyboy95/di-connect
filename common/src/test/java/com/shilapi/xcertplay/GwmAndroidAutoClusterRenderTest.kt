@@ -77,6 +77,43 @@ class GwmAndroidAutoClusterRenderTest {
             cover.recycle()
         }
     }
+
+    @Test fun batteryFlowFillsBlueWhenDrivingAndGreenWhenCharging() {
+        val (width, height) = 1920 to 720
+        fun render(currentA: Float?): Bitmap {
+            val view = GwmAndroidAutoClusterView(RuntimeEnvironment.getApplication())
+            view.setSnapshot(GwmVehicleData.Snapshot(40f, "D", 60f, 500f, 20f,
+                SystemClock.elapsedRealtime(), 34618f, currentA))
+            view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+            view.layout(0, 0, width, height)
+            return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
+                it.eraseColor(Color.rgb(20, 125, 210))
+                view.draw(Canvas(it))
+            }
+        }
+        val y = (height * .634f).toInt()
+        val centre = width * .15f
+        val half = width * .085f
+        val right = (centre + half * .3f).toInt()
+        val left = (centre - half * .3f).toInt()
+        render(120f).let { // +120 A ~ +41 kW: battery driving the car
+            val p = it.getPixel(right, y)
+            assertTrue("discharge fills blue", Color.blue(p) > Color.green(p) && Color.blue(p) > Color.red(p) + 60)
+            assertEquals("nothing on the charge side", it.getPixel(left, y), render(null).getPixel(left, y))
+        }
+        render(-80f).let { // -80 A ~ -27 kW: regen or the engine charging
+            val p = it.getPixel(left, y)
+            assertTrue("charge fills green", Color.green(p) > Color.red(p) + 60 && Color.green(p) > Color.blue(p))
+        }
+    }
+
+    @Test fun batteryPowerIsSignedAndRounded() {
+        assertEquals("\u2248 +41 kW", GwmAndroidAutoClusterView.formatKw(GwmAndroidAutoClusterView.batteryKw(120f)))
+        assertEquals("\u2248 \u221227 kW", GwmAndroidAutoClusterView.formatKw(GwmAndroidAutoClusterView.batteryKw(-80f)))
+        assertEquals("\u2248 +1 kW", GwmAndroidAutoClusterView.formatKw(GwmAndroidAutoClusterView.batteryKw(2.2f)))
+        assertEquals("\u2248 0 kW", GwmAndroidAutoClusterView.formatKw(0.3f))
+    }
 }
 
 
