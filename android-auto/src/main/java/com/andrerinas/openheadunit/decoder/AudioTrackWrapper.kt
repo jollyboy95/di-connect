@@ -39,6 +39,12 @@ class AudioTrackWrapper(
     companion object {
         private const val AUDIO_BUFFER_POOL_LIMIT = 16
         private const val MIN_POOLED_AUDIO_BUFFER_SIZE = 4096
+        /** Room for the burst the phone sends after a Wi-Fi hiccup, so it is not dropped. */
+        private const val MIN_QUEUE_CAPACITY = 200
+        /** A longer silence between packets mid-song is a network gap worth recording. */
+        private const val GAP_REPORT_MS = 250L
+        private const val GAP_IGNORE_MS = 5_000L
+        private const val UNDERRUN_CHECK_MS = 2_000L
     }
 
     private val audioTrack: AudioTrack?
@@ -51,13 +57,32 @@ class AudioTrackWrapper(
 
     // Limit queue capacity to provide backpressure to the network thread if audio playback is slow
     private val dataQueue = if (audioQueueCapacity > 0)
-        LinkedBlockingQueue<AudioChunk>(audioQueueCapacity)
+        LinkedBlockingQueue<AudioChunk>(maxOf(audioQueueCapacity, MIN_QUEUE_CAPACITY))
     else
         LinkedBlockingQueue<AudioChunk>()
     private val audioBufferPool = LinkedBlockingQueue<ByteArray>()
 
     @Volatile
     private var isRunning = true
+
+    // Stutter evidence, logged as AUDIO-STALL lines (see the diagnostic report).
+    private var lastPacketAt = 0L
+    private var droppedChunks = 0
+    private var lastUnderruns = 0
+    private var lastUnderrunCheck = 0L
+
+    private fun noteUnderruns() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastUnderrunCheck < UNDERRUN_CHECK_MS) return
+        lastUnderrunCheck = now
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+        val track = audioTrack ?: return
+        val count = runCatching { track.underrunCount }.getOrDefault(lastUnderruns)
+        if (count > lastUnderruns) {
+            AppLog.w("AUDIO-STALL underrun channel=$channelId +${count - lastUnderruns} total=$count queued=${dataQueue.size}")
+        }
+        lastUnderruns = count
+    }
 
     @Volatile
     private var currentGain: Float = gain
@@ -240,6 +265,7 @@ class AudioTrackWrapper(
             try {
                 // Use poll to avoid blocking indefinitely if isRunning becomes false
                 val chunk = dataQueue.poll(200, TimeUnit.MILLISECONDS)
+                noteUnderruns()
                 if (chunk != null) {
                     try {
                         if (isAac && decoder != null) {
@@ -439,6 +465,13 @@ class AudioTrackWrapper(
 
     fun write(buffer: ByteArray, offset: Int, size: Int) {
         if (!isRunning) return
+        val arrived = android.os.SystemClock.elapsedRealtime()
+        val gap = arrived - lastPacketAt
+        // Pauses stop the stream for much longer; only a short silence mid-song is a Wi-Fi gap.
+        if (lastPacketAt != 0L && gap in GAP_REPORT_MS until GAP_IGNORE_MS) {
+            AppLog.w("AUDIO-STALL packet gap channel=$channelId ${gap}ms queued=${dataQueue.size}")
+        }
+        lastPacketAt = arrived
 
         var data: ByteArray? = null
         try {
@@ -447,7 +480,8 @@ class AudioTrackWrapper(
             val success = dataQueue.offer(AudioChunk(data, size), 5, TimeUnit.MILLISECONDS)
             if (!success) {
                 recycleAudioBuffer(data)
-                AppLog.w("Audio queue is full, dropping audio frame to prevent stalling")
+                droppedChunks++
+                AppLog.w("AUDIO-STALL queue full channel=$channelId dropped=$droppedChunks capacity=${maxOf(audioQueueCapacity, MIN_QUEUE_CAPACITY)}")
             }
         } catch (e: InterruptedException) {
             data?.let { recycleAudioBuffer(it) }
