@@ -1513,6 +1513,24 @@ edit(softap,
      '        /** Tethering that is not the car hotspot: USB, Bluetooth PAN and Ethernet sharing. */\n'
      '        private val TETHER_NOT_WIFI = listOf("rndis", "usb", "ncm", "bt-pan", "bnep")\n'))
 
+# USB Android Auto for any Android phone (Oct 2026). Di-Connect disables DiAuto's UsbAttachedActivity
+# so Android Auto cannot start underneath CarPlay, which leaves the service's attach fallback as the
+# only USB path, and that fallback only accepted Google's vendor ID. A Samsung S26 Ultra (04e8)
+# was logged as "Trying from service..." and then nothing. Accept one Android phone of any vendor.
+edit(AAP,
+    ("""            val googleDevices = nonAccessoryDevices.filter { it.vendorId == 0x18D1 }
+            if (googleDevices.size == 1) {
+                AppLog.i("Fallback: force=true and found single Google normal-mode device ${UsbDeviceCompat(googleDevices[0]).uniqueName}. Switching to accessory mode.")
+                performSingleUsbConnect(googleDevices[0])
+            }""",
+     """            // isAndroidDevice already excludes the CarPlay iPhone, hubs and the MFi chip.
+            if (nonAccessoryDevices.size == 1) {
+                AppLog.i("Fallback: force=true and found one Android phone in normal mode ${UsbDeviceCompat(nonAccessoryDevices[0]).uniqueName}. Switching to accessory mode.")
+                performSingleUsbConnect(nonAccessoryDevices[0])
+            } else {
+                AppLog.i("USB attach: ${nonAccessoryDevices.size} Android devices in normal mode; not choosing one automatically.")
+            }"""))
+
 # Android Auto-only luxury cluster skin. Preserve the donor CarPlay renderer byte-for-byte.
 skin = Path('target/_integration/GwmAndroidAutoClusterView.kt')
 require(skin.is_file(), 'Missing Android Auto cluster skin')
