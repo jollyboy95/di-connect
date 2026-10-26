@@ -80,7 +80,7 @@ jobs:
         run: ./gradlew :android-auto:testDebugUnitTest --tests '*BydNavigationMapperTest' --tests '*PrivateDiagnosticExportTest' $GRADLE_ARGS
       - name: Render actual Android Auto cluster and check protected regions
         timeout-minutes: 15
-        run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' $GRADLE_ARGS
+        run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
       - name: Upload actual cluster renders
         if: always()
         uses: actions/upload-artifact@v4

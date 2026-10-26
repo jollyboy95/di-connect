@@ -1481,7 +1481,7 @@ edit(D,("""                if (!UpdateChecksums.matches(expected, release.apkNam
                     throw IOException("Checksum mismatch for ${release.apkName}")
                 }
                 // Same app, same signing key: anything else is refused before the installer opens.
-                if (!UpdateSignature.matchesInstalled(applicationContext, apkFile)) {
+                if (!com.shilapi.xcertplay.update.UpdateSignature.matchesInstalled(applicationContext, apkFile)) {
                     throw IOException(getString(R.string.di_connect_update_wrong_signer))
                 }
 """))
