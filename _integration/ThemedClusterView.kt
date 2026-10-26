@@ -947,42 +947,49 @@ internal class ThemedClusterView(
         line.strokeWidth = 2.5f * s; canvas.drawPath(path, line); line.shader = null
         val data = snapshot
         // Speed in the raised centre.
+        // The car draws its own indicators over this strip: EV, the speed-limit sign and lane
+        // assist low on the left (about 3-20 % across, 83-91 % down), READY under the middle
+        // (46-58 % across, below 91 %) and the drive mode at 75-79 % across on the bottom line.
+        // Everything here keeps out of those spots.
+        val value = data?.speedKph?.roundToInt()?.toString() ?: "—"
         type(.13f * h, theme.text, 800, Paint.Align.CENTER)
-        canvas.drawText(data?.speedKph?.roundToInt()?.toString() ?: "—", .5f * w, .89f * h, text)
-        type(.022f * h, theme.secondary, 600, Paint.Align.CENTER, .2f); canvas.drawText("KM/H", .5f * w, .94f * h, text)
-        // Left wing: power, then fuel.
-        val rowOne = .9f * h
-        val rowTwo = .96f * h
+        canvas.drawText(value, .5f * w, .875f * h, text)
+        val half = text.measureText(value) / 2f
+        type(.022f * h, theme.secondary, 600, Paint.Align.LEFT, .2f); canvas.drawText("KM/H", .5f * w + half + .006f * w, .875f * h, text)
+        // Left wing, all on the bottom line under the car's indicators: fuel, then power.
+        val row = .962f * h
         val kw = data?.batteryCurrentA?.let { GwmAndroidAutoClusterView.batteryKw(it) }
-        val l = .03f * w
-        val r = .2f * w
+        val fl = .03f * w
+        drawPump(canvas, fl, row - .03f * h, .03f * h)
+        type(.03f * h, theme.text, 600)
+        val fuelText = listOfNotNull(data?.fuelPercent?.let { "${it.roundToInt()}%" }, data?.rangeKm?.let { "${it.roundToInt()} km" })
+            .joinToString("  ·  ").ifEmpty { "—" }
+        canvas.drawText(fuelText, fl + .03f * h, row, text)
+        val l = maxOf(fl + .03f * h + text.measureText(fuelText) + .025f * w, .17f * w)
+        val r = l + .11f * w
         val mid = (l + r) / 2f
-        rect.set(l, rowOne - 12f * s, r, rowOne - 4f * s); fill.color = Color.argb(46, 255, 255, 255); canvas.drawRoundRect(rect, 4f * s, 4f * s, fill)
+        val by = row - .012f * h
+        rect.set(l, by - 4f * s, r, by + 4f * s); fill.shader = null; fill.color = Color.argb(46, 255, 255, 255); canvas.drawRoundRect(rect, 4f * s, 4f * s, fill)
         if (kw != null) {
             val fx = mid + (r - l) / 2f * (kw / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f)
-            rect.set(minOf(mid, fx), rowOne - 12f * s, maxOf(mid, fx), rowOne - 4f * s)
+            rect.set(minOf(mid, fx), by - 4f * s, maxOf(mid, fx), by + 4f * s)
             fill.color = if (kw >= 0) theme.accent else theme.charge; canvas.drawRoundRect(rect, 4f * s, 4f * s, fill)
         }
-        fill.color = theme.text; canvas.drawRect(mid - 1f * s, rowOne - 18f * s, mid + 1f * s, rowOne + 2f * s, fill)
-        type(.03f * h, when { kw == null -> theme.secondary; kw >= 0 -> theme.accent; else -> theme.charge }, 700)
-        canvas.drawText(kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", r + .012f * w, rowOne, text)
-        drawPump(canvas, l, rowTwo - .03f * h, .03f * h)
-        type(.03f * h, theme.text, 600)
-        canvas.drawText(listOfNotNull(data?.fuelPercent?.let { "${it.roundToInt()}%" }, data?.rangeKm?.let { "${it.roundToInt()} km" })
-            .joinToString("  ·  ").ifEmpty { "—" }, l + .03f * h, rowTwo, text)
-        // Right wing: now playing, then clock, temperature and odometer.
-        val rl = .7f * w
+        fill.color = theme.text; canvas.drawRect(mid - 1f * s, by - 10f * s, mid + 1f * s, by + 10f * s, fill)
+        type(.028f * h, when { kw == null -> theme.secondary; kw >= 0 -> theme.accent; else -> theme.charge }, 700)
+        canvas.drawText(kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", r + .01f * w, row, text)
+        // Right wing, right-aligned so it ends clear of the drive-mode label: music, then the rest.
         val rr = .97f * w
+        val room = rr - .8f * w
         if (showMusic) music.info.title?.takeIf { it.isNotBlank() }?.let { title ->
-            type(.03f * h, theme.text, 700)
-            val shown = fit(listOfNotNull(title, music.info.artist?.takeIf { it.isNotBlank() }).joinToString(" — "), rr - rl)
-            canvas.drawText(shown, rl, rowOne, text)
+            type(.03f * h, theme.text, 700, Paint.Align.RIGHT)
+            canvas.drawText(fit(listOfNotNull(title, music.info.artist?.takeIf { it.isNotBlank() }).joinToString(" — "), rr - .66f * w), rr, .9f * h, text)
         }
-        type(.026f * h, theme.secondary, 500)
+        type(.026f * h, theme.secondary, 500, Paint.Align.RIGHT)
         val info = listOfNotNull(SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()),
             data?.outsideTempC?.let { "${it.roundToInt()}°C" },
-            data?.odometerKm?.let { "ODO " + NumberFormat.getIntegerInstance().format(it.roundToInt()) + " km" }).joinToString("   ")
-        canvas.drawText(fit(info, rr - rl), rl, rowTwo, text)
+            data?.odometerKm?.let { NumberFormat.getIntegerInstance().format(it.roundToInt()) + " km" }).joinToString("   ")
+        canvas.drawText(fit(info, room), rr, row, text)
     }
 
     // ---- segment display -------------------------------------------------------------------
