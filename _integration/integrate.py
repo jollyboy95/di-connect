@@ -1755,12 +1755,21 @@ edit(D,
 
     private var themesTab = 0
 
+    /** Co-Pilot photo: copied small into the app, so the original stays in the driver's gallery. */
+    private val coPilotPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        if (ClusterThemeStore.saveCoPilot(this, uri)) render()
+        else android.widget.Toast.makeText(this, getString(R.string.di_connect_theme_photo_failed), android.widget.Toast.LENGTH_LONG).show()
+    }
+
     /**
-     * The theme engine's screen: Android Auto and CarPlay tabs over one gallery. Each connection
-     * keeps its own theme; until more themes ship, each tab lists the one theme it has.
+     * The theme engine's screen: Android Auto and CarPlay tabs over one gallery grouped by
+     * category. Each preview is drawn by the real renderer. A choice applies to the cluster at once.
      */
     private fun themes(content: LinearLayout) {
         val compact = isCompactLayout
+        val same = ClusterThemeStore.sameForBoth(this)
+        val connection = if (themesTab == 0) ClusterConnection.ANDROID_AUTO else ClusterConnection.CARPLAY
         content.addView(label(getString(R.string.di_connect_themes), if (compact) 24 else 32, TEXT, true))
         content.addView(label(getString(R.string.di_connect_themes_subtitle), 16, MUTED).apply {
             setPadding(0, dp(6), 0, dp(SETTINGS_BLOCK_GAP_DP))
@@ -1772,20 +1781,76 @@ edit(D,
                     LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
             }
         })
-        val (name, description) = if (themesTab == 0)
-            R.string.di_connect_theme_modern to R.string.di_connect_theme_modern_description
-        else R.string.di_connect_theme_glass to R.string.di_connect_theme_glass_description
-        val card = card()
-        card.addView(row().apply {
-            gravity = Gravity.CENTER_VERTICAL
-            addView(label(getString(name), 22, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
-            addView(label(getString(R.string.di_connect_theme_in_use), 15, ACCENT, true))
-        })
-        card.addView(label(getString(description), 16, MUTED).apply { setPadding(0, dp(8), 0, 0) })
-        content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+        content.addView(button("${getString(R.string.di_connect_themes_same)} · " +
+            getString(if (same) R.string.di_connect_on else R.string.di_connect_off), false) {
+            ClusterThemeStore.setSameForBoth(this, !same)
+            render()
+        }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        val selected = ClusterThemeStore.selected(this, connection)
+        if (selected.id == ClusterThemes.CO_PILOT) {
+            content.addView(button(getString(R.string.di_connect_theme_choose_photo), true) { coPilotPicker.launch("image/*") },
+                matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        }
+        val columns = when {
+            compact -> 1
+            resources.configuration.screenWidthDp >= 1100 -> 3
+            else -> 2
+        }
+        ThemeCategory.entries.forEach { category ->
+            val themes = ClusterThemes.availableFor(connection).filter { it.category == category }
+            if (themes.isEmpty()) return@forEach
+            content.addView(label(getString(themeCategoryName(category)), 18, TEXT, true).apply {
+                setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
+            })
+            themes.chunked(columns).forEach { group ->
+                val line = row()
+                for (index in 0 until columns) {
+                    if (index > 0) line.addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                    val theme = group.getOrNull(index)
+                    line.addView(if (theme == null) View(this) else themeCard(theme, connection, theme.id == selected.id),
+                        LinearLayout.LayoutParams(0, -2, 1f))
+                }
+                content.addView(line, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+            }
+        }
         content.addView(label(getString(R.string.di_connect_themes_more), 15, MUTED).apply {
             setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
         })
+    }
+
+    private fun themeCategoryName(category: ThemeCategory) = when (category) {
+        ThemeCategory.EVERYDAY -> R.string.di_connect_theme_category_everyday
+        ThemeCategory.TECH -> R.string.di_connect_theme_category_tech
+        ThemeCategory.LUXURY -> R.string.di_connect_theme_category_luxury
+        ThemeCategory.SPORT -> R.string.di_connect_theme_category_sport
+        ThemeCategory.NIGHT -> R.string.di_connect_theme_category_night
+        ThemeCategory.PETS -> R.string.di_connect_theme_category_pets
+    }
+
+    private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean): View {
+        val card = column().apply {
+            background = rounded(SURFACE, if (selected) ACCENT else BORDER)
+            setPadding(dp(10), dp(10), dp(10), dp(12))
+            isClickable = true
+            isFocusable = true
+            contentDescription = theme.name
+            setOnClickListener {
+                ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
+                render()
+            }
+        }
+        card.addView(ImageView(this).apply {
+            setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection))
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(-1, -2))
+        card.addView(row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(label(theme.name, 17, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
+            if (selected) addView(label(getString(R.string.di_connect_theme_in_use), 14, ACCENT, true))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        return card
     }
 
     private fun connect(wireless: Boolean) {
@@ -1805,13 +1870,25 @@ CONTROL_STRINGS={
   '停止 CarPlay 和 Android Auto，关闭仪表盘和抬头显示，然后重新打开 Di-Connect。在某些功能无响应时使用。',
   '停止 CarPlay 和 Android Auto，關閉儀表板和抬頭顯示器，然後重新開啟 Di-Connect。在某些功能沒有回應時使用。'],
  'di_connect_carplay':['CarPlay']*9,
- 'di_connect_themes_subtitle':['Choose how the dash cluster looks for each connection.','اختر شكل لوحة العدادات لكل اتصال.','Elige el aspecto del cuadro de instrumentos para cada conexión.',"Scegli l\\'aspetto del quadro strumenti per ogni connessione.",'接続ごとにメーターの見た目を選びます。','Выберите вид приборной панели для каждого подключения.','Виберіть вигляд панелі приладів для кожного підключення.','为每种连接选择仪表盘外观。','為每種連線選擇儀表板外觀。'],
+ 'di_connect_themes_subtitle':['Choose how the dash cluster looks for each connection. A new choice shows straight away.', 'اختر شكل لوحة العدادات لكل اتصال. يظهر الاختيار الجديد فورًا.', 'Elige el aspecto del cuadro para cada conexión. El cambio se ve al instante.', "Scegli l\\'aspetto del quadro per ogni connessione. La scelta si vede subito.", '接続ごとにメーターの見た目を選びます。選ぶとすぐに反映されます。', 'Выберите вид приборной панели для каждого подключения. Выбор применяется сразу.', 'Виберіть вигляд панелі приладів для кожного підключення. Вибір застосовується одразу.', '为每种连接选择仪表盘外观。选择后立即生效。', '為每種連線選擇儀表板外觀。選擇後立即生效。'],
  'di_connect_theme_in_use':['✓ In use','✓ قيد الاستخدام','✓ En uso','✓ In uso','✓ 使用中','✓ Используется','✓ Використовується','✓ 使用中','✓ 使用中'],
  'di_connect_theme_modern':['Modern']*9,
  'di_connect_theme_modern_description':['Android 17 style: dark pills, a live battery-flow bar and a navy glow behind the speed.','بأسلوب Android 17: كبسولات داكنة وشريط تدفق البطارية المباشر وتوهج كحلي خلف السرعة.','Estilo Android 17: píldoras oscuras, barra de flujo de batería en vivo y un brillo azul marino tras la velocidad.',"Stile Android 17: pillole scure, barra del flusso della batteria in tempo reale e un alone blu notte dietro la velocità.",'Android 17 スタイル：ダークなピル、リアルタイムのバッテリーフローバー、速度の後ろのネイビーの光。','Стиль Android 17: тёмные плашки, полоса потока батареи в реальном времени и тёмно-синее свечение за скоростью.','Стиль Android 17: темні плашки, смуга потоку батареї в реальному часі та темно-синє світіння за швидкістю.','Android 17 风格：深色胶囊、实时电池能量流条，以及速度后的海军蓝光晕。','Android 17 風格：深色膠囊、即時電池能量流條，以及速度後方的海軍藍光暈。'],
  'di_connect_theme_glass':['Glass']*9,
  'di_connect_theme_glass_description':["iOS style: frosted panels and Di-Connect\\'s own directions card.",'بأسلوب iOS: لوحات شفافة وبطاقة الاتجاهات الخاصة بـ Di-Connect.','Estilo iOS: paneles esmerilados y la tarjeta de indicaciones propia de Di-Connect.',"Stile iOS: pannelli satinati e la scheda indicazioni di Di-Connect.",'iOS スタイル：すりガラス調のパネルと Di-Connect 独自の案内カード。','Стиль iOS: матовые панели и собственная карточка маршрута Di-Connect.','Стиль iOS: матові панелі та власна картка маршруту Di-Connect.','iOS 风格：磨砂面板和 Di-Connect 自带的导航卡片。','iOS 風格：霧面面板和 Di-Connect 自帶的導航卡片。'],
- 'di_connect_themes_more':['More themes are on the way. Using one theme for both and previewing a theme on the cluster arrive with them.','المزيد من السمات قادم. استخدام سمة واحدة لكليهما ومعاينة السمة على لوحة العدادات سيأتيان معها.','Pronto llegarán más temas. Usar un mismo tema para ambos y previsualizarlo en el cuadro llegarán con ellos.',"Altri temi in arrivo. Usare un tema per entrambi e vederne l\\'anteprima sul quadro arriveranno con loro.",'テーマは今後追加されます。両方に同じテーマを使う機能とメーターでのプレビューも同時に追加されます。','Скоро появятся новые темы. Вместе с ними — одна тема для обоих и предпросмотр на приборной панели.','Незабаром з’являться нові теми. Разом із ними — одна тема для обох і попередній перегляд на панелі приладів.','更多主题即将推出，届时还会加入两者共用一个主题和在仪表盘上预览主题。','更多主題即將推出，屆時還會加入兩者共用一個主題和在儀表板上預覽主題。'],
+ 'di_connect_themes_more':['Full-screen layouts with a framed map are coming next.', 'التخطيطات بملء الشاشة مع خريطة داخل إطار قادمة قريبًا.', 'Pronto llegarán diseños a pantalla completa con el mapa enmarcado.', 'In arrivo i layout a schermo intero con la mappa incorniciata.', '地図を枠に収めた全画面レイアウトを次に追加予定です。', 'Скоро — полноэкранные макеты с картой в рамке.', 'Незабаром — повноекранні макети з картою в рамці.', '带框地图的全屏布局即将推出。', '帶框地圖的全螢幕版面即將推出。'],
+ 'di_connect_theme_speed':['Speed', 'السرعة', 'Velocidad', 'Velocità', '速度', 'Скорость', 'Швидкість', '速度', '速度'],
+ 'di_connect_themes_same':['One theme for both', 'سمة واحدة لكليهما', 'Un tema para ambos', 'Un tema per entrambi', '両方に同じテーマ', 'Одна тема для обоих', 'Одна тема для обох', '两者使用同一主题', '兩者使用同一主題'],
+ 'di_connect_on':['On', 'تشغيل', 'Activado', 'Attivo', 'オン', 'Вкл.', 'Увімк.', '开', '開'],
+ 'di_connect_off':['Off', 'إيقاف', 'Desactivado', 'Disattivo', 'オフ', 'Выкл.', 'Вимк.', '关', '關'],
+ 'di_connect_theme_choose_photo':['Choose co-pilot photo', 'اختر صورة مساعد السائق', 'Elegir foto del copiloto', 'Scegli la foto del copilota', '副操縦士の写真を選ぶ', 'Выбрать фото второго пилота', 'Вибрати фото другого пілота', '选择副驾驶照片', '選擇副駕駛照片'],
+ 'di_connect_theme_photo_failed':['That picture could not be opened. Try another photo.', 'تعذّر فتح هذه الصورة. جرّب صورة أخرى.', 'No se pudo abrir esa imagen. Prueba con otra foto.', "Impossibile aprire l\\'immagine. Prova con un\\'altra foto.", 'この画像を開けませんでした。別の写真をお試しください。', 'Не удалось открыть изображение. Попробуйте другое фото.', 'Не вдалося відкрити зображення. Спробуйте інше фото.', '无法打开该图片。请换一张照片。', '無法開啟這張圖片。請換一張照片。'],
+ 'di_connect_theme_category_everyday':['Everyday', 'يومي', 'Diario', 'Quotidiano', 'デイリー', 'На каждый день', 'На щодень', '日常', '日常'],
+ 'di_connect_theme_category_tech':['Tech-inspired', 'مستوحى من التقنية', 'Inspirado en la tecnología', 'Ispirato alla tecnologia', 'テック風', 'В стиле гаджетов', 'У стилі гаджетів', '科技风', '科技風'],
+ 'di_connect_theme_category_luxury':['Luxury car-inspired', 'مستوحى من السيارات الفاخرة', 'Inspirado en coches de lujo', 'Ispirato alle auto di lusso', '高級車風', 'В стиле премиум-авто', 'У стилі преміум-авто', '豪华车风', '豪華車風'],
+ 'di_connect_theme_category_sport':['Sport and motorsport', 'رياضي', 'Deportivo', 'Sportivo', 'スポーツ', 'Спорт', 'Спорт', '运动', '運動'],
+ 'di_connect_theme_category_night':['Night', 'ليلي', 'Noche', 'Notte', 'ナイト', 'Ночь', 'Ніч', '夜间', '夜間'],
+ 'di_connect_theme_category_pets':['Pets', 'الحيوانات الأليفة', 'Mascotas', 'Animali', 'ペット', 'Питомцы', 'Улюбленці', '宠物', '寵物'],
 }
 for p in STRINGS:
     i=LOCALE_ORDER.index(p.parent.name)
@@ -2040,3 +2117,22 @@ class DiConnectUpdateTest {
     }
 }
 """)
+
+# Theme engine (Oct 2026): every cluster theme is data drawn by one renderer, picked per connection
+# on the Themes screen and swapped live. Modern (Android Auto) and Glass (CarPlay) are the original
+# renderers. Android Auto's and CarPlay's cluster layers become a ClusterThemeFrame.
+for name in ['ClusterThemes.kt', 'ThemedClusterView.kt', 'ClusterThemeFrame.kt']:
+    source = Path('target/_integration')/name
+    require(source.is_file(), f'Missing theme engine source {name}')
+    (root/'common/src/main/java/com/shilapi/xcertplay'/name).write_text(source.read_text())
+edit(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt',
+    ('private val hud = GwmAndroidAutoClusterView(displayContext)',
+     'private val hud = ClusterThemeFrame(displayContext, ClusterConnection.ANDROID_AUTO)'))
+host = root/'common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt'
+edit(host,
+    ('    private var gwmHud: GwmClusterHudView? = null\n', '    private var gwmHud: ClusterThemeFrame? = null\n'),
+    ('            GwmClusterHudView(displayContext).also { hud ->',
+     '            ClusterThemeFrame(displayContext, ClusterConnection.CARPLAY).also { hud ->'))
+test = Path('target/_integration/ClusterThemesRenderTest.kt')
+require(test.is_file(), 'Missing theme engine render test')
+(root/'common/src/test/java/com/shilapi/xcertplay/ClusterThemesRenderTest.kt').write_text(test.read_text())

@@ -6062,12 +6062,21 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
 
     private var themesTab = 0
 
+    /** Co-Pilot photo: copied small into the app, so the original stays in the driver's gallery. */
+    private val coPilotPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        if (ClusterThemeStore.saveCoPilot(this, uri)) render()
+        else android.widget.Toast.makeText(this, getString(R.string.di_connect_theme_photo_failed), android.widget.Toast.LENGTH_LONG).show()
+    }
+
     /**
-     * The theme engine's screen: Android Auto and CarPlay tabs over one gallery. Each connection
-     * keeps its own theme; until more themes ship, each tab lists the one theme it has.
+     * The theme engine's screen: Android Auto and CarPlay tabs over one gallery grouped by
+     * category. Each preview is drawn by the real renderer. A choice applies to the cluster at once.
      */
     private fun themes(content: LinearLayout) {
         val compact = isCompactLayout
+        val same = ClusterThemeStore.sameForBoth(this)
+        val connection = if (themesTab == 0) ClusterConnection.ANDROID_AUTO else ClusterConnection.CARPLAY
         content.addView(label(getString(R.string.di_connect_themes), if (compact) 24 else 32, TEXT, true))
         content.addView(label(getString(R.string.di_connect_themes_subtitle), 16, MUTED).apply {
             setPadding(0, dp(6), 0, dp(SETTINGS_BLOCK_GAP_DP))
@@ -6079,20 +6088,76 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
             }
         })
-        val (name, description) = if (themesTab == 0)
-            R.string.di_connect_theme_modern to R.string.di_connect_theme_modern_description
-        else R.string.di_connect_theme_glass to R.string.di_connect_theme_glass_description
-        val card = card()
-        card.addView(row().apply {
-            gravity = Gravity.CENTER_VERTICAL
-            addView(label(getString(name), 22, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
-            addView(label(getString(R.string.di_connect_theme_in_use), 15, ACCENT, true))
-        })
-        card.addView(label(getString(description), 16, MUTED).apply { setPadding(0, dp(8), 0, 0) })
-        content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+        content.addView(button("${getString(R.string.di_connect_themes_same)} · " +
+            getString(if (same) R.string.di_connect_on else R.string.di_connect_off), false) {
+            ClusterThemeStore.setSameForBoth(this, !same)
+            render()
+        }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        val selected = ClusterThemeStore.selected(this, connection)
+        if (selected.id == ClusterThemes.CO_PILOT) {
+            content.addView(button(getString(R.string.di_connect_theme_choose_photo), true) { coPilotPicker.launch("image/*") },
+                matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        }
+        val columns = when {
+            compact -> 1
+            resources.configuration.screenWidthDp >= 1100 -> 3
+            else -> 2
+        }
+        ThemeCategory.entries.forEach { category ->
+            val themes = ClusterThemes.availableFor(connection).filter { it.category == category }
+            if (themes.isEmpty()) return@forEach
+            content.addView(label(getString(themeCategoryName(category)), 18, TEXT, true).apply {
+                setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
+            })
+            themes.chunked(columns).forEach { group ->
+                val line = row()
+                for (index in 0 until columns) {
+                    if (index > 0) line.addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                    val theme = group.getOrNull(index)
+                    line.addView(if (theme == null) View(this) else themeCard(theme, connection, theme.id == selected.id),
+                        LinearLayout.LayoutParams(0, -2, 1f))
+                }
+                content.addView(line, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+            }
+        }
         content.addView(label(getString(R.string.di_connect_themes_more), 15, MUTED).apply {
             setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
         })
+    }
+
+    private fun themeCategoryName(category: ThemeCategory) = when (category) {
+        ThemeCategory.EVERYDAY -> R.string.di_connect_theme_category_everyday
+        ThemeCategory.TECH -> R.string.di_connect_theme_category_tech
+        ThemeCategory.LUXURY -> R.string.di_connect_theme_category_luxury
+        ThemeCategory.SPORT -> R.string.di_connect_theme_category_sport
+        ThemeCategory.NIGHT -> R.string.di_connect_theme_category_night
+        ThemeCategory.PETS -> R.string.di_connect_theme_category_pets
+    }
+
+    private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean): View {
+        val card = column().apply {
+            background = rounded(SURFACE, if (selected) ACCENT else BORDER)
+            setPadding(dp(10), dp(10), dp(10), dp(12))
+            isClickable = true
+            isFocusable = true
+            contentDescription = theme.name
+            setOnClickListener {
+                ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
+                render()
+            }
+        }
+        card.addView(ImageView(this).apply {
+            setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection))
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(-1, -2))
+        card.addView(row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(label(theme.name, 17, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
+            if (selected) addView(label(getString(R.string.di_connect_theme_in_use), 14, ACCENT, true))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        return card
     }
 
     private fun connect(wireless: Boolean) {

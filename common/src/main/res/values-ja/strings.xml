@@ -1099,12 +1099,24 @@
     <string name="di_connect_restart_title">Di-Connect を再起動しますか？</string>
     <string name="di_connect_restart_message">CarPlay と Android Auto を停止し、メーターとヘッドアップディスプレイを閉じてから Di-Connect を開き直します。反応しなくなったときに使います。</string>
     <string name="di_connect_carplay">CarPlay</string>
-    <string name="di_connect_themes_subtitle">接続ごとにメーターの見た目を選びます。</string>
+    <string name="di_connect_themes_subtitle">接続ごとにメーターの見た目を選びます。選ぶとすぐに反映されます。</string>
     <string name="di_connect_theme_in_use">✓ 使用中</string>
     <string name="di_connect_theme_modern">Modern</string>
     <string name="di_connect_theme_modern_description">Android 17 スタイル：ダークなピル、リアルタイムのバッテリーフローバー、速度の後ろのネイビーの光。</string>
     <string name="di_connect_theme_glass">Glass</string>
     <string name="di_connect_theme_glass_description">iOS スタイル：すりガラス調のパネルと Di-Connect 独自の案内カード。</string>
-    <string name="di_connect_themes_more">テーマは今後追加されます。両方に同じテーマを使う機能とメーターでのプレビューも同時に追加されます。</string>
+    <string name="di_connect_themes_more">地図を枠に収めた全画面レイアウトを次に追加予定です。</string>
+    <string name="di_connect_theme_speed">速度</string>
+    <string name="di_connect_themes_same">両方に同じテーマ</string>
+    <string name="di_connect_on">オン</string>
+    <string name="di_connect_off">オフ</string>
+    <string name="di_connect_theme_choose_photo">副操縦士の写真を選ぶ</string>
+    <string name="di_connect_theme_photo_failed">この画像を開けませんでした。別の写真をお試しください。</string>
+    <string name="di_connect_theme_category_everyday">デイリー</string>
+    <string name="di_connect_theme_category_tech">テック風</string>
+    <string name="di_connect_theme_category_luxury">高級車風</string>
+    <string name="di_connect_theme_category_sport">スポーツ</string>
+    <string name="di_connect_theme_category_night">ナイト</string>
+    <string name="di_connect_theme_category_pets">ペット</string>
     <string name="di_connect_update_wrong_signer">このダウンロードはあなたの鍵で署名された Di-Connect ではないため、インストールしませんでした。</string>
 </resources>

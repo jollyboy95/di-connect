@@ -1046,12 +1046,24 @@
     <string name="di_connect_restart_title">إعادة تشغيل Di-Connect؟</string>
     <string name="di_connect_restart_message">يوقف CarPlay وAndroid Auto ويغلق لوحة العدادات وشاشة العرض الأمامية ثم يفتح Di-Connect من جديد. استخدمه إذا توقف شيء عن الاستجابة.</string>
     <string name="di_connect_carplay">CarPlay</string>
-    <string name="di_connect_themes_subtitle">اختر شكل لوحة العدادات لكل اتصال.</string>
+    <string name="di_connect_themes_subtitle">اختر شكل لوحة العدادات لكل اتصال. يظهر الاختيار الجديد فورًا.</string>
     <string name="di_connect_theme_in_use">✓ قيد الاستخدام</string>
     <string name="di_connect_theme_modern">Modern</string>
     <string name="di_connect_theme_modern_description">بأسلوب Android 17: كبسولات داكنة وشريط تدفق البطارية المباشر وتوهج كحلي خلف السرعة.</string>
     <string name="di_connect_theme_glass">Glass</string>
     <string name="di_connect_theme_glass_description">بأسلوب iOS: لوحات شفافة وبطاقة الاتجاهات الخاصة بـ Di-Connect.</string>
-    <string name="di_connect_themes_more">المزيد من السمات قادم. استخدام سمة واحدة لكليهما ومعاينة السمة على لوحة العدادات سيأتيان معها.</string>
+    <string name="di_connect_themes_more">التخطيطات بملء الشاشة مع خريطة داخل إطار قادمة قريبًا.</string>
+    <string name="di_connect_theme_speed">السرعة</string>
+    <string name="di_connect_themes_same">سمة واحدة لكليهما</string>
+    <string name="di_connect_on">تشغيل</string>
+    <string name="di_connect_off">إيقاف</string>
+    <string name="di_connect_theme_choose_photo">اختر صورة مساعد السائق</string>
+    <string name="di_connect_theme_photo_failed">تعذّر فتح هذه الصورة. جرّب صورة أخرى.</string>
+    <string name="di_connect_theme_category_everyday">يومي</string>
+    <string name="di_connect_theme_category_tech">مستوحى من التقنية</string>
+    <string name="di_connect_theme_category_luxury">مستوحى من السيارات الفاخرة</string>
+    <string name="di_connect_theme_category_sport">رياضي</string>
+    <string name="di_connect_theme_category_night">ليلي</string>
+    <string name="di_connect_theme_category_pets">الحيوانات الأليفة</string>
     <string name="di_connect_update_wrong_signer">هذا التنزيل ليس إصدارًا من Di-Connect موقّعًا بمفتاحك، لذلك لم يُثبَّت.</string>
 </resources>

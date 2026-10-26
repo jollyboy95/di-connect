@@ -1057,12 +1057,24 @@
     <string name="di_connect_restart_title">重新啟動 Di-Connect？</string>
     <string name="di_connect_restart_message">停止 CarPlay 和 Android Auto，關閉儀表板和抬頭顯示器，然後重新開啟 Di-Connect。在某些功能沒有回應時使用。</string>
     <string name="di_connect_carplay">CarPlay</string>
-    <string name="di_connect_themes_subtitle">為每種連線選擇儀表板外觀。</string>
+    <string name="di_connect_themes_subtitle">為每種連線選擇儀表板外觀。選擇後立即生效。</string>
     <string name="di_connect_theme_in_use">✓ 使用中</string>
     <string name="di_connect_theme_modern">Modern</string>
     <string name="di_connect_theme_modern_description">Android 17 風格：深色膠囊、即時電池能量流條，以及速度後方的海軍藍光暈。</string>
     <string name="di_connect_theme_glass">Glass</string>
     <string name="di_connect_theme_glass_description">iOS 風格：霧面面板和 Di-Connect 自帶的導航卡片。</string>
-    <string name="di_connect_themes_more">更多主題即將推出，屆時還會加入兩者共用一個主題和在儀表板上預覽主題。</string>
+    <string name="di_connect_themes_more">帶框地圖的全螢幕版面即將推出。</string>
+    <string name="di_connect_theme_speed">速度</string>
+    <string name="di_connect_themes_same">兩者使用同一主題</string>
+    <string name="di_connect_on">開</string>
+    <string name="di_connect_off">關</string>
+    <string name="di_connect_theme_choose_photo">選擇副駕駛照片</string>
+    <string name="di_connect_theme_photo_failed">無法開啟這張圖片。請換一張照片。</string>
+    <string name="di_connect_theme_category_everyday">日常</string>
+    <string name="di_connect_theme_category_tech">科技風</string>
+    <string name="di_connect_theme_category_luxury">豪華車風</string>
+    <string name="di_connect_theme_category_sport">運動</string>
+    <string name="di_connect_theme_category_night">夜間</string>
+    <string name="di_connect_theme_category_pets">寵物</string>
     <string name="di_connect_update_wrong_signer">此下載不是用你的金鑰簽署的 Di-Connect 版本，因此未安裝。</string>
 </resources>

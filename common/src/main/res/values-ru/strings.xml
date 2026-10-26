@@ -997,12 +997,24 @@
     <string name="di_connect_restart_title">Перезапустить Di-Connect?</string>
     <string name="di_connect_restart_message">Останавливает CarPlay и Android Auto, закрывает приборную панель и проекционный дисплей и снова открывает Di-Connect. Используйте, если что-то перестало отвечать.</string>
     <string name="di_connect_carplay">CarPlay</string>
-    <string name="di_connect_themes_subtitle">Выберите вид приборной панели для каждого подключения.</string>
+    <string name="di_connect_themes_subtitle">Выберите вид приборной панели для каждого подключения. Выбор применяется сразу.</string>
     <string name="di_connect_theme_in_use">✓ Используется</string>
     <string name="di_connect_theme_modern">Modern</string>
     <string name="di_connect_theme_modern_description">Стиль Android 17: тёмные плашки, полоса потока батареи в реальном времени и тёмно-синее свечение за скоростью.</string>
     <string name="di_connect_theme_glass">Glass</string>
     <string name="di_connect_theme_glass_description">Стиль iOS: матовые панели и собственная карточка маршрута Di-Connect.</string>
-    <string name="di_connect_themes_more">Скоро появятся новые темы. Вместе с ними — одна тема для обоих и предпросмотр на приборной панели.</string>
+    <string name="di_connect_themes_more">Скоро — полноэкранные макеты с картой в рамке.</string>
+    <string name="di_connect_theme_speed">Скорость</string>
+    <string name="di_connect_themes_same">Одна тема для обоих</string>
+    <string name="di_connect_on">Вкл.</string>
+    <string name="di_connect_off">Выкл.</string>
+    <string name="di_connect_theme_choose_photo">Выбрать фото второго пилота</string>
+    <string name="di_connect_theme_photo_failed">Не удалось открыть изображение. Попробуйте другое фото.</string>
+    <string name="di_connect_theme_category_everyday">На каждый день</string>
+    <string name="di_connect_theme_category_tech">В стиле гаджетов</string>
+    <string name="di_connect_theme_category_luxury">В стиле премиум-авто</string>
+    <string name="di_connect_theme_category_sport">Спорт</string>
+    <string name="di_connect_theme_category_night">Ночь</string>
+    <string name="di_connect_theme_category_pets">Питомцы</string>
     <string name="di_connect_update_wrong_signer">Эта загрузка не является сборкой Di-Connect, подписанной вашим ключом, поэтому она не установлена.</string>
 </resources>

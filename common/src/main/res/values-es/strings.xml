@@ -997,12 +997,24 @@
     <string name="di_connect_restart_title">¿Reiniciar Di-Connect?</string>
     <string name="di_connect_restart_message">Detiene CarPlay y Android Auto, cierra el cuadro de instrumentos y el head-up display, y vuelve a abrir Di-Connect. Úsalo si algo deja de responder.</string>
     <string name="di_connect_carplay">CarPlay</string>
-    <string name="di_connect_themes_subtitle">Elige el aspecto del cuadro de instrumentos para cada conexión.</string>
+    <string name="di_connect_themes_subtitle">Elige el aspecto del cuadro para cada conexión. El cambio se ve al instante.</string>
     <string name="di_connect_theme_in_use">✓ En uso</string>
     <string name="di_connect_theme_modern">Modern</string>
     <string name="di_connect_theme_modern_description">Estilo Android 17: píldoras oscuras, barra de flujo de batería en vivo y un brillo azul marino tras la velocidad.</string>
     <string name="di_connect_theme_glass">Glass</string>
     <string name="di_connect_theme_glass_description">Estilo iOS: paneles esmerilados y la tarjeta de indicaciones propia de Di-Connect.</string>
-    <string name="di_connect_themes_more">Pronto llegarán más temas. Usar un mismo tema para ambos y previsualizarlo en el cuadro llegarán con ellos.</string>
+    <string name="di_connect_themes_more">Pronto llegarán diseños a pantalla completa con el mapa enmarcado.</string>
+    <string name="di_connect_theme_speed">Velocidad</string>
+    <string name="di_connect_themes_same">Un tema para ambos</string>
+    <string name="di_connect_on">Activado</string>
+    <string name="di_connect_off">Desactivado</string>
+    <string name="di_connect_theme_choose_photo">Elegir foto del copiloto</string>
+    <string name="di_connect_theme_photo_failed">No se pudo abrir esa imagen. Prueba con otra foto.</string>
+    <string name="di_connect_theme_category_everyday">Diario</string>
+    <string name="di_connect_theme_category_tech">Inspirado en la tecnología</string>
+    <string name="di_connect_theme_category_luxury">Inspirado en coches de lujo</string>
+    <string name="di_connect_theme_category_sport">Deportivo</string>
+    <string name="di_connect_theme_category_night">Noche</string>
+    <string name="di_connect_theme_category_pets">Mascotas</string>
     <string name="di_connect_update_wrong_signer">Esta descarga no es una versión de Di-Connect firmada con tu clave, así que no se instaló.</string>
 </resources>

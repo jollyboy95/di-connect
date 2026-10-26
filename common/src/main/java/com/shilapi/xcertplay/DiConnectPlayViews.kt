@@ -35,7 +35,7 @@ internal object DiConnectPlayViews {
     }
 
     private class ClusterLayer(displayContext: Context, private val app: Context) : DiConnectViews.Layer {
-        private val hud = GwmAndroidAutoClusterView(displayContext)
+        private val hud = ClusterThemeFrame(displayContext, ClusterConnection.ANDROID_AUTO)
         private val vehicle: (GwmVehicleData.Snapshot?) -> Unit = { snapshot -> hud.post { hud.setSnapshot(snapshot) } }
         private val stopMusic = DiConnectViews.observeMusic { music ->
             ClusterMusicState.publish(CarPlayNowPlaying(
