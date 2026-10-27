@@ -1017,6 +1017,13 @@
     <string name="di_connect_theme_glass_description">Стиль iOS: матові панелі та власна картка маршруту Di-Connect.</string>
     <string name="di_connect_themes_more">Незабаром — повноекранні макети з картою в рамці.</string>
     <string name="di_connect_theme_speed">Швидкість</string>
+    <string name="di_connect_themes_get_more">Отримати більше тем</string>
+    <string name="di_connect_themes_import">Імпорт файлу теми</string>
+    <string name="di_connect_themes_getting">Завантаження тем…</string>
+    <string name="di_connect_themes_added">Додано або оновлено тем: %1$d</string>
+    <string name="di_connect_themes_up_to_date">Теми вже оновлені</string>
+    <string name="di_connect_themes_download_failed">Не вдалося отримати теми. Перевірте підключення до інтернету й спробуйте ще раз.</string>
+    <string name="di_connect_themes_import_failed">У цьому файлі немає тем, які може використати Di-Connect.</string>
     <string name="di_connect_theme_hud">HUD у стилі теми</string>
     <string name="di_connect_themes_same">Одна тема для обох</string>
     <string name="di_connect_on">Увімк.</string>

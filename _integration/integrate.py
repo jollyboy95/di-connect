@@ -1761,6 +1761,46 @@ edit(D,
 
     private var themesTab = 0
 
+    /** A theme file the driver picked: read it (small files only) and add its themes. */
+    private val themeFilePicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        Thread {
+            val result = runCatching {
+                val text = contentResolver.openInputStream(uri)?.use { input ->
+                    val bytes = input.readBytes()
+                    require(bytes.size <= 1_000_000) { "Too large" }
+                    String(bytes, Charsets.UTF_8)
+                } ?: throw IllegalArgumentException("Unreadable")
+                ThemePacks.install(applicationContext, text)
+            }
+            runOnUiThread { themesInstalled(result, R.string.di_connect_themes_import_failed) }
+        }.start()
+    }
+
+    /** Downloads the shared theme catalogue from the releases repo and adds what is new. */
+    private fun downloadThemes() {
+        android.widget.Toast.makeText(this, getString(R.string.di_connect_themes_getting), android.widget.Toast.LENGTH_SHORT).show()
+        Thread {
+            val result = runCatching {
+                val text = com.shilapi.xcertplay.update.UpdateClient.fetchText(ThemePacks.CATALOGUE_URL, "application/json", "Di-Connect")
+                ThemePacks.install(applicationContext, text)
+            }
+            runOnUiThread { themesInstalled(result, R.string.di_connect_themes_download_failed) }
+        }.start()
+    }
+
+    private fun themesInstalled(result: Result<ThemePacks.Result>, failure: Int) {
+        if (isFinishing || isDestroyed) return
+        val message = result.fold(
+            onSuccess = { counts ->
+                if (counts.added + counts.updated == 0) getString(R.string.di_connect_themes_up_to_date)
+                else getString(R.string.di_connect_themes_added, counts.added + counts.updated)
+            },
+            onFailure = { getString(failure) })
+        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
+        if (page == "themes") render()
+    }
+
     /** Co-Pilot photo: copied small into the app, so the original stays in the driver's gallery. */
     private val coPilotPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@registerForActivityResult
@@ -1798,6 +1838,13 @@ edit(D,
             ClusterThemeStore.setHudFollowsTheme(this, !hudFollows)
             render()
         }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        content.addView(row().apply {
+            addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(button(getString(R.string.di_connect_themes_import), false) { themeFilePicker.launch("*/*") },
+                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         val selected = ClusterThemeStore.selected(this, connection)
         // Two across at most: three made each preview too small to tell the themes apart.
         val columns = if (compact) 1 else 2
@@ -1890,6 +1937,13 @@ CONTROL_STRINGS={
  'di_connect_theme_glass_description':["iOS style: frosted panels and Di-Connect\\'s own directions card.",'بأسلوب iOS: لوحات شفافة وبطاقة الاتجاهات الخاصة بـ Di-Connect.','Estilo iOS: paneles esmerilados y la tarjeta de indicaciones propia de Di-Connect.',"Stile iOS: pannelli satinati e la scheda indicazioni di Di-Connect.",'iOS スタイル：すりガラス調のパネルと Di-Connect 独自の案内カード。','Стиль iOS: матовые панели и собственная карточка маршрута Di-Connect.','Стиль iOS: матові панелі та власна картка маршруту Di-Connect.','iOS 风格：磨砂面板和 Di-Connect 自带的导航卡片。','iOS 風格：霧面面板和 Di-Connect 自帶的導航卡片。'],
  'di_connect_themes_more':['Full-screen layouts with a framed map are coming next.', 'التخطيطات بملء الشاشة مع خريطة داخل إطار قادمة قريبًا.', 'Pronto llegarán diseños a pantalla completa con el mapa enmarcado.', 'In arrivo i layout a schermo intero con la mappa incorniciata.', '地図を枠に収めた全画面レイアウトを次に追加予定です。', 'Скоро — полноэкранные макеты с картой в рамке.', 'Незабаром — повноекранні макети з картою в рамці.', '带框地图的全屏布局即将推出。', '帶框地圖的全螢幕版面即將推出。'],
  'di_connect_theme_speed':['Speed', 'السرعة', 'Velocidad', 'Velocità', '速度', 'Скорость', 'Швидкість', '速度', '速度'],
+ 'di_connect_themes_get_more':['Get more themes', 'الحصول على المزيد من السمات', 'Obtener más temas', 'Scarica altri temi', 'テーマをさらに入手', 'Получить ещё темы', 'Отримати більше тем', '获取更多主题', '取得更多主題'],
+ 'di_connect_themes_import':['Import theme file', 'استيراد ملف سمة', 'Importar archivo de tema', 'Importa file tema', 'テーマファイルを読み込む', 'Импорт файла темы', 'Імпорт файлу теми', '导入主题文件', '匯入主題檔案'],
+ 'di_connect_themes_getting':['Getting themes…', 'جارٍ الحصول على السمات…', 'Obteniendo temas…', 'Download dei temi…', 'テーマを取得しています…', 'Загрузка тем…', 'Завантаження тем…', '正在获取主题…', '正在取得主題…'],
+ 'di_connect_themes_added':['%1$d themes added or updated', 'تمت إضافة أو تحديث %1$d من السمات', 'Se añadieron o actualizaron %1$d temas', '%1$d temi aggiunti o aggiornati', '%1$d 件のテーマを追加または更新しました', 'Добавлено или обновлено тем: %1$d', 'Додано або оновлено тем: %1$d', '已添加或更新 %1$d 个主题', '已新增或更新 %1$d 個主題'],
+ 'di_connect_themes_up_to_date':['Your themes are up to date', 'سماتك محدّثة', 'Tus temas están al día', 'I tuoi temi sono aggiornati', 'テーマは最新です', 'Темы уже обновлены', 'Теми вже оновлені', '主题已是最新', '主題已是最新'],
+ 'di_connect_themes_download_failed':['Could not get themes. Check the internet connection and try again.', 'تعذّر الحصول على السمات. تحقّق من الاتصال بالإنترنت وحاول مرة أخرى.', 'No se pudieron obtener los temas. Comprueba la conexión a internet e inténtalo de nuevo.', 'Impossibile scaricare i temi. Controlla la connessione a internet e riprova.', 'テーマを取得できませんでした。インターネット接続を確認して、もう一度お試しください。', 'Не удалось получить темы. Проверьте подключение к интернету и повторите попытку.', 'Не вдалося отримати теми. Перевірте підключення до інтернету й спробуйте ще раз.', '无法获取主题。请检查网络连接后重试。', '無法取得主題。請檢查網路連線後再試一次。'],
+ 'di_connect_themes_import_failed':['That file has no themes Di-Connect can use.', 'لا يحتوي هذا الملف على سمات يمكن لـ Di-Connect استخدامها.', 'Ese archivo no tiene temas que Di-Connect pueda usar.', 'Il file non contiene temi utilizzabili da Di-Connect.', 'このファイルには Di-Connect で使えるテーマがありません。', 'В этом файле нет тем, которые может использовать Di-Connect.', 'У цьому файлі немає тем, які може використати Di-Connect.', '该文件中没有 Di-Connect 可用的主题。', '此檔案中沒有 Di-Connect 可用的主題。'],
  'di_connect_theme_hud':['HUD matches theme', 'شاشة HUD تطابق السمة', 'HUD a juego con el tema', "HUD abbinato al tema", 'HUDをテーマに合わせる', 'HUD в стиле темы', 'HUD у стилі теми', 'HUD 跟随主题', 'HUD 跟隨主題'],
  'di_connect_themes_same':['One theme for both', 'سمة واحدة لكليهما', 'Un tema para ambos', 'Un tema per entrambi', '両方に同じテーマ', 'Одна тема для обоих', 'Одна тема для обох', '两者使用同一主题', '兩者使用同一主題'],
  'di_connect_on':['On', 'تشغيل', 'Activado', 'Attivo', 'オン', 'Вкл.', 'Увімк.', '开', '開'],
@@ -2134,7 +2188,7 @@ class DiConnectUpdateTest {
 # Theme engine (Oct 2026): every cluster theme is data drawn by one renderer, picked per connection
 # on the Themes screen and swapped live. Modern (Android Auto) and Glass (CarPlay) are the original
 # renderers. Android Auto's and CarPlay's cluster layers become a ClusterThemeFrame.
-for name in ['ClusterThemes.kt', 'ThemedClusterView.kt', 'ClusterThemeFrame.kt', 'HudThemeStyle.kt']:
+for name in ['ClusterThemes.kt', 'ThemedClusterView.kt', 'ClusterThemeFrame.kt', 'HudThemeStyle.kt', 'ThemePacks.kt']:
     source = Path('target/_integration')/name
     require(source.is_file(), f'Missing theme engine source {name}')
     (root/'common/src/main/java/com/shilapi/xcertplay'/name).write_text(source.read_text())

@@ -1005,6 +1005,13 @@
     <string name="di_connect_theme_glass_description">Estilo iOS: paneles esmerilados y la tarjeta de indicaciones propia de Di-Connect.</string>
     <string name="di_connect_themes_more">Pronto llegarán diseños a pantalla completa con el mapa enmarcado.</string>
     <string name="di_connect_theme_speed">Velocidad</string>
+    <string name="di_connect_themes_get_more">Obtener más temas</string>
+    <string name="di_connect_themes_import">Importar archivo de tema</string>
+    <string name="di_connect_themes_getting">Obteniendo temas…</string>
+    <string name="di_connect_themes_added">Se añadieron o actualizaron %1$d temas</string>
+    <string name="di_connect_themes_up_to_date">Tus temas están al día</string>
+    <string name="di_connect_themes_download_failed">No se pudieron obtener los temas. Comprueba la conexión a internet e inténtalo de nuevo.</string>
+    <string name="di_connect_themes_import_failed">Ese archivo no tiene temas que Di-Connect pueda usar.</string>
     <string name="di_connect_theme_hud">HUD a juego con el tema</string>
     <string name="di_connect_themes_same">Un tema para ambos</string>
     <string name="di_connect_on">Activado</string>

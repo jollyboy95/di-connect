@@ -58,7 +58,8 @@ internal object ClusterThemes {
     const val GLASS = "glass"
     const val CO_PILOT = "co-pilot"
 
-    val all: List<ClusterTheme> = listOf(
+    /** The themes built into the app. */
+    val builtIn: List<ClusterTheme> = listOf(
         ClusterTheme(MODERN, "Modern", ThemeCategory.EVERYDAY, native = ClusterConnection.ANDROID_AUTO),
         ClusterTheme(GLASS, "Glass", ThemeCategory.EVERYDAY, native = ClusterConnection.CARPLAY),
         ClusterTheme("mono-line", "Mono Line", ThemeCategory.EVERYDAY, panel = ClusterTheme.Panel.NONE,
@@ -143,6 +144,9 @@ internal object ClusterThemes {
             surface = Color.rgb(28, 25, 24), edge = Color.rgb(233, 203, 160)),
     )
 
+    /** Built-in themes followed by any downloaded or imported ones ([ThemePacks]). */
+    val all: List<ClusterTheme> get() = builtIn + ThemePacks.cached()
+
     fun byId(id: String?): ClusterTheme? = all.firstOrNull { it.id == id }
 
     fun defaultFor(connection: ClusterConnection): ClusterTheme =
@@ -158,6 +162,7 @@ internal object ClusterThemeStore {
     private const val KEY_CARPLAY = "cluster_theme_carplay"
     private const val KEY_SAME = "cluster_theme_same_for_both"
     private const val KEY_HUD = "cluster_theme_hud_follows"
+    private const val KEY_PACKS = "cluster_theme_packs_changed"
     private const val CO_PILOT_FILE = "co_pilot_photo.png"
     private const val CO_PILOT_SIZE = 384
 
@@ -167,6 +172,7 @@ internal object ClusterThemeStore {
 
     /** With one theme for both, Modern and Glass still mean each connection's original look. */
     fun selected(context: Context, connection: ClusterConnection): ClusterTheme {
+        ThemePacks.themes(context)
         val prefs = prefs(context)
         val id = if (prefs.getBoolean(KEY_SAME, false)) prefs.getString(KEY_ANDROID_AUTO, null)
             else prefs.getString(key(connection), null)
@@ -190,6 +196,11 @@ internal object ClusterThemeStore {
         edit.apply()
     }
 
+    /** Wakes every open cluster and gallery after themes were downloaded or imported. */
+    fun packsChanged(context: Context) {
+        prefs(context).edit().putLong(KEY_PACKS, System.currentTimeMillis()).apply()
+    }
+
     /** The windscreen HUD takes the theme's colour and digits unless the driver turns it off. */
     fun hudFollowsTheme(context: Context) = prefs(context).getBoolean(KEY_HUD, true)
 
@@ -201,7 +212,7 @@ internal object ClusterThemeStore {
     fun observe(context: Context, changed: () -> Unit): () -> Unit {
         val prefs = prefs(context)
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == KEY_ANDROID_AUTO || key == KEY_CARPLAY || key == KEY_SAME || key == KEY_HUD || key == CO_PILOT_FILE) changed()
+            if (key == KEY_ANDROID_AUTO || key == KEY_CARPLAY || key == KEY_SAME || key == KEY_HUD || key == KEY_PACKS || key == CO_PILOT_FILE) changed()
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
         return { prefs.unregisterOnSharedPreferenceChangeListener(listener) }

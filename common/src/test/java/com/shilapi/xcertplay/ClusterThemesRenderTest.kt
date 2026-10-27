@@ -124,4 +124,34 @@ class ClusterThemesRenderTest {
         bitmap.recycle()
         assertTrue("Ember's HUD arrow should be amber", amber > 40)
     }
+
+    @Test fun themePacksAddDrawableThemesAndSkipUnknownStyles() {
+        val pack = """{"version": 1, "themes": [
+            {"id": "Sunset", "name": "Sunset", "category": "everyday", "layout": "orbit", "panel": "frost",
+             "accent": "#FF8A3D", "charge": "#40C0FF", "surface": "#A0101018"},
+            {"id": "future", "name": "Future", "layout": "hologram"},
+            {"id": "", "name": "No id"},
+            {"id": "modern", "name": "Not the built-in", "layout": "deck"}
+        ]}"""
+        val result = ThemePacks.install(context, pack)
+        assertEquals(2, result.added)
+        val sunset = ClusterThemes.byId("pack-sunset")!!
+        assertEquals(ClusterTheme.Layout.ORBIT, sunset.layout)
+        assertEquals(Color.rgb(255, 138, 61), sunset.accent)
+        assertEquals(Color.argb(160, 16, 16, 24), sunset.surface)
+        assertEquals("Modern", ClusterThemes.byId(ClusterThemes.MODERN)!!.name)
+        assertTrue(ClusterThemes.byId("pack-modern") != null)
+        assertTrue(ClusterThemes.all.none { it.name == "Future" })
+        assertEquals(0, ThemePacks.install(context, pack).let { it.added + it.updated })
+        // What is saved reads back the same.
+        assertEquals(ThemePacks.parse(ThemePacks.serialize(ThemePacks.themes(context))), ThemePacks.themes(context))
+        val bitmap = ClusterThemePreview.render(context, sunset, ClusterConnection.ANDROID_AUTO, 480, 180)
+        assertEquals(480, bitmap.width)
+        bitmap.recycle()
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun aFileWithoutUsableThemesIsRefused() {
+        ThemePacks.install(context, """{"themes": [{"id": "x", "name": "X", "speed": "warp"}]}""")
+    }
 }

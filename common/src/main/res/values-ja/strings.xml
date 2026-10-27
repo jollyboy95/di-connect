@@ -1107,6 +1107,13 @@
     <string name="di_connect_theme_glass_description">iOS スタイル：すりガラス調のパネルと Di-Connect 独自の案内カード。</string>
     <string name="di_connect_themes_more">地図を枠に収めた全画面レイアウトを次に追加予定です。</string>
     <string name="di_connect_theme_speed">速度</string>
+    <string name="di_connect_themes_get_more">テーマをさらに入手</string>
+    <string name="di_connect_themes_import">テーマファイルを読み込む</string>
+    <string name="di_connect_themes_getting">テーマを取得しています…</string>
+    <string name="di_connect_themes_added">%1$d 件のテーマを追加または更新しました</string>
+    <string name="di_connect_themes_up_to_date">テーマは最新です</string>
+    <string name="di_connect_themes_download_failed">テーマを取得できませんでした。インターネット接続を確認して、もう一度お試しください。</string>
+    <string name="di_connect_themes_import_failed">このファイルには Di-Connect で使えるテーマがありません。</string>
     <string name="di_connect_theme_hud">HUDをテーマに合わせる</string>
     <string name="di_connect_themes_same">両方に同じテーマ</string>
     <string name="di_connect_on">オン</string>

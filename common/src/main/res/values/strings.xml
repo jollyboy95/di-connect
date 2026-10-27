@@ -1108,6 +1108,13 @@
     <string name="di_connect_theme_glass_description">iOS style: frosted panels and Di-Connect\'s own directions card.</string>
     <string name="di_connect_themes_more">Full-screen layouts with a framed map are coming next.</string>
     <string name="di_connect_theme_speed">Speed</string>
+    <string name="di_connect_themes_get_more">Get more themes</string>
+    <string name="di_connect_themes_import">Import theme file</string>
+    <string name="di_connect_themes_getting">Getting themes…</string>
+    <string name="di_connect_themes_added">%1$d themes added or updated</string>
+    <string name="di_connect_themes_up_to_date">Your themes are up to date</string>
+    <string name="di_connect_themes_download_failed">Could not get themes. Check the internet connection and try again.</string>
+    <string name="di_connect_themes_import_failed">That file has no themes Di-Connect can use.</string>
     <string name="di_connect_theme_hud">HUD matches theme</string>
     <string name="di_connect_themes_same">One theme for both</string>
     <string name="di_connect_on">On</string>

@@ -23,15 +23,15 @@ internal data class HudThemeStyle(
         /** Below this HSV brightness a projected colour washes out in daylight. */
         const val MIN_BRIGHTNESS = 0.85f
 
-        private var cachedKey: String? = null
+        private var cachedTheme: ClusterTheme? = null
         private var cached: HudThemeStyle = PLAIN
 
         /** The style for the theme active on [connection], or [PLAIN] when the driver turned it off. */
         fun of(context: Context, connection: ClusterConnection): HudThemeStyle {
             if (!ClusterThemeStore.hudFollowsTheme(context)) return PLAIN
             val theme = ClusterThemeStore.selected(context, connection)
-            if (theme.id == cachedKey) return cached
-            return forTheme(theme).also { cachedKey = theme.id; cached = it }
+            if (theme == cachedTheme) return cached
+            return forTheme(theme).also { cachedTheme = theme; cached = it }
         }
 
         fun forTheme(theme: ClusterTheme): HudThemeStyle {

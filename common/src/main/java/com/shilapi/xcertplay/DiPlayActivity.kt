@@ -6062,6 +6062,46 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
 
     private var themesTab = 0
 
+    /** A theme file the driver picked: read it (small files only) and add its themes. */
+    private val themeFilePicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        Thread {
+            val result = runCatching {
+                val text = contentResolver.openInputStream(uri)?.use { input ->
+                    val bytes = input.readBytes()
+                    require(bytes.size <= 1_000_000) { "Too large" }
+                    String(bytes, Charsets.UTF_8)
+                } ?: throw IllegalArgumentException("Unreadable")
+                ThemePacks.install(applicationContext, text)
+            }
+            runOnUiThread { themesInstalled(result, R.string.di_connect_themes_import_failed) }
+        }.start()
+    }
+
+    /** Downloads the shared theme catalogue from the releases repo and adds what is new. */
+    private fun downloadThemes() {
+        android.widget.Toast.makeText(this, getString(R.string.di_connect_themes_getting), android.widget.Toast.LENGTH_SHORT).show()
+        Thread {
+            val result = runCatching {
+                val text = com.shilapi.xcertplay.update.UpdateClient.fetchText(ThemePacks.CATALOGUE_URL, "application/json", "Di-Connect")
+                ThemePacks.install(applicationContext, text)
+            }
+            runOnUiThread { themesInstalled(result, R.string.di_connect_themes_download_failed) }
+        }.start()
+    }
+
+    private fun themesInstalled(result: Result<ThemePacks.Result>, failure: Int) {
+        if (isFinishing || isDestroyed) return
+        val message = result.fold(
+            onSuccess = { counts ->
+                if (counts.added + counts.updated == 0) getString(R.string.di_connect_themes_up_to_date)
+                else getString(R.string.di_connect_themes_added, counts.added + counts.updated)
+            },
+            onFailure = { getString(failure) })
+        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
+        if (page == "themes") render()
+    }
+
     /** Co-Pilot photo: copied small into the app, so the original stays in the driver's gallery. */
     private val coPilotPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@registerForActivityResult
@@ -6099,6 +6139,13 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             ClusterThemeStore.setHudFollowsTheme(this, !hudFollows)
             render()
         }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        content.addView(row().apply {
+            addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(button(getString(R.string.di_connect_themes_import), false) { themeFilePicker.launch("*/*") },
+                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         val selected = ClusterThemeStore.selected(this, connection)
         // Two across at most: three made each preview too small to tell the themes apart.
         val columns = if (compact) 1 else 2
