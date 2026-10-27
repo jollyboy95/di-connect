@@ -48,7 +48,8 @@ class ClusterThemesRenderTest {
             var drawn = 0
             for (y in 0 until height step 4) for (x in 0 until width / 3 step 4) if (bitmap.getPixel(x, y) != background) drawn++
             assertTrue("${theme.id} on $connection draws its instruments", drawn > 500)
-            if (connection == ClusterConnection.ANDROID_AUTO && theme.dim == 0) {
+            // A theme with its own map window has Google's card inside that window instead.
+            if (connection == ClusterConnection.ANDROID_AUTO && theme.dim == 0 && theme.mapWindow == null) {
                 for (y in (height * .42f).toInt() until (height * .74f).toInt() step 3)
                     for (x in (width * .76f).toInt() until (width * .99f).toInt() step 3)
                         assertEquals("${theme.id} covers Google's card at $x,$y", background, bitmap.getPixel(x, y))
@@ -180,5 +181,28 @@ class ClusterThemesRenderTest {
         val panel = bitmap.getPixel((width * .45f).toInt(), (height * .85f).toInt())
         assertTrue("the split panel lets the map show through: ${Integer.toHexString(panel)}", Color.red(panel) < 60)
         bitmap.recycle()
+    }
+
+    @Test fun centreStageLeavesTheMiddleToTheMap() {
+        for (id in listOf("centre-stage", "co-pilot-stage")) {
+            val theme = ClusterThemes.byId(id)!!
+            assertEquals(.25f to .75f, theme.mapWindow)
+            assertTrue(!theme.availableFor(ClusterConnection.CARPLAY))
+            val (width, height) = 1920 to 720
+            val view = ThemedClusterView(context, theme, ClusterConnection.ANDROID_AUTO, preview = true)
+            view.setSnapshot(GwmVehicleData.Snapshot(72f, "D", 58f, 703f, 19f, SystemClock.elapsedRealtime(), 34116f, -40f))
+            view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+            view.layout(0, 0, width, height)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            for (pass in 0 until 2) { bitmap.eraseColor(Color.MAGENTA); view.draw(Canvas(bitmap)) }
+            for (y in (height * .15f).toInt() until (height * .85f).toInt() step 6)
+                for (x in (width * .3f).toInt() until (width * .7f).toInt() step 6)
+                    assertEquals("$id draws over the map at $x,$y", Color.MAGENTA, bitmap.getPixel(x, y))
+            assertTrue(Color.red(bitmap.getPixel((width * .02f).toInt(), (height * .2f).toInt())) < 60)
+            File("build/reports/gwm-cluster/themes").mkdirs()
+            File("build/reports/gwm-cluster/themes/$id-two-frames.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            bitmap.recycle()
+        }
     }
 }

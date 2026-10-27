@@ -118,6 +118,7 @@ internal class ThemedClusterView(
             ClusterTheme.Layout.ARCS -> drawArcs(canvas, w, h, showMusic)
             ClusterTheme.Layout.PERFORMANCE -> drawPerformance(canvas, w, h, showMusic)
             ClusterTheme.Layout.SPLIT -> drawSplit(canvas, w, h, showMusic)
+            ClusterTheme.Layout.CENTRE -> drawCentre(canvas, w, h, showMusic)
             ClusterTheme.Layout.CLASSIC -> {
             drawHeader(canvas, w, h)
             snapshot?.let { data ->
@@ -1402,6 +1403,116 @@ internal class ThemedClusterView(
             // READY sits from 46 % across on the bottom line, so end well before it.
             canvas.drawText("ODO  " + NumberFormat.getIntegerInstance().format(it.roundToInt()) + " km", .43f * w, .955f * h, text)
         }
+    }
+
+    // ---- centre stage -----------------------------------------------------------------------
+
+    /**
+     * Like the car's own cluster: a speedometer on the left, a power dial on the right and the map
+     * through the middle (Android Auto draws it for that window), with soft fades at its edges.
+     */
+    private fun drawCentre(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        val s = h / 720f
+        val (from, to) = ClusterTheme.CENTRE_MAP
+        val l = from * w
+        val r = to * w
+        val shade = Color.argb(255, Color.red(theme.surface), Color.green(theme.surface), Color.blue(theme.surface))
+        fill.color = shade; fill.shader = null
+        canvas.drawRect(0f, 0f, l, h, fill)
+        canvas.drawRect(r, 0f, w, h, fill)
+        val fade = .045f * w
+        fill.color = Color.BLACK; fill.shader = LinearGradient(l, 0f, l + fade, 0f, shade, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        canvas.drawRect(l, 0f, l + fade, h, fill)
+        fill.color = Color.BLACK; fill.shader = LinearGradient(r - fade, 0f, r, 0f, Color.TRANSPARENT, shade, Shader.TileMode.CLAMP)
+        canvas.drawRect(r - fade, 0f, r, h, fill); fill.shader = null
+        val data = snapshot
+        // Speedometer: 0-220 over 240 degrees.
+        val sx = .125f * w
+        val cy = .5f * h
+        val dr = .3f * h
+        val speed = data?.speedKph
+        val a0 = Math.toRadians(150.0)
+        val sweep = Math.toRadians(240.0)
+        for (v in 0..220 step 10) {
+            val a = a0 + sweep * v / 220.0
+            val major = v % 20 == 0
+            line.shader = null; line.strokeCap = Paint.Cap.ROUND
+            line.color = if (speed != null && v <= speed) theme.accent else withAlpha(theme.text, if (major) 230 else 120)
+            line.strokeWidth = (if (major) 5f else 2f) * s
+            val outer = dr
+            val inner = dr - (if (major) 30f else 16f) * s
+            canvas.drawLine(sx + cos(a).toFloat() * outer, cy + sin(a).toFloat() * outer, sx + cos(a).toFloat() * inner, cy + sin(a).toFloat() * inner, line)
+            if (major) {
+                type(.026f * h, theme.text, 600, Paint.Align.CENTER)
+                val tr = dr - 54f * s
+                canvas.drawText(v.toString(), sx + cos(a).toFloat() * tr, cy + sin(a).toFloat() * tr + .009f * h, text)
+            }
+        }
+        // A sweep of colour along the rim up to the current speed.
+        val rim = RectF(sx - dr - 10f * s, cy - dr - 10f * s, sx + dr + 10f * s, cy + dr + 10f * s)
+        line.color = withAlpha(theme.accent, 70); line.strokeWidth = 6f * s; line.strokeCap = Paint.Cap.BUTT
+        canvas.drawArc(rim, 150f, 240f, false, line)
+        if (speed != null) { line.color = theme.accent; canvas.drawArc(rim, 150f, 240f * (speed / 220f).coerceIn(0f, 1f), false, line) }
+        line.strokeCap = Paint.Cap.ROUND
+        needle(canvas, sx, cy, dr - 34f * s, a0 + sweep * ((speed ?: 0f).coerceIn(0f, 220f) / 220f))
+        type(.11f * h, theme.text, 700, Paint.Align.CENTER)
+        canvas.drawText(speed?.roundToInt()?.toString() ?: "—", sx, cy + .2f * h, text)
+        type(.022f * h, theme.secondary, 600, Paint.Align.CENTER, .2f); canvas.drawText("KM/H", sx, cy + .245f * h, text)
+
+        // Power dial: needle up at zero, left for charge, right for power.
+        val px = .875f * w
+        val kw = kwNow()
+        val f = ((kw ?: 0f) / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f)
+        val photo = if (theme.speed == ClusterTheme.Speed.DOG_TAG && !preview) ClusterThemeStore.coPilot(context) else null
+        if (theme.speed == ClusterTheme.Speed.DOG_TAG) {
+            val pr = dr * .62f
+            if (photo != null) {
+                canvas.save(); path.reset(); path.addCircle(px, cy, pr, Path.Direction.CW); canvas.clipPath(path)
+                rect.set(px - pr, cy - pr, px + pr, cy + pr); canvas.drawBitmap(photo, null, rect, art); canvas.restore()
+            } else pugFace(canvas, px, cy, pr * 2f)
+            line.shader = null; line.color = theme.edge; line.strokeWidth = 4f * s; canvas.drawCircle(px, cy, pr, line)
+        }
+        for (i in -10..10) {
+            val a = Math.toRadians(270.0 + 11.0 * i)
+            val major = i % 5 == 0
+            line.color = when {
+                kw != null && i > 0 && i <= f * 10 -> theme.accent
+                kw != null && i < 0 && i >= f * 10 -> theme.charge
+                else -> withAlpha(theme.text, if (major) 230 else 120)
+            }
+            line.strokeWidth = (if (major) 5f else 2.5f) * s
+            val inner = dr - (if (major) 30f else 18f) * s
+            canvas.drawLine(px + cos(a).toFloat() * dr, cy + sin(a).toFloat() * dr, px + cos(a).toFloat() * inner, cy + sin(a).toFloat() * inner, line)
+        }
+        needle(canvas, px, cy, dr - 30f * s, Math.toRadians(270.0 + 110.0 * f))
+        type(.02f * h, theme.charge, 700, Paint.Align.CENTER, .12f)
+        canvas.drawText("CHG", px + cos(Math.toRadians(150.0)).toFloat() * (dr - 46f * s), cy + sin(Math.toRadians(150.0)).toFloat() * (dr - 46f * s), text)
+        type(.02f * h, theme.accent, 700, Paint.Align.CENTER, .12f)
+        canvas.drawText("PWR", px + cos(Math.toRadians(30.0)).toFloat() * (dr - 46f * s), cy + sin(Math.toRadians(30.0)).toFloat() * (dr - 46f * s), text)
+        type(.034f * h, kwColor(kw), 700, Paint.Align.CENTER)
+        canvas.drawText(kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", px, cy + .23f * h, text)
+
+        // Fuel under the speedometer and odometer under the power dial, on the bottom line below
+        // the car's own icons.
+        val row = .962f * h
+        drawPump(canvas, .025f * w, row - .03f * h, .03f * h)
+        val bl = .025f * w + .045f * h
+        val bw = .07f * w
+        rect.set(bl, row - .018f * h, bl + bw, row - .006f * h); fill.shader = null; fill.color = withAlpha(theme.text, 46)
+        canvas.drawRoundRect(rect, 4f * s, 4f * s, fill)
+        data?.fuelPercent?.let { fuel ->
+            rect.right = bl + bw * (fuel / 100f).coerceIn(.03f, 1f)
+            fill.color = if (fuel < 15f) Color.rgb(255, 159, 10) else theme.charge; canvas.drawRoundRect(rect, 4f * s, 4f * s, fill)
+        }
+        type(.03f * h, theme.text, 600)
+        canvas.drawText(listOfNotNull(data?.fuelPercent?.let { "${it.roundToInt()}%" }, data?.rangeKm?.let { "${it.roundToInt()} km" })
+            .joinToString("  ").ifEmpty { "—" }, bl + bw + .01f * w, row, text)
+        data?.odometerKm?.let {
+            type(.028f * h, theme.secondary, 500, Paint.Align.RIGHT)
+            canvas.drawText("ODO  " + NumberFormat.getIntegerInstance().format(it.roundToInt()) + " km", .975f * w, row, text)
+        }
+        drawHeader(canvas, w, h)
+        if (showMusic) drawMusicLine(canvas, w, h)
     }
 
     // ---- CarPlay directions card ----------------------------------------------------------

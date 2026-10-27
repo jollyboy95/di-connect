@@ -6105,7 +6105,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     /** Co-Pilot photo: copied small into the app, so the original stays in the driver's gallery. */
     private val coPilotPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@registerForActivityResult
-        if (ClusterThemeStore.saveCoPilot(this, uri)) { ClusterThemePreview.forget(ClusterThemes.CO_PILOT); render() }
+        if (ClusterThemeStore.saveCoPilot(this, uri)) {
+            ClusterThemes.all.filter { it.speed == ClusterTheme.Speed.DOG_TAG }.forEach { ClusterThemePreview.forget(it.id) }
+            render()
+        }
         else android.widget.Toast.makeText(this, getString(R.string.di_connect_theme_photo_failed), android.widget.Toast.LENGTH_LONG).show()
     }
 
@@ -6208,7 +6211,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             if (selected) addView(label(getString(R.string.di_connect_theme_in_use), 14, ACCENT, true))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.
-        if (theme.id == ClusterThemes.CO_PILOT) {
+        if (theme.speed == ClusterTheme.Speed.DOG_TAG) {
             card.addView(button(getString(R.string.di_connect_theme_choose_photo), true) {
                 ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
                 coPilotPicker.launch("image/*")

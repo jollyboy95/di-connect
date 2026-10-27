@@ -47,7 +47,7 @@ internal data class ClusterTheme(
      * cluster on the left, one solid sidebar, or a console along the bottom edge. All keep Google's
      * card on Android Auto (the right, 42-74 % down) clear.
      */
-    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT }
+    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE }
     enum class Face { SANS, SERIF, MONO }
 
     /**
@@ -55,7 +55,11 @@ internal data class ClusterTheme(
      * panel. Android Auto is asked for a map drawn for that window (a change applies at the next
      * connection). CarPlay cannot resize its map yet, so split layouts are Android Auto only.
      */
-    val mapWindow: Pair<Float, Float>? get() = if (layout == Layout.SPLIT) SPLIT_MAP else null
+    val mapWindow: Pair<Float, Float>? get() = when (layout) {
+        Layout.SPLIT -> SPLIT_MAP
+        Layout.CENTRE -> CENTRE_MAP
+        else -> null
+    }
 
     fun availableFor(connection: ClusterConnection) =
         (native == null || native == connection) && (mapWindow == null || connection == ClusterConnection.ANDROID_AUTO)
@@ -63,6 +67,8 @@ internal data class ClusterTheme(
     companion object {
         /** Split: instruments on the left half, the map on the right half. */
         val SPLIT_MAP = .5f to 1f
+        /** Centre stage: dials either side, the map through the middle half, like the car's own cluster. */
+        val CENTRE_MAP = .25f to .75f
     }
 }
 
@@ -116,6 +122,9 @@ internal object ClusterThemes {
         ClusterTheme("split-test", "Split (test)", ThemeCategory.EVERYDAY, panel = ClusterTheme.Panel.FROST,
             layout = ClusterTheme.Layout.SPLIT, accent = Color.rgb(64, 156, 255), charge = Color.rgb(70, 225, 150),
             surface = Color.argb(250, 12, 16, 26), edge = Color.argb(60, 255, 255, 255)),
+        ClusterTheme("centre-stage", "Centre Stage", ThemeCategory.EVERYDAY, panel = ClusterTheme.Panel.FROST,
+            layout = ClusterTheme.Layout.CENTRE, accent = Color.rgb(80, 220, 255), charge = Color.rgb(255, 210, 60),
+            surface = Color.rgb(8, 10, 16), edge = Color.argb(120, 255, 255, 255)),
         ClusterTheme("chronograph", "Chronograph", ThemeCategory.LUXURY, panel = ClusterTheme.Panel.GOLD_LINE,
             speed = ClusterTheme.Speed.DIAL, flow = ClusterTheme.Flow.HAIRLINE, face = ClusterTheme.Face.SERIF,
             text = Color.rgb(244, 236, 220), secondary = Color.argb(205, 217, 184, 120), accent = Color.rgb(217, 184, 120),
@@ -154,6 +163,10 @@ internal object ClusterThemes {
         ClusterTheme("command", "Command", ThemeCategory.NIGHT, layout = ClusterTheme.Layout.SIDEBAR,
             text = Color.rgb(255, 176, 64), secondary = Color.argb(170, 255, 176, 64), accent = Color.rgb(255, 176, 64),
             charge = Color.rgb(120, 200, 255), surface = Color.argb(248, 6, 6, 8), edge = Color.argb(60, 255, 176, 64), dim = 110),
+        ClusterTheme("co-pilot-stage", "Co-Pilot Stage", ThemeCategory.PETS, panel = ClusterTheme.Panel.FROST,
+            layout = ClusterTheme.Layout.CENTRE, speed = ClusterTheme.Speed.DOG_TAG, text = Color.rgb(255, 246, 232),
+            secondary = Color.rgb(233, 203, 160), accent = Color.rgb(255, 150, 60), charge = Color.rgb(120, 210, 255),
+            surface = Color.rgb(14, 12, 12), edge = Color.rgb(233, 203, 160)),
         ClusterTheme(CO_PILOT, "Co-Pilot", ThemeCategory.PETS, panel = ClusterTheme.Panel.BONE,
             speed = ClusterTheme.Speed.DOG_TAG, flow = ClusterTheme.Flow.PAWS, text = Color.rgb(255, 246, 232),
             secondary = Color.rgb(233, 203, 160), accent = Color.rgb(164, 109, 255), charge = Color.rgb(245, 143, 176),
