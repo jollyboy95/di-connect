@@ -6061,6 +6061,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     }
 
     private var themesTab = 0
+    /** The category the gallery shows; null until the driver picks one (then the theme in use decides). */
+    private var themesCategory: ThemeCategory? = null
 
     /** A theme file the driver picked: read it (small files only) and add its themes. */
     private val themeFilePicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
@@ -6152,7 +6154,21 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val selected = ClusterThemeStore.selected(this, connection)
         // Two across at most: three made each preview too small to tell the themes apart.
         val columns = if (compact) 1 else 2
+        // One category at a time, picked from a row of buttons, so the gallery is not one long scroll.
+        val categories = ThemeCategory.entries.filter { c -> ClusterThemes.availableFor(connection).any { it.category == c } }
+        val shown = themesCategory?.takeIf { it in categories } ?: selected.category.takeIf { it in categories } ?: categories.firstOrNull()
+        content.addView(android.widget.HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(row().apply {
+                categories.forEachIndexed { index, category ->
+                    if (index > 0) addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                    addView(button(getString(themeCategoryName(category)), category == shown) { themesCategory = category; render() },
+                        LinearLayout.LayoutParams(-2, dp(if (compact) 44 else 52)))
+                }
+            })
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
         ThemeCategory.entries.forEach { category ->
+            if (category != shown) return@forEach
             val themes = ClusterThemes.availableFor(connection).filter { it.category == category }
             if (themes.isEmpty()) return@forEach
             content.addView(label(getString(themeCategoryName(category)), 18, TEXT, true).apply {
