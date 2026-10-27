@@ -1516,7 +1516,7 @@ internal class ThemedClusterView(
             canvas.drawText("ODO  " + NumberFormat.getIntegerInstance().format(it.roundToInt()) + " km", .975f * w, row, text)
         }
         drawHeader(canvas, w, h)
-        if (showMusic) drawMusicLine(canvas, w, h)
+        if (showMusic) studioMusic(canvas, RectF(.78f * w, .77f * h, .97f * w, .84f * h), false)
     }
 
     // Studio layouts deliberately share only data helpers, not their instrument geometry.
@@ -1603,13 +1603,13 @@ internal class ThemedClusterView(
         val x = box.left + side + .025f * h
         val tw = (box.right - x).coerceAtLeast(1f)
         val title = music.info.title?.takeIf { it.isNotBlank() } ?: "—"
-        studioText(canvas, title, x, box.top + side * .35f, (if (large) .043f else .034f) * h,
+        studioText(canvas, title, x, box.top + side * .38f, minOf((if (large) .043f else .034f) * h, side * .30f),
             weight = 700, width = tw)
         music.info.artist?.takeIf { it.isNotBlank() }?.let {
-            studioText(canvas, it, x, box.top + side * .60f, .027f * h, theme.secondary, width = tw)
+            studioText(canvas, it, x, box.top + side * .70f, minOf(.027f * h, side * .23f), theme.secondary, width = tw)
         }
         progress()?.let { done ->
-            val y = box.top + side * .83f
+            val y = box.top + side * .88f
             fill.shader = null; fill.color = withAlpha(theme.text, 40)
             canvas.drawRoundRect(RectF(x, y, box.right, y + .007f * h), .0035f * h, .0035f * h, fill)
             fill.color = theme.accent

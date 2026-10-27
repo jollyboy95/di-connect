@@ -35,7 +35,7 @@ class ClusterThemesRenderTest {
         for (connection in ClusterConnection.entries) for (theme in renderThemes.filter { it.availableFor(connection) }) {
             if (theme.native != null) continue
             val view = ThemedClusterView(context, theme, connection, preview = true)
-            view.setSnapshot(GwmVehicleData.Snapshot(54f, "D", 58f, 523f, 19f, SystemClock.elapsedRealtime(), 34868f, 35f))
+            view.setSnapshot(GwmVehicleData.Snapshot(54f, "D", 58f, 523f, 19f, SystemClock.elapsedRealtime(), 34868f, 35f, 1800f))
             view.setGuidance(ClusterTurnGuidance(3, 0, 300, "Pacific Hwy", arrivalEpochSeconds = System.currentTimeMillis() / 1000 + 900))
             view.setPreviewMusic(ClusterMusicState.Snapshot(CarPlayNowPlaying(title = "Joy.", artist = "RAYE",
                 durationMillis = 200_000L, elapsedMillis = 90_000L)))
@@ -168,7 +168,7 @@ class ClusterThemesRenderTest {
         // The instruments stay in the left half; the right half is left to the map.
         val (width, height) = 1920 to 720
         val view = ThemedClusterView(context, split, ClusterConnection.ANDROID_AUTO, preview = true)
-        view.setSnapshot(GwmVehicleData.Snapshot(54f, "D", 58f, 523f, 19f, SystemClock.elapsedRealtime(), 34868f, 35f))
+        view.setSnapshot(GwmVehicleData.Snapshot(54f, "D", 58f, 523f, 19f, SystemClock.elapsedRealtime(), 34868f, 35f, 1800f))
         view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
         view.layout(0, 0, width, height)
