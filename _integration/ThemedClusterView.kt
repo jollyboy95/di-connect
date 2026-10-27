@@ -157,6 +157,9 @@ internal class ThemedClusterView(
         text.shader = null
     }
 
+    // Every shaded draw first sets an opaque colour: a Paint's alpha scales its shader, so a gradient
+    // drawn after a translucent colour came out see-through on the car (but not in the first preview).
+
     private fun panel(canvas: Canvas, box: RectF, radius: Float) {
         val s = height / 720f
         fill.shader = null
@@ -175,14 +178,14 @@ internal class ThemedClusterView(
             ClusterTheme.Panel.WIDGET -> {
                 val r = radius * 1.6f
                 fill.color = theme.surface; canvas.drawRoundRect(box, r, r, fill)
-                line.shader = LinearGradient(0f, box.top, 0f, box.bottom,
+                line.color = Color.BLACK; line.shader = LinearGradient(0f, box.top, 0f, box.bottom,
                     intArrayOf(Color.argb(140, 255, 255, 255), Color.argb(20, 255, 255, 255), Color.argb(46, 255, 255, 255)),
                     floatArrayOf(0f, .25f, 1f), Shader.TileMode.CLAMP)
                 line.strokeWidth = 1.5f * s; canvas.drawRoundRect(box, r, r, line); line.shader = null
             }
             ClusterTheme.Panel.AURORA -> {
                 fill.color = theme.surface; canvas.drawRoundRect(box, radius, radius, fill)
-                line.shader = LinearGradient(box.left, 0f, box.right, 0f,
+                line.color = Color.BLACK; line.shader = LinearGradient(box.left, 0f, box.right, 0f,
                     intArrayOf(Color.rgb(62, 242, 200), Color.rgb(123, 108, 255), Color.rgb(255, 95, 200)), null, Shader.TileMode.CLAMP)
                 line.strokeWidth = 2f * s; canvas.drawRoundRect(box, radius, radius, line); line.shader = null
             }
@@ -218,7 +221,7 @@ internal class ThemedClusterView(
             }
             ClusterTheme.Panel.FROST -> {
                 fill.color = theme.surface; canvas.drawRoundRect(box, radius, radius, fill)
-                line.shader = LinearGradient(0f, box.top, 0f, box.bottom, Color.argb(120, 255, 255, 255), Color.argb(24, 255, 255, 255), Shader.TileMode.CLAMP)
+                line.color = Color.BLACK; line.shader = LinearGradient(0f, box.top, 0f, box.bottom, Color.argb(120, 255, 255, 255), Color.argb(24, 255, 255, 255), Shader.TileMode.CLAMP)
                 line.strokeWidth = 1.4f * s; canvas.drawRoundRect(box, radius, radius, line); line.shader = null
             }
             ClusterTheme.Panel.LCD -> {
@@ -377,7 +380,7 @@ internal class ThemedClusterView(
             ClusterTheme.Speed.DOG_TAG -> {
                 val ty = .43f * h
                 val tr = .15f * h
-                fill.shader = RadialGradient(cx - tr * .3f, ty - tr * .4f, tr, theme.accent, Color.rgb(123, 63, 208), Shader.TileMode.CLAMP)
+                fill.color = Color.BLACK; fill.shader = RadialGradient(cx - tr * .3f, ty - tr * .4f, tr, theme.accent, Color.rgb(123, 63, 208), Shader.TileMode.CLAMP)
                 canvas.drawCircle(cx, ty, tr, fill); fill.shader = null
                 line.color = Color.rgb(216, 216, 222); line.strokeWidth = 6f * s; canvas.drawCircle(cx, ty, tr - 3f * s, line)
                 val pr = .075f * h
@@ -428,7 +431,7 @@ internal class ThemedClusterView(
 
     private fun darkGlow(canvas: Canvas, cx: Float, cy: Float, r: Float, sx: Float, sy: Float, color: Int) {
         canvas.save(); canvas.translate(cx, cy); canvas.scale(sx, sy)
-        fill.shader = RadialGradient(0f, 0f, r,
+        fill.color = Color.BLACK; fill.shader = RadialGradient(0f, 0f, r,
             intArrayOf(Color.argb(216, Color.red(color), Color.green(color), Color.blue(color)),
                 Color.argb(110, Color.red(color), Color.green(color), Color.blue(color)), Color.argb(0, 0, 0, 0)),
             floatArrayOf(0f, .6f, 1f), Shader.TileMode.CLAMP)
@@ -536,7 +539,7 @@ internal class ThemedClusterView(
                 rect.set(l, y - 5f * s, r, y + 5f * s); fill.color = Color.argb(30, 255, 255, 255); canvas.drawRoundRect(rect, 5f * s, 5f * s, fill)
                 if (kw != null) {
                     val tip = if (f >= 0) theme.accent else theme.charge
-                    fill.shader = LinearGradient(mid, 0f, fx, 0f, Color.argb(100, 123, 108, 255), tip, Shader.TileMode.CLAMP)
+                    fill.color = Color.BLACK; fill.shader = LinearGradient(mid, 0f, fx, 0f, Color.argb(100, 123, 108, 255), tip, Shader.TileMode.CLAMP)
                     rect.set(minOf(mid, fx), y - 5f * s, maxOf(mid, fx), y + 5f * s); canvas.drawRoundRect(rect, 5f * s, 5f * s, fill); fill.shader = null
                     fill.color = Color.argb(90, Color.red(tip), Color.green(tip), Color.blue(tip)); canvas.drawCircle(fx, y, 13f * s, fill)
                     fill.color = Color.WHITE; canvas.drawCircle(fx, y, 7f * s, fill)
@@ -715,7 +718,7 @@ internal class ThemedClusterView(
 
     private fun drawMonoLine(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
         val s = h / 720f
-        fill.shader = LinearGradient(0f, .78f * h, 0f, h, intArrayOf(Color.argb(0, 0, 0, 0), Color.argb(200, 0, 0, 0), Color.argb(230, 0, 0, 0)),
+        fill.color = Color.BLACK; fill.shader = LinearGradient(0f, .78f * h, 0f, h, intArrayOf(Color.argb(0, 0, 0, 0), Color.argb(200, 0, 0, 0), Color.argb(230, 0, 0, 0)),
             floatArrayOf(0f, .5f, 1f), Shader.TileMode.CLAMP)
         canvas.drawRect(0f, .78f * h, w, h, fill); fill.shader = null
         val y = .86f * h
@@ -821,7 +824,7 @@ internal class ThemedClusterView(
 
     private fun dialFace(canvas: Canvas, cx: Float, cy: Float, r: Float) {
         val s = height / 720f
-        fill.shader = RadialGradient(cx, cy - r * .3f, r * 1.2f, theme.surface,
+        fill.color = Color.BLACK; fill.shader = RadialGradient(cx, cy - r * .3f, r * 1.2f, theme.surface,
             Color.argb(Color.alpha(theme.surface), 0, 0, 0), Shader.TileMode.CLAMP)
         canvas.drawCircle(cx, cy, r, fill); fill.shader = null
         line.shader = null; line.color = theme.edge; line.strokeWidth = 3f * s; canvas.drawCircle(cx, cy, r, line)
@@ -846,11 +849,11 @@ internal class ThemedClusterView(
     private fun drawSidebar(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
         val s = h / 720f
         val right = SIDEBAR_RIGHT * w
-        fill.shader = LinearGradient(0f, 0f, right, 0f, theme.surface,
+        fill.color = Color.BLACK; fill.shader = LinearGradient(0f, 0f, right, 0f, theme.surface,
             Color.argb(Color.alpha(theme.surface), Color.red(theme.surface) * 3 / 4, Color.green(theme.surface) * 3 / 4,
                 Color.blue(theme.surface) * 3 / 4), Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, right, h, fill); fill.shader = null
-        fill.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(Color.TRANSPARENT, theme.accent, Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
+        fill.color = Color.BLACK; fill.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(Color.TRANSPARENT, theme.accent, Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
         canvas.drawRect(right - 3f * s, 0f, right, h, fill); fill.shader = null
         val left = .02f * w
         val inner = right - .02f * w
@@ -939,11 +942,11 @@ internal class ThemedClusterView(
         path.lineTo(.61f * w, hump)
         path.cubicTo(.64f * w, hump, .64f * w, top, .67f * w, top)
         path.lineTo(w, top); path.lineTo(w, h); path.lineTo(0f, h); path.close()
-        fill.shader = LinearGradient(0f, hump, 0f, h, theme.surface,
+        fill.color = Color.BLACK; fill.shader = LinearGradient(0f, hump, 0f, h, theme.surface,
             Color.argb(Color.alpha(theme.surface), Color.red(theme.surface) / 2, Color.green(theme.surface) / 2, Color.blue(theme.surface) / 2),
             Shader.TileMode.CLAMP)
         canvas.drawPath(path, fill); fill.shader = null
-        line.shader = LinearGradient(0f, 0f, w, 0f, intArrayOf(Color.TRANSPARENT, theme.accent, theme.accent, Color.TRANSPARENT),
+        line.color = Color.BLACK; line.shader = LinearGradient(0f, 0f, w, 0f, intArrayOf(Color.TRANSPARENT, theme.accent, theme.accent, Color.TRANSPARENT),
             floatArrayOf(0f, .3f, .7f, 1f), Shader.TileMode.CLAMP)
         line.strokeWidth = 2.5f * s; canvas.drawPath(path, line); line.shader = null
         val data = snapshot
@@ -1035,7 +1038,7 @@ internal class ThemedClusterView(
     /** A stroke with a soft halo: a wide faint pass under a thin bright one. */
     private fun glowStroke(canvas: Canvas, p: Path, color: Int, width: Float, shader: Shader? = null) {
         line.strokeCap = Paint.Cap.ROUND
-        line.shader = shader
+        line.color = Color.BLACK; line.shader = shader
         line.color = withAlpha(color, 46); line.strokeWidth = width * 4f; if (shader == null) canvas.drawPath(p, line)
         line.color = withAlpha(color, 90); line.strokeWidth = width * 2f; if (shader == null) canvas.drawPath(p, line)
         line.color = color; line.strokeWidth = width; canvas.drawPath(p, line)
@@ -1044,7 +1047,7 @@ internal class ThemedClusterView(
 
     /** Darkens the left of the screen so a large instrument reads over a bright map. */
     private fun leftShade(canvas: Canvas, w: Float, h: Float, until: Float, alpha: Int) {
-        fill.shader = LinearGradient(0f, 0f, until * w, 0f, intArrayOf(Color.argb(alpha, 0, 0, 0), Color.argb(alpha * 2 / 3, 0, 0, 0), Color.TRANSPARENT),
+        fill.color = Color.BLACK; fill.shader = LinearGradient(0f, 0f, until * w, 0f, intArrayOf(Color.argb(alpha, 0, 0, 0), Color.argb(alpha * 2 / 3, 0, 0, 0), Color.TRANSPARENT),
             floatArrayOf(0f, .55f, 1f), Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, until * w, h, fill); fill.shader = null
     }
@@ -1119,7 +1122,7 @@ internal class ThemedClusterView(
             piece.reset(); piece.moveTo(ex, ey)
             piece.cubicTo(ex + .08f * w, ey + .03f * h, endX - .1f * w, endY, endX, endY)
             val tail = LinearGradient(ex, 0f, endX, 0f, color, Color.TRANSPARENT, Shader.TileMode.CLAMP)
-            line.strokeWidth = width; line.shader = tail; line.color = color; canvas.drawPath(piece, line); line.shader = null
+            line.strokeWidth = width; line.color = Color.BLACK; line.shader = tail; line.color = color; canvas.drawPath(piece, line); line.shader = null
             // Live energy: a brighter run along the ribbons in use, as long as the flow is strong.
             if (kw != null && ((warm && f > 0f) || (!warm && f < 0f))) {
                 measure.setPath(path, false)
@@ -1214,7 +1217,7 @@ internal class ThemedClusterView(
         val cx = .12f * w
         val cy = .48f * h
         val r = .19f * h
-        fill.shader = RadialGradient(cx, cy, r, Color.argb(235, 6, 10, 22), Color.argb(235, 12, 22, 44), Shader.TileMode.CLAMP)
+        fill.color = Color.BLACK; fill.shader = RadialGradient(cx, cy, r, Color.argb(235, 6, 10, 22), Color.argb(235, 12, 22, 44), Shader.TileMode.CLAMP)
         canvas.drawCircle(cx, cy, r, fill); fill.shader = null
         path.reset(); path.addCircle(cx, cy, r, Path.Direction.CW)
         glowStroke(canvas, path, theme.accent, 2.5f * s)
@@ -1336,11 +1339,11 @@ internal class ThemedClusterView(
     private fun drawSplit(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
         val s = h / 720f
         val edge = (ClusterTheme.SPLIT_MAP.first) * w
-        fill.shader = LinearGradient(0f, 0f, edge, h, theme.surface,
+        fill.color = Color.BLACK; fill.shader = LinearGradient(0f, 0f, edge, h, theme.surface,
             Color.argb(Color.alpha(theme.surface), Color.red(theme.surface) * 2 / 3, Color.green(theme.surface) * 2 / 3,
                 Color.blue(theme.surface) * 2 / 3), Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, edge, h, fill); fill.shader = null
-        fill.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(Color.TRANSPARENT, theme.accent, Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
+        fill.color = Color.BLACK; fill.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(Color.TRANSPARENT, theme.accent, Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
         canvas.drawRect(edge - 2f * s, 0f, edge, h, fill); fill.shader = null
         val data = snapshot
         val left = .035f * w

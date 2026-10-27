@@ -2348,9 +2348,17 @@ edit(prof,
 
     /** The profile declared to the phone this connection, for the selected cluster display. */
     fun forSession(context: Context): ClusterMapConfig.Profile {
-        declaredWindow = runCatching { com.andrerinas.openheadunit.DiConnectViews.clusterMapWindow?.invoke(context) }
+        val window = runCatching { com.andrerinas.openheadunit.DiConnectViews.clusterMapWindow?.invoke(context) }
             .getOrNull()?.takeIf { it.width in 0.2f..1f && it.left >= 0f && it.right <= 1f }
             ?: com.andrerinas.openheadunit.DiConnectViews.MapWindow.FULL
+        val changed = window != declaredWindow
+        declaredWindow = window
+        // The cluster window can already be up (it is after a restart, before the phone asks for
+        // the services): rebuild it so the map view takes the new window and crop.
+        if (changed) {
+            val app = context.applicationContext
+            android.os.Handler(android.os.Looper.getMainLooper()).post { GwmOutputs.refresh(app) }
+        }
         val id = GwmSettings(context).clusterDisplayId'''),
     ('''        return profile(w, h, ClusterMapConfig.Detail.of(settings.clusterMapDetail), 0, 0)''',
      '''        // A split theme's map is drawn for its window, not the whole panel.

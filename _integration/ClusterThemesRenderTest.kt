@@ -174,6 +174,11 @@ class ClusterThemesRenderTest {
         for (y in 0 until height step 6) for (x in width / 2 + 4 until width step 6)
             assertEquals("split draws over the map at $x,$y", Color.MAGENTA, bitmap.getPixel(x, y))
         assertNotEquals(Color.MAGENTA, bitmap.getPixel(width / 4, height / 2))
+        // Draw again, as the car does every frame: the panel must stay solid, not see-through.
+        bitmap.eraseColor(Color.MAGENTA)
+        view.draw(Canvas(bitmap))
+        val panel = bitmap.getPixel((width * .45f).toInt(), (height * .85f).toInt())
+        assertTrue("the split panel lets the map show through: ${Integer.toHexString(panel)}", Color.red(panel) < 60)
         bitmap.recycle()
     }
 }
