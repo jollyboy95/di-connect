@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "about": "Di-Connect theme catalogue. The Themes screen's Get more themes button downloads this file. Each theme combines layouts and styles the app already draws; see ThemePacks.kt for every field.",
+  "themes": [
+    {"id": "sunset-orbit", "name": "Sunset Orbit", "category": "everyday", "layout": "orbit", "panel": "frost",
+     "text": "#FFF6EE", "accent": "#FF8A3D", "charge": "#FFD166", "surface": "#A6180C0A"},
+    {"id": "glacier", "name": "Glacier", "category": "tech", "layout": "arcs", "panel": "frost",
+     "text": "#F0FBFF", "accent": "#9BE7FF", "charge": "#B4FFE6", "surface": "#AA0A1620"},
+    {"id": "forest", "name": "Forest", "category": "everyday", "layout": "sidebar",
+     "text": "#E9F5EC", "secondary": "#B0C8D8CC", "accent": "#7DDE92", "charge": "#F2C14E", "surface": "#F40E1A12", "edge": "#337DDE92"},
+    {"id": "silver-ribbon", "name": "Silver Ribbon", "category": "luxury", "layout": "ribbons", "panel": "frost", "face": "serif",
+     "text": "#F6F6F8", "accent": "#E8E8EE", "charge": "#8FA6C8", "surface": "#A60E1016"},
+    {"id": "lava", "name": "Lava", "category": "sport", "layout": "performance", "panel": "carbon",
+     "accent": "#FF3B1F", "charge": "#FFB020", "surface": "#E8140C0A"},
+    {"id": "amber-lcd", "name": "Amber LCD", "category": "tech", "panel": "lcd", "speed": "segment", "flow": "segment", "face": "mono",
+     "text": "#2A1600", "secondary": "#BE2A1600", "accent": "#2A1600", "charge": "#2A1600", "surface": "#F2F2B54A", "edge": "#8A5A10"},
+    {"id": "midnight-dials", "name": "Midnight Dials", "category": "night", "layout": "twin_dials", "panel": "gold_line", "face": "serif",
+     "text": "#E6EAFF", "secondary": "#C07C9CFF", "accent": "#7C9CFF", "charge": "#7CF0D0", "surface": "#F00A0C18", "edge": "#907C9CFF", "dim": 100},
+    {"id": "racing-green", "name": "Racing Green", "category": "luxury", "layout": "twin_dials", "panel": "gold_line", "face": "serif",
+     "text": "#F4EEDC", "secondary": "#C8E0C080", "accent": "#E0C080", "charge": "#9ED8B8", "surface": "#F0102A1E", "edge": "#A0E0C080"},
+    {"id": "candy-deck", "name": "Candy Deck", "category": "everyday", "layout": "deck",
+     "accent": "#FF5FA2", "charge": "#5FE0FF", "surface": "#EE1A0C24"},
+    {"id": "bubblegum-pup", "name": "Bubblegum Pup", "category": "pets", "panel": "bone", "speed": "dog_tag", "flow": "paws",
+     "text": "#FFF4F8", "secondary": "#F5C8DA", "accent": "#FF7EB6", "charge": "#7ED9FF", "surface": "#FF1E1820", "edge": "#F5C8DA"}
+  ]
+}
