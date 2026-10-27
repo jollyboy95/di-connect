@@ -1061,6 +1061,7 @@
     <string name="di_connect_themes_up_to_date">سماتك محدّثة</string>
     <string name="di_connect_themes_download_failed">تعذّر الحصول على السمات. تحقّق من الاتصال بالإنترنت وحاول مرة أخرى.</string>
     <string name="di_connect_themes_import_failed">لا يحتوي هذا الملف على سمات يمكن لـ Di-Connect استخدامها.</string>
+    <string name="di_connect_theme_split_reconnect">يتغيّر حجم الخريطة عند اتصال Android Auto في المرة القادمة. اضغط إعادة التشغيل في الشاشة الرئيسية لتطبيق ذلك الآن.</string>
     <string name="di_connect_theme_hud">شاشة HUD تطابق السمة</string>
     <string name="di_connect_themes_same">سمة واحدة لكليهما</string>
     <string name="di_connect_on">تشغيل</string>

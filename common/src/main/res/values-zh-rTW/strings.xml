@@ -1072,6 +1072,7 @@
     <string name="di_connect_themes_up_to_date">主題已是最新</string>
     <string name="di_connect_themes_download_failed">無法取得主題。請檢查網路連線後再試一次。</string>
     <string name="di_connect_themes_import_failed">此檔案中沒有 Di-Connect 可用的主題。</string>
+    <string name="di_connect_theme_split_reconnect">地圖大小將在下次連接 Android Auto 時改變。點按主畫面上的「重新啟動」即可立即套用。</string>
     <string name="di_connect_theme_hud">HUD 跟隨主題</string>
     <string name="di_connect_themes_same">兩者使用同一主題</string>
     <string name="di_connect_on">開</string>

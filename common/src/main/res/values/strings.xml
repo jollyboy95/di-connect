@@ -1115,6 +1115,7 @@
     <string name="di_connect_themes_up_to_date">Your themes are up to date</string>
     <string name="di_connect_themes_download_failed">Could not get themes. Check the internet connection and try again.</string>
     <string name="di_connect_themes_import_failed">That file has no themes Di-Connect can use.</string>
+    <string name="di_connect_theme_split_reconnect">The map changes size the next time Android Auto connects. Tap Restart on the home screen to do it now.</string>
     <string name="di_connect_theme_hud">HUD matches theme</string>
     <string name="di_connect_themes_same">One theme for both</string>
     <string name="di_connect_on">On</string>

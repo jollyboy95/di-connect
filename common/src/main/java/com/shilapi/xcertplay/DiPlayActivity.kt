@@ -6188,7 +6188,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             isFocusable = true
             contentDescription = theme.name
             setOnClickListener {
+                val before = ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow
                 ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
+                // Android Auto's map is sized when it connects: a split theme needs a reconnect.
+                if (ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow != before)
+                    android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_split_reconnect), android.widget.Toast.LENGTH_LONG).show()
                 render()
             }
         }

@@ -1102,6 +1102,7 @@
     <string name="di_connect_themes_up_to_date">I tuoi temi sono aggiornati</string>
     <string name="di_connect_themes_download_failed">Impossibile scaricare i temi. Controlla la connessione a internet e riprova.</string>
     <string name="di_connect_themes_import_failed">Il file non contiene temi utilizzabili da Di-Connect.</string>
+    <string name="di_connect_theme_split_reconnect">La mappa cambia dimensione alla prossima connessione di Android Auto. Tocca Riavvia nella schermata principale per farlo subito.</string>
     <string name="di_connect_theme_hud">HUD abbinato al tema</string>
     <string name="di_connect_themes_same">Un tema per entrambi</string>
     <string name="di_connect_on">Attivo</string>

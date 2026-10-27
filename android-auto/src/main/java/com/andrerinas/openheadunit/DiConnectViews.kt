@@ -36,6 +36,16 @@ object DiConnectViews {
         fun release()
     }
 
+    /** Where on the cluster panel the map goes, as fractions of its width (0-1 is the whole panel). */
+    data class MapWindow(val left: Float, val right: Float) {
+        val width: Float get() = right - left
+        val full: Boolean get() = left <= 0f && right >= 1f
+        companion object { val FULL = MapWindow(0f, 1f) }
+    }
+
+    /** The map window the chosen cluster theme wants; read when an Android Auto session starts. */
+    @Volatile var clusterMapWindow: ((Context) -> MapWindow)? = null
+
     /** Set by Di-Connect's D-Play side at start-up; while null, DiAuto's own views are used. */
     @Volatile var cluster: ((Context) -> Layer)? = null
     /** [anchor]: 0 left, 1 centre, 2 right, as both apps store it. */

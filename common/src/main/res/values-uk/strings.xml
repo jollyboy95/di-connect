@@ -1024,6 +1024,7 @@
     <string name="di_connect_themes_up_to_date">Теми вже оновлені</string>
     <string name="di_connect_themes_download_failed">Не вдалося отримати теми. Перевірте підключення до інтернету й спробуйте ще раз.</string>
     <string name="di_connect_themes_import_failed">У цьому файлі немає тем, які може використати Di-Connect.</string>
+    <string name="di_connect_theme_split_reconnect">Розмір карти зміниться під час наступного підключення Android Auto. Щоб застосувати зараз, натисніть «Перезапуск» на головному екрані.</string>
     <string name="di_connect_theme_hud">HUD у стилі теми</string>
     <string name="di_connect_themes_same">Одна тема для обох</string>
     <string name="di_connect_on">Увімк.</string>

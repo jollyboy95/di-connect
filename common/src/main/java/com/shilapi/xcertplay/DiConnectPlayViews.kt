@@ -17,6 +17,10 @@ import com.shilapi.xcertplay.media.CarPlayNowPlaying
 internal object DiConnectPlayViews {
     fun install(app: Context) {
         DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }
+        DiConnectViews.clusterMapWindow = { context ->
+            ClusterThemeStore.selected(context, ClusterConnection.ANDROID_AUTO).mapWindow
+                ?.let { DiConnectViews.MapWindow(it.first, it.second) } ?: DiConnectViews.MapWindow.FULL
+        }
         DiConnectViews.hud = { displayContext, anchor -> HudLayer(displayContext, anchor) }
         DiConnectViews.hudTestLabel = { it.getString(com.shilapi.xcertplay.host.R.string.settings_gwm_hud_test) }
     }

@@ -47,10 +47,23 @@ internal data class ClusterTheme(
      * cluster on the left, one solid sidebar, or a console along the bottom edge. All keep Google's
      * card on Android Auto (the right, 42-74 % down) clear.
      */
-    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE }
+    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT }
     enum class Face { SANS, SERIF, MONO }
 
-    fun availableFor(connection: ClusterConnection) = native == null || native == connection
+    /**
+     * Where the map goes on the cluster, as fractions of the panel width, or null for the whole
+     * panel. Android Auto is asked for a map drawn for that window (a change applies at the next
+     * connection). CarPlay cannot resize its map yet, so split layouts are Android Auto only.
+     */
+    val mapWindow: Pair<Float, Float>? get() = if (layout == Layout.SPLIT) SPLIT_MAP else null
+
+    fun availableFor(connection: ClusterConnection) =
+        (native == null || native == connection) && (mapWindow == null || connection == ClusterConnection.ANDROID_AUTO)
+
+    companion object {
+        /** Split: instruments on the left half, the map on the right half. */
+        val SPLIT_MAP = .5f to 1f
+    }
 }
 
 internal object ClusterThemes {
@@ -100,6 +113,9 @@ internal object ClusterThemes {
         ClusterTheme("orbit", "Orbit", ThemeCategory.LUXURY, panel = ClusterTheme.Panel.FROST, layout = ClusterTheme.Layout.ORBIT,
             face = ClusterTheme.Face.SERIF, text = Color.rgb(246, 244, 240), accent = Color.rgb(255, 190, 120),
             charge = Color.rgb(120, 220, 255), surface = Color.argb(150, 12, 16, 24)),
+        ClusterTheme("split-test", "Split (test)", ThemeCategory.EVERYDAY, panel = ClusterTheme.Panel.FROST,
+            layout = ClusterTheme.Layout.SPLIT, accent = Color.rgb(64, 156, 255), charge = Color.rgb(70, 225, 150),
+            surface = Color.argb(250, 12, 16, 26), edge = Color.argb(60, 255, 255, 255)),
         ClusterTheme("chronograph", "Chronograph", ThemeCategory.LUXURY, panel = ClusterTheme.Panel.GOLD_LINE,
             speed = ClusterTheme.Speed.DIAL, flow = ClusterTheme.Flow.HAIRLINE, face = ClusterTheme.Face.SERIF,
             text = Color.rgb(244, 236, 220), secondary = Color.argb(205, 217, 184, 120), accent = Color.rgb(217, 184, 120),

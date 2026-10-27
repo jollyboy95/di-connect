@@ -117,6 +117,7 @@ internal class ThemedClusterView(
             ClusterTheme.Layout.ORBIT -> drawOrbit(canvas, w, h, showMusic)
             ClusterTheme.Layout.ARCS -> drawArcs(canvas, w, h, showMusic)
             ClusterTheme.Layout.PERFORMANCE -> drawPerformance(canvas, w, h, showMusic)
+            ClusterTheme.Layout.SPLIT -> drawSplit(canvas, w, h, showMusic)
             ClusterTheme.Layout.CLASSIC -> {
             drawHeader(canvas, w, h)
             snapshot?.let { data ->
@@ -1324,6 +1325,80 @@ internal class ThemedClusterView(
         drawHeader(canvas, w, h)
         data?.let { drawBottomRow(canvas, w, h, it) }
         if (showMusic) drawMusic(canvas, w, h)
+    }
+
+    // ---- split ------------------------------------------------------------------------------
+
+    /**
+     * The instruments fill the left half and the map the right half (Android Auto draws the map for
+     * that window). Keeps out of the car's own icons low on the left (3-22 % across, 82-92 % down).
+     */
+    private fun drawSplit(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        val s = h / 720f
+        val edge = (ClusterTheme.SPLIT_MAP.first) * w
+        fill.shader = LinearGradient(0f, 0f, edge, h, theme.surface,
+            Color.argb(Color.alpha(theme.surface), Color.red(theme.surface) * 2 / 3, Color.green(theme.surface) * 2 / 3,
+                Color.blue(theme.surface) * 2 / 3), Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, 0f, edge, h, fill); fill.shader = null
+        fill.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(Color.TRANSPARENT, theme.accent, Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
+        canvas.drawRect(edge - 2f * s, 0f, edge, h, fill); fill.shader = null
+        val data = snapshot
+        val left = .035f * w
+        val right = edge - .03f * w
+        // Clock and temperature.
+        type(.045f * h, theme.text, 600)
+        canvas.drawText(SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()), left, .1f * h, text)
+        data?.outsideTempC?.let { type(.04f * h, theme.secondary, 500, Paint.Align.RIGHT); canvas.drawText("${it.roundToInt()}°C", right, .1f * h, text) }
+        // Speed, large, on the left of the panel.
+        val speedX = .14f * w
+        type(.3f * h, theme.text, 700, Paint.Align.CENTER)
+        canvas.drawText(data?.speedKph?.roundToInt()?.toString() ?: "—", speedX, .5f * h, text)
+        type(.03f * h, theme.secondary, 600, Paint.Align.CENTER, .2f); canvas.drawText("KM/H", speedX, .57f * h, text)
+        // Power and fuel on the right of the panel.
+        val col = .29f * w
+        val kw = kwNow()
+        sideLabel(canvas, "POWER", col, .25f * h)
+        type(.05f * h, kwColor(kw), 700); canvas.drawText(kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", col, .32f * h, text)
+        val mid = (col + right) / 2f
+        rect.set(col, .355f * h, right, .355f * h + 10f * s); fill.color = withAlpha(theme.text, 46); canvas.drawRoundRect(rect, 5f * s, 5f * s, fill)
+        if (kw != null) {
+            val fx = mid + (right - col) / 2f * (kw / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f)
+            rect.set(minOf(mid, fx), .355f * h, maxOf(mid, fx), .355f * h + 10f * s); fill.color = kwColor(kw); canvas.drawRoundRect(rect, 5f * s, 5f * s, fill)
+        }
+        fill.color = theme.text; canvas.drawRect(mid - 1.5f * s, .345f * h, mid + 1.5f * s, .355f * h + 20f * s, fill)
+        sideLabel(canvas, "FUEL", col, .46f * h)
+        val fuel = data?.fuelPercent
+        type(.05f * h, theme.text, 700); canvas.drawText(fuel?.let { "${it.roundToInt()}%" } ?: "—", col, .53f * h, text)
+        data?.rangeKm?.let { type(.032f * h, theme.secondary, 500, Paint.Align.RIGHT); canvas.drawText("${it.roundToInt()} km", right, .53f * h, text) }
+        rect.set(col, .565f * h, right, .565f * h + 10f * s); fill.color = withAlpha(theme.text, 46); canvas.drawRoundRect(rect, 5f * s, 5f * s, fill)
+        if (fuel != null) {
+            rect.right = col + (right - col) * (fuel / 100f).coerceIn(.03f, 1f)
+            fill.color = if (fuel < 15f) Color.rgb(255, 159, 10) else theme.charge; canvas.drawRoundRect(rect, 5f * s, 5f * s, fill)
+        }
+        divider(canvas, left, right, .64f * h)
+        // Now playing, across the panel above the car's icons.
+        if (showMusic) music.info.title?.takeIf { it.isNotBlank() }?.let { title ->
+            val side = .12f * h
+            val top = .67f * h
+            rect.set(left, top, left + side, top + side)
+            val cover = music.artwork?.takeUnless(Bitmap::isRecycled)
+            canvas.save(); path.reset(); path.addRoundRect(rect, 10f * s, 10f * s, Path.Direction.CW); canvas.clipPath(path)
+            if (cover != null) canvas.drawBitmap(cover, null, rect, art) else { fill.color = withAlpha(theme.text, 50); canvas.drawRect(rect, fill) }
+            canvas.restore()
+            val tx = left + side + .015f * w
+            type(.034f * h, theme.text, 700); canvas.drawText(fit(title, right - tx), tx, top + .05f * h, text)
+            music.info.artist?.takeIf { it.isNotBlank() }?.let { type(.026f * h, theme.secondary, 500); canvas.drawText(fit(it, right - tx), tx, top + .095f * h, text) }
+            progress()?.let { done ->
+                rect.set(tx, top + .112f * h, right, top + .112f * h + 4f * s); fill.color = withAlpha(theme.text, 50); canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
+                rect.right = tx + (right - tx) * done; fill.color = theme.accent; canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
+            }
+        }
+        // Odometer bottom right of the panel, clear of the car's icons on the left.
+        data?.odometerKm?.let {
+            type(.028f * h, theme.secondary, 500, Paint.Align.RIGHT)
+            // READY sits from 46 % across on the bottom line, so end well before it.
+            canvas.drawText("ODO  " + NumberFormat.getIntegerInstance().format(it.roundToInt()) + " km", .43f * w, .955f * h, text)
+        }
     }
 
     // ---- CarPlay directions card ----------------------------------------------------------

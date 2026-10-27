@@ -139,7 +139,12 @@ internal object GwmOutputs {
         }
         val profile = GwmClusterProfile.forDisplay(app, display)
         val root = FrameLayout(displayContext).apply { setBackgroundColor(Color.BLACK) }
-        root.addView(mapView(app, displayContext, display, profile), FrameLayout.LayoutParams(-1, -1))
+        // A split theme's map fills only its window of the panel; the theme draws the rest.
+        val window = GwmClusterProfile.declaredWindow
+        val panel = sizeOf(display)
+        root.addView(mapView(app, displayContext, display, profile),
+            if (window.full || panel.x <= 0) FrameLayout.LayoutParams(-1, -1)
+            else FrameLayout.LayoutParams((panel.x * window.width).toInt(), -1).apply { leftMargin = (panel.x * window.left).toInt() })
         if (gwm.styledLayer) {
             val dplay = com.andrerinas.openheadunit.DiConnectViews.cluster?.invoke(displayContext)
             if (dplay != null) {

@@ -154,4 +154,26 @@ class ClusterThemesRenderTest {
     fun aFileWithoutUsableThemesIsRefused() {
         ThemePacks.install(context, """{"themes": [{"id": "x", "name": "X", "speed": "warp"}]}""")
     }
+
+    @Test fun splitThemesAskForAHalfWidthMapOnAndroidAutoOnly() {
+        val split = ClusterThemes.byId("split-test")!!
+        assertEquals(.5f to 1f, split.mapWindow)
+        assertTrue(split.availableFor(ClusterConnection.ANDROID_AUTO))
+        assertTrue(!split.availableFor(ClusterConnection.CARPLAY))
+        assertEquals(null, ClusterThemes.byId(ClusterThemes.MODERN)!!.mapWindow)
+        // The instruments stay in the left half; the right half is left to the map.
+        val (width, height) = 1920 to 720
+        val view = ThemedClusterView(context, split, ClusterConnection.ANDROID_AUTO, preview = true)
+        view.setSnapshot(GwmVehicleData.Snapshot(54f, "D", 58f, 523f, 19f, SystemClock.elapsedRealtime(), 34868f, 35f))
+        view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, width, height)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(Color.MAGENTA)
+        view.draw(Canvas(bitmap))
+        for (y in 0 until height step 6) for (x in width / 2 + 4 until width step 6)
+            assertEquals("split draws over the map at $x,$y", Color.MAGENTA, bitmap.getPixel(x, y))
+        assertNotEquals(Color.MAGENTA, bitmap.getPixel(width / 4, height / 2))
+        bitmap.recycle()
+    }
 }

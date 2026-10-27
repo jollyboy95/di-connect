@@ -1887,7 +1887,11 @@ edit(D,
             isFocusable = true
             contentDescription = theme.name
             setOnClickListener {
+                val before = ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow
                 ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
+                // Android Auto's map is sized when it connects: a split theme needs a reconnect.
+                if (ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow != before)
+                    android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_split_reconnect), android.widget.Toast.LENGTH_LONG).show()
                 render()
             }
         }
@@ -1944,6 +1948,7 @@ CONTROL_STRINGS={
  'di_connect_themes_up_to_date':['Your themes are up to date', 'سماتك محدّثة', 'Tus temas están al día', 'I tuoi temi sono aggiornati', 'テーマは最新です', 'Темы уже обновлены', 'Теми вже оновлені', '主题已是最新', '主題已是最新'],
  'di_connect_themes_download_failed':['Could not get themes. Check the internet connection and try again.', 'تعذّر الحصول على السمات. تحقّق من الاتصال بالإنترنت وحاول مرة أخرى.', 'No se pudieron obtener los temas. Comprueba la conexión a internet e inténtalo de nuevo.', 'Impossibile scaricare i temi. Controlla la connessione a internet e riprova.', 'テーマを取得できませんでした。インターネット接続を確認して、もう一度お試しください。', 'Не удалось получить темы. Проверьте подключение к интернету и повторите попытку.', 'Не вдалося отримати теми. Перевірте підключення до інтернету й спробуйте ще раз.', '无法获取主题。请检查网络连接后重试。', '無法取得主題。請檢查網路連線後再試一次。'],
  'di_connect_themes_import_failed':['That file has no themes Di-Connect can use.', 'لا يحتوي هذا الملف على سمات يمكن لـ Di-Connect استخدامها.', 'Ese archivo no tiene temas que Di-Connect pueda usar.', 'Il file non contiene temi utilizzabili da Di-Connect.', 'このファイルには Di-Connect で使えるテーマがありません。', 'В этом файле нет тем, которые может использовать Di-Connect.', 'У цьому файлі немає тем, які може використати Di-Connect.', '该文件中没有 Di-Connect 可用的主题。', '此檔案中沒有 Di-Connect 可用的主題。'],
+ 'di_connect_theme_split_reconnect':['The map changes size the next time Android Auto connects. Tap Restart on the home screen to do it now.', 'يتغيّر حجم الخريطة عند اتصال Android Auto في المرة القادمة. اضغط إعادة التشغيل في الشاشة الرئيسية لتطبيق ذلك الآن.', 'El mapa cambiará de tamaño la próxima vez que se conecte Android Auto. Toca Reiniciar en la pantalla de inicio para hacerlo ahora.', 'La mappa cambia dimensione alla prossima connessione di Android Auto. Tocca Riavvia nella schermata principale per farlo subito.', '地図のサイズは次回 Android Auto に接続したときに変わります。今すぐ反映するにはホーム画面の「再起動」をタップしてください。', 'Размер карты изменится при следующем подключении Android Auto. Чтобы применить сейчас, нажмите «Перезапуск» на главном экране.', 'Розмір карти зміниться під час наступного підключення Android Auto. Щоб застосувати зараз, натисніть «Перезапуск» на головному екрані.', '地图大小将在下次连接 Android Auto 时改变。点按主屏幕上的“重启”可立即生效。', '地圖大小將在下次連接 Android Auto 時改變。點按主畫面上的「重新啟動」即可立即套用。'],
  'di_connect_theme_hud':['HUD matches theme', 'شاشة HUD تطابق السمة', 'HUD a juego con el tema', "HUD abbinato al tema", 'HUDをテーマに合わせる', 'HUD в стиле темы', 'HUD у стилі теми', 'HUD 跟随主题', 'HUD 跟隨主題'],
  'di_connect_themes_same':['One theme for both', 'سمة واحدة لكليهما', 'Un tema para ambos', 'Un tema per entrambi', '両方に同じテーマ', 'Одна тема для обоих', 'Одна тема для обох', '两者使用同一主题', '兩者使用同一主題'],
  'di_connect_on':['On', 'تشغيل', 'Activado', 'Attivo', 'オン', 'Вкл.', 'Увімк.', '开', '開'],
@@ -2308,3 +2313,65 @@ edit(atw,
 ''','''                val chunk = dataQueue.poll(200, TimeUnit.MILLISECONDS)
                 noteUnderruns()
 '''))
+
+# Split cluster (Oct 2026): a split theme asks the phone for a map drawn for part of the cluster
+# (the right half for the Split layout), and the map video sits in that part of the panel, so Google
+# Maps lays out its map and card natively for the smaller window instead of being squashed or cut.
+# The window is fixed for a session when it is declared, so the view always matches the stream; a
+# change of window takes effect at the next Android Auto connection.
+aa_java=root/'android-auto/src/main/java/com/andrerinas/openheadunit'
+edit(aa_java/'DiConnectViews.kt',
+    ('''    /** Set by Di-Connect's D-Play side at start-up; while null, DiAuto's own views are used. */''',
+     '''    /** Where on the cluster panel the map goes, as fractions of its width (0-1 is the whole panel). */
+    data class MapWindow(val left: Float, val right: Float) {
+        val width: Float get() = right - left
+        val full: Boolean get() = left <= 0f && right >= 1f
+        companion object { val FULL = MapWindow(0f, 1f) }
+    }
+
+    /** The map window the chosen cluster theme wants; read when an Android Auto session starts. */
+    @Volatile var clusterMapWindow: ((Context) -> MapWindow)? = null
+
+    /** Set by Di-Connect's D-Play side at start-up; while null, DiAuto's own views are used. */'''))
+prof=aa_java/'gwm/GwmClusterProfile.kt'
+edit(prof,
+    ('''    /** The profile declared to the phone this connection, for the selected cluster display. */
+    fun forSession(context: Context): ClusterMapConfig.Profile {
+        val id = GwmSettings(context).clusterDisplayId''',
+     '''    /**
+     * The map window declared to the phone for this connection. The map view follows it until the
+     * next connection, so a theme change mid-session never puts a full map in a half window.
+     */
+    @Volatile var declaredWindow: com.andrerinas.openheadunit.DiConnectViews.MapWindow =
+        com.andrerinas.openheadunit.DiConnectViews.MapWindow.FULL
+        private set
+
+    /** The profile declared to the phone this connection, for the selected cluster display. */
+    fun forSession(context: Context): ClusterMapConfig.Profile {
+        declaredWindow = runCatching { com.andrerinas.openheadunit.DiConnectViews.clusterMapWindow?.invoke(context) }
+            .getOrNull()?.takeIf { it.width in 0.2f..1f && it.left >= 0f && it.right <= 1f }
+            ?: com.andrerinas.openheadunit.DiConnectViews.MapWindow.FULL
+        val id = GwmSettings(context).clusterDisplayId'''),
+    ('''        return profile(w, h, ClusterMapConfig.Detail.of(settings.clusterMapDetail), 0, 0)''',
+     '''        // A split theme's map is drawn for its window, not the whole panel.
+        val window = declaredWindow
+        if (!window.full) {
+            if (w <= 0 || h <= 0) { w = ClusterMapConfig.PANEL_WIDTH; h = ClusterMapConfig.PANEL_HEIGHT }
+            w = (w * window.width).toInt()
+        }
+        return profile(w, h, ClusterMapConfig.Detail.of(settings.clusterMapDetail), 0, 0)'''))
+edit(aa_java/'gwm/GwmOutputs.kt',
+    ('''        root.addView(mapView(app, displayContext, display, profile), FrameLayout.LayoutParams(-1, -1))''',
+     '''        // A split theme's map fills only its window of the panel; the theme draws the rest.
+        val window = GwmClusterProfile.declaredWindow
+        val panel = sizeOf(display)
+        root.addView(mapView(app, displayContext, display, profile),
+            if (window.full || panel.x <= 0) FrameLayout.LayoutParams(-1, -1)
+            else FrameLayout.LayoutParams((panel.x * window.width).toInt(), -1).apply { leftMargin = (panel.x * window.left).toInt() })'''))
+edit(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt',
+    ('''        DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }''',
+     '''        DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }
+        DiConnectViews.clusterMapWindow = { context ->
+            ClusterThemeStore.selected(context, ClusterConnection.ANDROID_AUTO).mapWindow
+                ?.let { DiConnectViews.MapWindow(it.first, it.second) } ?: DiConnectViews.MapWindow.FULL
+        }'''))

@@ -26,8 +26,19 @@ internal object GwmClusterProfile {
     /** Marker steps reuse DiAuto's dashboard settings; this many percent per step. */
     private const val STEP = 5
 
+    /**
+     * The map window declared to the phone for this connection. The map view follows it until the
+     * next connection, so a theme change mid-session never puts a full map in a half window.
+     */
+    @Volatile var declaredWindow: com.andrerinas.openheadunit.DiConnectViews.MapWindow =
+        com.andrerinas.openheadunit.DiConnectViews.MapWindow.FULL
+        private set
+
     /** The profile declared to the phone this connection, for the selected cluster display. */
     fun forSession(context: Context): ClusterMapConfig.Profile {
+        declaredWindow = runCatching { com.andrerinas.openheadunit.DiConnectViews.clusterMapWindow?.invoke(context) }
+            .getOrNull()?.takeIf { it.width in 0.2f..1f && it.left >= 0f && it.right <= 1f }
+            ?: com.andrerinas.openheadunit.DiConnectViews.MapWindow.FULL
         val id = GwmSettings(context).clusterDisplayId
         val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
             (context.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager)?.getDisplay(id) else null
@@ -45,6 +56,12 @@ internal object GwmClusterProfile {
             display.getRealSize(size)
             w = size.x
             h = size.y
+        }
+        // A split theme's map is drawn for its window, not the whole panel.
+        val window = declaredWindow
+        if (!window.full) {
+            if (w <= 0 || h <= 0) { w = ClusterMapConfig.PANEL_WIDTH; h = ClusterMapConfig.PANEL_HEIGHT }
+            w = (w * window.width).toInt()
         }
         return profile(w, h, ClusterMapConfig.Detail.of(settings.clusterMapDetail), 0, 0)
     }
