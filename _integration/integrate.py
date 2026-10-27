@@ -2402,3 +2402,12 @@ edit(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt',
             ClusterThemeStore.selected(context, ClusterConnection.ANDROID_AUTO).mapWindow
                 ?.let { DiConnectViews.MapWindow(it.first, it.second) } ?: DiConnectViews.MapWindow.FULL
         }'''))
+
+
+
+# Studio instrument layouts and SmartSplit-verified read-only engine RPM support.
+# Keep the canonical vehicle reader and tests durable across rsync --delete regeneration.
+for name in ['GwmVehicleData.kt']:
+    (root/'common/src/main/java/com/shilapi/xcertplay'/name).write_text((Path('target/_integration')/name).read_text())
+for name in ['GwmEngineRpmTest.kt']:
+    (root/'common/src/test/java/com/shilapi/xcertplay'/name).write_text((Path('target/_integration')/name).read_text())

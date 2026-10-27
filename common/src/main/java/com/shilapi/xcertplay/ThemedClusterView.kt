@@ -119,6 +119,10 @@ internal class ThemedClusterView(
             ClusterTheme.Layout.PERFORMANCE -> drawPerformance(canvas, w, h, showMusic)
             ClusterTheme.Layout.SPLIT -> drawSplit(canvas, w, h, showMusic)
             ClusterTheme.Layout.CENTRE -> drawCentre(canvas, w, h, showMusic)
+            ClusterTheme.Layout.HYBRID_SPORT -> drawHybridSport(canvas, w, h, showMusic)
+            ClusterTheme.Layout.VAPORWAVE_STEREO -> drawVaporwaveStereo(canvas, w, h, showMusic)
+            ClusterTheme.Layout.MUSIC_LOUNGE -> drawMusicLounge(canvas, w, h, showMusic)
+            ClusterTheme.Layout.BAVARIAN -> drawBavarian(canvas, w, h, showMusic)
             ClusterTheme.Layout.CLASSIC -> {
             drawHeader(canvas, w, h)
             snapshot?.let { data ->
@@ -1515,6 +1519,223 @@ internal class ThemedClusterView(
         if (showMusic) drawMusicLine(canvas, w, h)
     }
 
+    // Studio layouts deliberately share only data helpers, not their instrument geometry.
+    // All use already-tested negotiated windows; no full-width video is cropped into a split.
+    private fun studioPanel(canvas: Canvas, w: Float, h: Float, centre: Boolean = false) {
+        fill.shader = null; fill.color = Color.rgb(Color.red(theme.surface), Color.green(theme.surface), Color.blue(theme.surface))
+        if (centre) {
+            canvas.drawRect(0f, 0f, .25f * w, h, fill)
+            canvas.drawRect(.75f * w, 0f, w, h, fill)
+        } else canvas.drawRect(0f, 0f, .5f * w, h, fill)
+    }
+
+    private fun studioText(canvas: Canvas, value: String, x: Float, y: Float, size: Float,
+        color: Int = theme.text, weight: Int = 500, width: Float = Float.MAX_VALUE,
+        align: Paint.Align = Paint.Align.LEFT) {
+        type(size, color, weight, align)
+        canvas.drawText(fit(value, width), x, y, text)
+    }
+
+    /** Shared real fuel/odometer row below the H7's immovable telltales. */
+    private fun studioFooter(canvas: Canvas, w: Float, h: Float, centre: Boolean = false) {
+        val data = snapshot
+        val fuel = data?.fuelPercent?.let { "${it.roundToInt()}%" } ?: "—"
+        val range = data?.rangeKm?.let { "${it.roundToInt()} km" } ?: "— km"
+        drawPump(canvas, .024f * w, .935f * h, .028f * h)
+        studioText(canvas, "$fuel  $range", .046f * w, .962f * h, .027f * h,
+            width = (if (centre) .19f else .21f) * w)
+        val odo = data?.odometerKm?.let { NumberFormat.getIntegerInstance().format(it.roundToInt()) } ?: "—"
+        studioText(canvas, "ODO  $odo km", (if (centre) .975f else .438f) * w, .962f * h,
+            .024f * h, theme.secondary, width = .18f * w, align = Paint.Align.RIGHT)
+    }
+
+    /** Bipolar power: only the side of zero matching the signed battery reading is lit. */
+    private fun studioFlow(canvas: Canvas, box: RectF, segments: Boolean) {
+        val kw = kwNow()
+        val f = kw?.let { (it / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f) }
+        val mid = box.centerX()
+        fill.shader = null
+        if (segments) {
+            val count = 36
+            val step = box.width() / count
+            for (i in 0 until count) {
+                val position = (i + .5f) / count * 2f - 1f
+                val lit = f != null && if (f >= 0f) position > 0f && position <= f else position < 0f && position >= f
+                fill.color = if (lit) { if (position < 0f) theme.charge else theme.accent } else withAlpha(theme.text, 35)
+                canvas.drawRect(box.left + i * step, box.top, box.left + (i + .72f) * step, box.bottom, fill)
+            }
+        } else {
+            fill.color = withAlpha(theme.text, 35); canvas.drawRoundRect(box, box.height() / 2f, box.height() / 2f, fill)
+            f?.let {
+                fill.color = kwColor(kw)
+                val end = mid + box.width() / 2f * it
+                canvas.drawRoundRect(RectF(minOf(mid, end), box.top, maxOf(mid, end), box.bottom), box.height() / 2f, box.height() / 2f, fill)
+            }
+        }
+        fill.color = theme.text
+        canvas.drawRect(mid - height / 720f, box.top - 3f * height / 720f, mid + height / 720f, box.bottom + 3f * height / 720f, fill)
+    }
+
+    /** Artwork is centre-cropped, never stretched. The empty state has no invented playback data. */
+    private fun studioAlbum(canvas: Canvas, box: RectF, radius: Float) {
+        val bitmap = music.artwork?.takeUnless(Bitmap::isRecycled)
+        canvas.save()
+        val clip = Path().apply { addRoundRect(box, radius, radius, Path.Direction.CW) }
+        canvas.clipPath(clip)
+        fill.shader = null; fill.color = withAlpha(theme.accent, 35); canvas.drawRect(box, fill)
+        if (bitmap != null) {
+            val scale = maxOf(box.width() / bitmap.width, box.height() / bitmap.height)
+            val bw = bitmap.width * scale
+            val bh = bitmap.height * scale
+            canvas.drawBitmap(bitmap, null, RectF(box.centerX() - bw / 2f, box.centerY() - bh / 2f,
+                box.centerX() + bw / 2f, box.centerY() + bh / 2f), art)
+        } else {
+            studioText(canvas, "♪", box.centerX(), box.centerY() + box.height() * .16f,
+                box.height() * .55f, theme.accent, align = Paint.Align.CENTER)
+        }
+        canvas.restore()
+    }
+
+    private fun studioMusic(canvas: Canvas, box: RectF, large: Boolean) {
+        val h = height.toFloat()
+        val side = minOf(box.height(), box.width() * (if (large) .48f else .25f))
+        studioAlbum(canvas, RectF(box.left, box.top, box.left + side, box.top + side), .014f * h)
+        val x = box.left + side + .025f * h
+        val tw = (box.right - x).coerceAtLeast(1f)
+        val title = music.info.title?.takeIf { it.isNotBlank() } ?: "—"
+        studioText(canvas, title, x, box.top + side * .35f, (if (large) .043f else .034f) * h,
+            weight = 700, width = tw)
+        music.info.artist?.takeIf { it.isNotBlank() }?.let {
+            studioText(canvas, it, x, box.top + side * .60f, .027f * h, theme.secondary, width = tw)
+        }
+        progress()?.let { done ->
+            val y = box.top + side * .83f
+            fill.shader = null; fill.color = withAlpha(theme.text, 40)
+            canvas.drawRoundRect(RectF(x, y, box.right, y + .007f * h), .0035f * h, .0035f * h, fill)
+            fill.color = theme.accent
+            canvas.drawRoundRect(RectF(x, y, x + tw * done, y + .007f * h), .0035f * h, .0035f * h, fill)
+        }
+    }
+
+    private fun studioRpm(canvas: Canvas, box: RectF) {
+        val rpm = snapshot?.engineRpm
+        val h = height.toFloat()
+        studioText(canvas, "ENGINE RPM", box.left, box.top, .018f * h, theme.secondary)
+        studioText(canvas, rpm?.roundToInt()?.toString() ?: "—", box.right, box.top,
+            .024f * h, theme.text, align = Paint.Align.RIGHT)
+        val step = box.width() / 30
+        fill.shader = null
+        for (i in 0 until 30) {
+            fill.color = if (rpm != null && (i + .5f) / 30 <= (rpm / 6000f).coerceIn(0f, 1f)) theme.accent else withAlpha(theme.text, 30)
+            canvas.drawRect(box.left + i * step, box.top + .016f * h,
+                box.left + (i + .76f) * step, box.bottom, fill)
+        }
+    }
+
+    private fun drawHybridSport(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        studioPanel(canvas, w, h)
+        val s = h / 720f
+        // A clipped shoulder and vertical speed ladder give this its own silhouette.
+        val shoulder = Path().apply {
+            moveTo(.025f * w, .15f * h); lineTo(.465f * w, .15f * h)
+            lineTo(.435f * w, .60f * h); lineTo(.025f * w, .60f * h); close()
+        }
+        fill.color = withAlpha(theme.accent, 15); canvas.drawPath(shoulder, fill)
+        line.shader = null; line.strokeWidth = 2f * s; line.color = theme.edge; canvas.drawPath(shoulder, line)
+        val speed = snapshot?.speedKph
+        for (i in 0..10) {
+            val y = (.20f + i * .032f) * h
+            line.color = if (speed != null && speed >= (10 - i) * 20) theme.accent else withAlpha(theme.text, 45)
+            line.strokeWidth = 3f * s; canvas.drawLine(.038f * w, y, .053f * w, y, line)
+        }
+        studioText(canvas, speed?.roundToInt()?.toString() ?: "—", .078f * w, .475f * h, .28f * h, weight = 800)
+        studioText(canvas, "km/h", .335f * w, .475f * h, .032f * h, theme.secondary)
+        studioText(canvas, "BATTERY FLOW", .065f * w, .565f * h, .022f * h, theme.secondary)
+        val kw = kwNow()
+        studioText(canvas, kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", .435f * w,
+            .565f * h, .032f * h, kwColor(kw), align = Paint.Align.RIGHT)
+        studioFlow(canvas, RectF(.065f * w, .61f * h, .435f * w, .635f * h), true)
+        studioText(canvas, "CHARGE", .065f * w, .675f * h, .018f * h, theme.charge)
+        studioText(canvas, "DRAW", .435f * w, .675f * h, .018f * h, theme.accent, align = Paint.Align.RIGHT)
+        if (showMusic) studioMusic(canvas, RectF(.065f * w, .705f * h, .435f * w, .795f * h), false)
+        studioRpm(canvas, RectF(.065f * w, .125f * h, .435f * w, .16f * h))
+        drawHeader(canvas, w, h)
+        studioFooter(canvas, w, h)
+    }
+
+    private fun drawVaporwaveStereo(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        studioPanel(canvas, w, h)
+        val s = h / 720f
+        // Flat LCD cells and a cassette deck, with no analogue gauges or sport geometry.
+        studioRpm(canvas, RectF(.035f * w, .135f * h, .465f * w, .17f * h))
+        val speedBox = RectF(.035f * w, .19f * h, .255f * w, .49f * h)
+        panel(canvas, speedBox, .012f * h)
+        segmentDigits(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .14f * w, .20f * h, .22f * h)
+        studioText(canvas, "km/h", .14f * w, .475f * h, .025f * h, theme.secondary, align = Paint.Align.CENTER)
+        studioText(canvas, "BATTERY FLOW", .28f * w, .205f * h, .020f * h, theme.secondary)
+        studioText(canvas, kwNow()?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", .28f * w,
+            .28f * h, .037f * h, kwColor(kwNow()))
+        studioFlow(canvas, RectF(.28f * w, .33f * h, .465f * w, .36f * h), true)
+        studioText(canvas, "CHG / DRAW", .28f * w, .415f * h, .019f * h, theme.charge)
+        val deck = RectF(.035f * w, .53f * h, .465f * w, .79f * h)
+        panel(canvas, deck, .018f * h)
+        if (showMusic) studioMusic(canvas, RectF(deck.left + .018f * w, deck.top + .025f * h,
+            deck.right - .018f * w, deck.bottom - .025f * h), false)
+        line.color = theme.accent; line.strokeWidth = 2f * s; line.shader = null
+        canvas.drawLine(.035f * w, .815f * h, .465f * w, .815f * h, line)
+        drawHeader(canvas, w, h)
+        studioFooter(canvas, w, h)
+    }
+
+    private fun drawMusicLounge(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        studioPanel(canvas, w, h)
+        // Speed stays prominent while album art is the main lower-panel feature.
+        studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .035f * w,
+            .31f * h, .18f * h, weight = 300)
+        studioText(canvas, "km/h", .20f * w, .30f * h, .028f * h, theme.secondary)
+        studioText(canvas, kwNow()?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—",
+            .465f * w, .24f * h, .037f * h, kwColor(kwNow()), align = Paint.Align.RIGHT)
+        studioText(canvas, "BATTERY FLOW", .465f * w, .295f * h, .018f * h, theme.secondary, align = Paint.Align.RIGHT)
+        if (showMusic) studioMusic(canvas, RectF(.035f * w, .375f * h, .465f * w, .78f * h), true)
+        drawHeader(canvas, w, h)
+        studioFooter(canvas, w, h)
+    }
+
+    /** Angular opposing instruments inspired by modern Bavarian clusters, not a logo skin. */
+    private fun drawBavarian(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        studioPanel(canvas, w, h, centre = true)
+        val s = h / 720f
+        for (right in listOf(false, true)) {
+            val x0 = (if (right) .775f else .025f) * w
+            val x1 = (if (right) .975f else .225f) * w
+            val p = Path().apply {
+                moveTo(x0, .24f * h); lineTo(x0 + .035f * w, .17f * h)
+                lineTo(x1, .30f * h); lineTo(x1, .64f * h)
+                lineTo(x0 + .035f * w, .74f * h); lineTo(x0, .67f * h)
+            }
+            line.shader = null; line.color = withAlpha(theme.accent, 70); line.strokeWidth = 9f * s
+            canvas.drawPath(p, line)
+            line.color = theme.accent; line.strokeWidth = 2f * s; canvas.drawPath(p, line)
+            for (i in 0..8) {
+                val y = (.28f + .045f * i) * h
+                line.color = withAlpha(theme.text, if (i % 2 == 0) 180 else 60)
+                canvas.drawLine(x0, y, x0 + (if (i % 2 == 0) .015f else .008f) * w, y, line)
+            }
+        }
+        studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .125f * w, .51f * h,
+            .17f * h, weight = 500, align = Paint.Align.CENTER)
+        studioText(canvas, "km/h", .125f * w, .57f * h, .028f * h, theme.secondary, align = Paint.Align.CENTER)
+        studioText(canvas, "BATTERY", .875f * w, .38f * h, .022f * h, theme.secondary, align = Paint.Align.CENTER)
+        studioText(canvas, kwNow()?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", .875f * w,
+            .49f * h, .052f * h, kwColor(kwNow()), width = .17f * w, align = Paint.Align.CENTER)
+        studioFlow(canvas, RectF(.79f * w, .55f * h, .96f * w, .57f * h), false)
+        studioText(canvas, "CHARGE / DRAW", .875f * w, .625f * h, .018f * h, theme.secondary, align = Paint.Align.CENTER)
+        if (showMusic) studioMusic(canvas, RectF(.78f * w, .735f * h, .97f * w, .81f * h), false)
+        drawHeader(canvas, w, h)
+        studioFooter(canvas, w, h, centre = true)
+    }
+
+
     // ---- CarPlay directions card ----------------------------------------------------------
 
     private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance) {
@@ -1607,3 +1828,4 @@ internal class ThemedClusterView(
         )
     }
 }
+

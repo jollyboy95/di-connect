@@ -29,7 +29,10 @@ class ClusterThemesRenderTest {
         val (width, height) = 1920 to 720
         val background = Color.rgb(20, 125, 210)
         val output = File("build/reports/gwm-cluster/themes").apply { mkdirs() }
-        for (connection in ClusterConnection.entries) for (theme in ClusterThemes.availableFor(connection)) {
+        val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
+            .first { it.isFile }.readText().let(ThemePacks::parse)
+        val renderThemes = (ClusterThemes.builtIn + catalogue).distinctBy { it.id }
+        for (connection in ClusterConnection.entries) for (theme in renderThemes.filter { it.availableFor(connection) }) {
             if (theme.native != null) continue
             val view = ThemedClusterView(context, theme, connection, preview = true)
             view.setSnapshot(GwmVehicleData.Snapshot(54f, "D", 58f, 523f, 19f, SystemClock.elapsedRealtime(), 34868f, 35f))
@@ -202,6 +205,34 @@ class ClusterThemesRenderTest {
             assertTrue(Color.red(bitmap.getPixel((width * .02f).toInt(), (height * .2f).toInt())) < 60)
             File("build/reports/gwm-cluster/themes").mkdirs()
             File("build/reports/gwm-cluster/themes/$id-two-frames.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            bitmap.recycle()
+        }
+    }
+
+    @Test fun studioWindowsKeepNavigationPixelsClearAtBothPreviewSizes() {
+        val file = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json")).first { it.isFile }
+        val themes = ThemePacks.parse(file.readText()).filter { it.layout in setOf(
+            ClusterTheme.Layout.HYBRID_SPORT, ClusterTheme.Layout.VAPORWAVE_STEREO,
+            ClusterTheme.Layout.MUSIC_LOUNGE, ClusterTheme.Layout.BAVARIAN) }
+        assertEquals(4, themes.size)
+        for (theme in themes) for ((w, h) in listOf(1920 to 720, 960 to 360)) {
+            val window = theme.mapWindow!!
+            assertTrue(theme.availableFor(ClusterConnection.ANDROID_AUTO))
+            assertTrue(!theme.availableFor(ClusterConnection.CARPLAY))
+            val view = ThemedClusterView(context, theme, ClusterConnection.ANDROID_AUTO, preview = true)
+            view.setSnapshot(GwmVehicleData.Snapshot(54f, "D", 58f, 523f, 19f,
+                SystemClock.elapsedRealtime(), 35096f, -35f, 1800f))
+            view.setPreviewMusic(ClusterMusicState.Snapshot(CarPlayNowPlaying(title = "A very long song title that must fit",
+                artist = "Fleetwood Mac", durationMillis = 200000L, elapsedMillis = 90000L)))
+            view.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+            view.layout(0, 0, w, h)
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            bitmap.eraseColor(Color.MAGENTA)
+            view.draw(Canvas(bitmap))
+            for (y in (h * .20f).toInt() until (h * .80f).toInt() step 5)
+                for (x in (w * (window.first + .01f)).toInt() until (w * (window.second - .01f)).toInt() step 5)
+                    assertEquals("${theme.id} overlaps navigation at $x,$y", Color.MAGENTA, bitmap.getPixel(x, y))
             bitmap.recycle()
         }
     }

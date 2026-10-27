@@ -47,7 +47,7 @@ internal data class ClusterTheme(
      * cluster on the left, one solid sidebar, or a console along the bottom edge. All keep Google's
      * card on Android Auto (the right, 42-74 % down) clear.
      */
-    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE }
+    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE, HYBRID_SPORT, VAPORWAVE_STEREO, MUSIC_LOUNGE, BAVARIAN }
     enum class Face { SANS, SERIF, MONO }
 
     /**
@@ -56,8 +56,8 @@ internal data class ClusterTheme(
      * connection). CarPlay cannot resize its map yet, so split layouts are Android Auto only.
      */
     val mapWindow: Pair<Float, Float>? get() = when (layout) {
-        Layout.SPLIT -> SPLIT_MAP
-        Layout.CENTRE -> CENTRE_MAP
+        Layout.SPLIT, Layout.HYBRID_SPORT, Layout.VAPORWAVE_STEREO, Layout.MUSIC_LOUNGE -> SPLIT_MAP
+        Layout.CENTRE, Layout.BAVARIAN -> CENTRE_MAP
         else -> null
     }
 
@@ -279,3 +279,4 @@ internal object ClusterThemeStore {
         true
     }.getOrDefault(false)
 }
+
