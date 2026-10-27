@@ -1843,6 +1843,20 @@ edit(D,
             ClusterThemeStore.setHudFollowsTheme(this, !hudFollows)
             render()
         }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        val directions = ClusterThemeStore.directionsCard(this)
+        content.addView(row().apply {
+            addView(button("${getString(R.string.di_connect_theme_directions)} · " +
+                getString(if (directions) R.string.di_connect_on else R.string.di_connect_off), false) {
+                ClusterThemeStore.setDirectionsCard(this@DiPlayActivity, !directions)
+                render()
+            }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(button(getString(R.string.di_connect_theme_directions_preview), false) {
+                NavDemo.start()
+                android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_directions_preview_running),
+                    android.widget.Toast.LENGTH_LONG).show()
+            }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         content.addView(row().apply {
             addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() },
                 LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
@@ -1968,6 +1982,9 @@ CONTROL_STRINGS={
  'di_connect_themes_download_failed':['Could not get themes. Check the internet connection and try again.', 'تعذّر الحصول على السمات. تحقّق من الاتصال بالإنترنت وحاول مرة أخرى.', 'No se pudieron obtener los temas. Comprueba la conexión a internet e inténtalo de nuevo.', 'Impossibile scaricare i temi. Controlla la connessione a internet e riprova.', 'テーマを取得できませんでした。インターネット接続を確認して、もう一度お試しください。', 'Не удалось получить темы. Проверьте подключение к интернету и повторите попытку.', 'Не вдалося отримати теми. Перевірте підключення до інтернету й спробуйте ще раз.', '无法获取主题。请检查网络连接后重试。', '無法取得主題。請檢查網路連線後再試一次。'],
  'di_connect_themes_import_failed':['That file has no themes Di-Connect can use.', 'لا يحتوي هذا الملف على سمات يمكن لـ Di-Connect استخدامها.', 'Ese archivo no tiene temas que Di-Connect pueda usar.', 'Il file non contiene temi utilizzabili da Di-Connect.', 'このファイルには Di-Connect で使えるテーマがありません。', 'В этом файле нет тем, которые может использовать Di-Connect.', 'У цьому файлі немає тем, які може використати Di-Connect.', '该文件中没有 Di-Connect 可用的主题。', '此檔案中沒有 Di-Connect 可用的主題。'],
  'di_connect_theme_split_reconnect':['The map changes size the next time Android Auto connects. Tap Restart on the home screen to do it now.', 'يتغيّر حجم الخريطة عند اتصال Android Auto في المرة القادمة. اضغط إعادة التشغيل في الشاشة الرئيسية لتطبيق ذلك الآن.', 'El mapa cambiará de tamaño la próxima vez que se conecte Android Auto. Toca Reiniciar en la pantalla de inicio para hacerlo ahora.', 'La mappa cambia dimensione alla prossima connessione di Android Auto. Tocca Riavvia nella schermata principale per farlo subito.', '地図のサイズは次回 Android Auto に接続したときに変わります。今すぐ反映するにはホーム画面の「再起動」をタップしてください。', 'Размер карты изменится при следующем подключении Android Auto. Чтобы применить сейчас, нажмите «Перезапуск» на главном экране.', 'Розмір карти зміниться під час наступного підключення Android Auto. Щоб застосувати зараз, натисніть «Перезапуск» на головному екрані.', '地图大小将在下次连接 Android Auto 时改变。点按主屏幕上的“重启”可立即生效。', '地圖大小將在下次連接 Android Auto 時改變。點按主畫面上的「重新啟動」即可立即套用。'],
+ 'di_connect_theme_directions':['Di-Connect directions (test)', 'اتجاهات Di-Connect (تجريبي)', 'Indicaciones de Di-Connect (prueba)', 'Indicazioni Di-Connect (test)', 'Di-Connect の案内（テスト）', 'Подсказки Di-Connect (тест)', 'Підказки Di-Connect (тест)', 'Di-Connect 路线指引（测试）', 'Di-Connect 路線指引（測試）'],
+ 'di_connect_theme_directions_preview':['Preview directions', 'معاينة الاتجاهات', 'Probar indicaciones', 'Anteprima indicazioni', '案内をプレビュー', 'Показать подсказки', 'Показати підказки', '预览路线指引', '預覽路線指引'],
+ 'di_connect_theme_directions_preview_running':['Showing every kind of turn on the cluster and HUD for 36 seconds. Android Auto must be connected.', 'يتم عرض كل أنواع المنعطفات على لوحة العدادات وشاشة HUD لمدة 36 ثانية. يجب أن يكون Android Auto متصلًا.', 'Se muestran todos los tipos de giro en el cuadro y el HUD durante 36 segundos. Android Auto debe estar conectado.', 'Vengono mostrati tutti i tipi di svolta sul quadro e sul HUD per 36 secondi. Android Auto deve essere connesso.', 'すべての曲がり方をメーターと HUD に 36 秒間表示します。Android Auto の接続が必要です。', 'Все виды поворотов показываются на панели приборов и HUD в течение 36 секунд. Android Auto должен быть подключён.', 'Усі види поворотів показуються на панелі приладів і HUD протягом 36 секунд. Android Auto має бути підключено.', '将在仪表盘和 HUD 上显示各种转弯 36 秒。需要连接 Android Auto。', '將在儀表板和 HUD 上顯示各種轉彎 36 秒。需要連接 Android Auto。'],
  'di_connect_theme_hud':['HUD matches theme', 'شاشة HUD تطابق السمة', 'HUD a juego con el tema', "HUD abbinato al tema", 'HUDをテーマに合わせる', 'HUD в стиле темы', 'HUD у стилі теми', 'HUD 跟随主题', 'HUD 跟隨主題'],
  'di_connect_themes_same':['One theme for both', 'سمة واحدة لكليهما', 'Un tema para ambos', 'Un tema per entrambi', '両方に同じテーマ', 'Одна тема для обоих', 'Одна тема для обох', '两者使用同一主题', '兩者使用同一主題'],
  'di_connect_on':['On', 'تشغيل', 'Activado', 'Attivo', 'オン', 'Вкл.', 'Увімк.', '开', '開'],
@@ -2212,7 +2229,7 @@ class DiConnectUpdateTest {
 # Theme engine (Oct 2026): every cluster theme is data drawn by one renderer, picked per connection
 # on the Themes screen and swapped live. Modern (Android Auto) and Glass (CarPlay) are the original
 # renderers. Android Auto's and CarPlay's cluster layers become a ClusterThemeFrame.
-for name in ['ClusterThemes.kt', 'ThemedClusterView.kt', 'ClusterThemeFrame.kt', 'HudThemeStyle.kt', 'ThemePacks.kt']:
+for name in ['ClusterThemes.kt', 'ThemedClusterView.kt', 'ClusterThemeFrame.kt', 'HudThemeStyle.kt', 'ThemePacks.kt', 'NavDemo.kt']:
     source = Path('target/_integration')/name
     require(source.is_file(), f'Missing theme engine source {name}')
     (root/'common/src/main/java/com/shilapi/xcertplay'/name).write_text(source.read_text())
@@ -2422,3 +2439,60 @@ for source in map_tests.rglob('*'):
         target = root/'android-auto'/source.relative_to(map_tests)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, target)
+
+# Navigation tests (Oct 2026). What the phone sends was measured on the H7 (report 8): only the
+# legacy next-turn (road, turn type and side, exit, angle, and Google's arrow image when the head
+# unit asks for images) and the distance to it; no lanes, no following step, no arrival. So:
+# - Google's arrow image reaches Di-Connect for every turn, not only roundabouts.
+# - Di-Connect's own directions card can be switched on for any theme without DiAuto's setting.
+gwm_guidance=aa_java/'hud/BydGuidance.kt'
+edit(gwm_guidance,
+    ('''    val roundaboutImage: com.google.protobuf.ByteString? = null,
+''','''    val roundaboutImage: com.google.protobuf.ByteString? = null,
+    /** Google's own arrow for the next turn, any type, when the head unit asked for images. */
+    val turnImage: com.google.protobuf.ByteString? = null,
+'''))
+edit(aa_java/'hud/BydNavigationMapper.kt',
+    ('''            }?.image?.takeIf { !it.isEmpty && it.size() <= 262144 })''',
+     '''            }?.image?.takeIf { !it.isEmpty && it.size() <= 262144 },
+            turnImage = legacy?.takeIf {
+                it.hasImage() && (snapshot.nextTurnDetail?.updatedAtElapsedRealtimeMs ?: -1L) >=
+                    (snapshot.navigationState?.updatedAtElapsedRealtimeMs ?: -1L)
+            }?.image?.takeIf { !it.isEmpty && it.size() <= 262144 })'''))
+edit(aa_java/'DiConnectViews.kt',
+    ('''        val roundaboutImage: ByteArray? = null,
+''','''        val roundaboutImage: ByteArray? = null,
+        /** Google's arrow image for the next turn, when the phone sends one (any turn type). */
+        val turnImage: ByteArray? = null,
+'''),
+    ('''it.arrivalText, it.roundaboutImage?.toByteArray())''',
+     '''it.arrivalText, it.roundaboutImage?.toByteArray(), it.turnImage?.toByteArray())'''),
+    ('''    /** Set by Di-Connect's D-Play side at start-up; while null, DiAuto's own views are used. */''',
+     '''    /** True while Di-Connect's own directions card is wanted on the cluster (a Themes setting). */
+    @Volatile var clusterDirectionsWanted: (() -> Boolean)? = null
+
+    /** Set by Di-Connect's D-Play side at start-up; while null, DiAuto's own views are used. */'''))
+edit(aa_java/'gwm/GwmOutputs.kt',
+    ('''            dplayLayer?.setGuidance(if (dplayLayerNavCard) mapped else null)''',
+     '''            val wanted = runCatching { com.andrerinas.openheadunit.DiConnectViews.clusterDirectionsWanted?.invoke() }.getOrNull() == true
+            dplayLayer?.setGuidance(if (dplayLayerNavCard || wanted) mapped else null)'''))
+
+edit(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt',
+    ('''        DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }''',
+     '''        DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }
+        DiConnectViews.clusterDirectionsWanted = { NavDemo.active || ClusterThemeStore.directionsCard(app) }'''),
+    ('''        override fun setGuidance(guidance: DiConnectViews.Guidance?) = hud.setGuidance(guidance(guidance))''',
+     '''        override fun setGuidance(guidance: DiConnectViews.Guidance?) {
+            // The parked preview replaces real guidance while it runs.
+            val demo = NavDemo.current()
+            hud.setTurnImage(if (demo == null) guidance?.turnImage else null)
+            hud.setGuidance(demo ?: guidance(guidance))
+        }'''),
+    ('''            hud.setArrivalText(guidance?.arrivalText)
+            hud.setRoundaboutImage(guidance?.roundaboutImage)
+            hud.setGuidance(guidance(guidance))''',
+     '''            val demo = NavDemo.current()
+            hud.setArrivalText(if (demo == null) guidance?.arrivalText else null)
+            hud.setRoundaboutImage(if (demo == null) guidance?.roundaboutImage else null)
+            hud.setTurnImage(if (demo == null) guidance?.turnImage else null)
+            hud.setGuidance(demo ?: guidance(guidance))'''))

@@ -1115,6 +1115,9 @@
     <string name="di_connect_themes_download_failed">テーマを取得できませんでした。インターネット接続を確認して、もう一度お試しください。</string>
     <string name="di_connect_themes_import_failed">このファイルには Di-Connect で使えるテーマがありません。</string>
     <string name="di_connect_theme_split_reconnect">地図のサイズは次回 Android Auto に接続したときに変わります。今すぐ反映するにはホーム画面の「再起動」をタップしてください。</string>
+    <string name="di_connect_theme_directions">Di-Connect の案内（テスト）</string>
+    <string name="di_connect_theme_directions_preview">案内をプレビュー</string>
+    <string name="di_connect_theme_directions_preview_running">すべての曲がり方をメーターと HUD に 36 秒間表示します。Android Auto の接続が必要です。</string>
     <string name="di_connect_theme_hud">HUDをテーマに合わせる</string>
     <string name="di_connect_themes_same">両方に同じテーマ</string>
     <string name="di_connect_on">オン</string>

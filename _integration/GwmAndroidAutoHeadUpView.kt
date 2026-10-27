@@ -45,6 +45,21 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         invalidate()
     }
 
+    /** Google's arrow for any turn, when the phone sends images; drawn instead of our own arrow. */
+    private val turnGlyph = RoundaboutGlyph()
+    private var turnBytes: ByteArray? = null
+
+    fun setTurnImage(bytes: ByteArray?) {
+        if (bytes == null && turnBytes == null) return
+        if (bytes != null && turnBytes?.contentEquals(bytes) == true) return
+        turnBytes = bytes?.copyOf()
+        turnGlyph.image?.recycle()
+        turnGlyph.image = bytes?.takeIf { it.size <= 262144 }?.let {
+            runCatching { BitmapFactory.decodeByteArray(it, 0, it.size) }.getOrNull()
+        }
+        invalidate()
+    }
+
     private var arrivalText: String? = null
 
     fun setArrivalText(next: String?) {
@@ -277,6 +292,10 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
     }
 
     private fun glyphFor(next: ClusterTurnGuidance): Drawable? {
+        if (turnGlyph.image != null && !NavDemo.active) {
+            glyphRes = 0
+            return turnGlyph
+        }
         if (next.icon in setOf(11, 12, 17, 18)) {
             roundaboutGlyph.exitNumber = next.roundaboutExit
             // Do not leave the roundabout drawable cached as a normal turn's resource.

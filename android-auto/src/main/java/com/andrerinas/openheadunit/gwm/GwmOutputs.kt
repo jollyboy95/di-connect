@@ -84,7 +84,8 @@ internal object GwmOutputs {
             hudView?.setGuidance(next)
             val mapped = com.andrerinas.openheadunit.DiConnectViews.from(next)
             // Google Maps draws its own card into the cluster video; Di-Connect's is opt-in in Android Auto.
-            dplayLayer?.setGuidance(if (dplayLayerNavCard) mapped else null)
+            val wanted = runCatching { com.andrerinas.openheadunit.DiConnectViews.clusterDirectionsWanted?.invoke() }.getOrNull() == true
+            dplayLayer?.setGuidance(if (dplayLayerNavCard || wanted) mapped else null)
             dplayHud?.setGuidance(mapped)
             handler.postDelayed(this, GUIDANCE_TICK_MS)
         }

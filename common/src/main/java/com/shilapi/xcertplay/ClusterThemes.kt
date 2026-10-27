@@ -192,6 +192,7 @@ internal object ClusterThemeStore {
     private const val KEY_SAME = "cluster_theme_same_for_both"
     private const val KEY_HUD = "cluster_theme_hud_follows"
     private const val KEY_PACKS = "cluster_theme_packs_changed"
+    private const val KEY_DIRECTIONS = "cluster_theme_directions_card"
     private const val CO_PILOT_FILE = "co_pilot_photo.png"
     private const val CO_PILOT_SIZE = 384
 
@@ -225,6 +226,16 @@ internal object ClusterThemeStore {
         edit.apply()
     }
 
+    /**
+     * Di-Connect's own directions card on Android Auto (a test): Google's arrow when the phone sends
+     * it, distance and road, drawn in the theme's style. Google's own card is still drawn in the map.
+     */
+    fun directionsCard(context: Context) = prefs(context).getBoolean(KEY_DIRECTIONS, false)
+
+    fun setDirectionsCard(context: Context, on: Boolean) {
+        prefs(context).edit().putBoolean(KEY_DIRECTIONS, on).apply()
+    }
+
     /** Wakes every open cluster and gallery after themes were downloaded or imported. */
     fun packsChanged(context: Context) {
         prefs(context).edit().putLong(KEY_PACKS, System.currentTimeMillis()).apply()
@@ -241,7 +252,7 @@ internal object ClusterThemeStore {
     fun observe(context: Context, changed: () -> Unit): () -> Unit {
         val prefs = prefs(context)
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == KEY_ANDROID_AUTO || key == KEY_CARPLAY || key == KEY_SAME || key == KEY_HUD || key == KEY_PACKS || key == CO_PILOT_FILE) changed()
+            if (key == KEY_ANDROID_AUTO || key == KEY_CARPLAY || key == KEY_SAME || key == KEY_HUD || key == KEY_PACKS || key == KEY_DIRECTIONS || key == CO_PILOT_FILE) changed()
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
         return { prefs.unregisterOnSharedPreferenceChangeListener(listener) }

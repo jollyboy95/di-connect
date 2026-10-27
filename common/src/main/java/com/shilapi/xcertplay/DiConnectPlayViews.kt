@@ -17,6 +17,7 @@ import com.shilapi.xcertplay.media.CarPlayNowPlaying
 internal object DiConnectPlayViews {
     fun install(app: Context) {
         DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }
+        DiConnectViews.clusterDirectionsWanted = { NavDemo.active || ClusterThemeStore.directionsCard(app) }
         DiConnectViews.clusterMapWindow = { context ->
             ClusterThemeStore.selected(context, ClusterConnection.ANDROID_AUTO).mapWindow
                 ?.let { DiConnectViews.MapWindow(it.first, it.second) } ?: DiConnectViews.MapWindow.FULL
@@ -51,7 +52,12 @@ internal object DiConnectPlayViews {
 
         init { GwmVehicleData.addListener(app, vehicle) }
 
-        override fun setGuidance(guidance: DiConnectViews.Guidance?) = hud.setGuidance(guidance(guidance))
+        override fun setGuidance(guidance: DiConnectViews.Guidance?) {
+            // The parked preview replaces real guidance while it runs.
+            val demo = NavDemo.current()
+            hud.setTurnImage(if (demo == null) guidance?.turnImage else null)
+            hud.setGuidance(demo ?: guidance(guidance))
+        }
 
         override fun release() {
             GwmVehicleData.removeListener(vehicle)
@@ -67,9 +73,11 @@ internal object DiConnectPlayViews {
         }
         override val view: View get() = hud
         override fun setGuidance(guidance: DiConnectViews.Guidance?) {
-            hud.setArrivalText(guidance?.arrivalText)
-            hud.setRoundaboutImage(guidance?.roundaboutImage)
-            hud.setGuidance(guidance(guidance))
+            val demo = NavDemo.current()
+            hud.setArrivalText(if (demo == null) guidance?.arrivalText else null)
+            hud.setRoundaboutImage(if (demo == null) guidance?.roundaboutImage else null)
+            hud.setTurnImage(if (demo == null) guidance?.turnImage else null)
+            hud.setGuidance(demo ?: guidance(guidance))
         }
         override fun release() = Unit
     }

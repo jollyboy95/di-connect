@@ -6144,6 +6144,20 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             ClusterThemeStore.setHudFollowsTheme(this, !hudFollows)
             render()
         }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        val directions = ClusterThemeStore.directionsCard(this)
+        content.addView(row().apply {
+            addView(button("${getString(R.string.di_connect_theme_directions)} · " +
+                getString(if (directions) R.string.di_connect_on else R.string.di_connect_off), false) {
+                ClusterThemeStore.setDirectionsCard(this@DiPlayActivity, !directions)
+                render()
+            }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(button(getString(R.string.di_connect_theme_directions_preview), false) {
+                NavDemo.start()
+                android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_directions_preview_running),
+                    android.widget.Toast.LENGTH_LONG).show()
+            }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         content.addView(row().apply {
             addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() },
                 LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))

@@ -1013,6 +1013,9 @@
     <string name="di_connect_themes_download_failed">No se pudieron obtener los temas. Comprueba la conexión a internet e inténtalo de nuevo.</string>
     <string name="di_connect_themes_import_failed">Ese archivo no tiene temas que Di-Connect pueda usar.</string>
     <string name="di_connect_theme_split_reconnect">El mapa cambiará de tamaño la próxima vez que se conecte Android Auto. Toca Reiniciar en la pantalla de inicio para hacerlo ahora.</string>
+    <string name="di_connect_theme_directions">Indicaciones de Di-Connect (prueba)</string>
+    <string name="di_connect_theme_directions_preview">Probar indicaciones</string>
+    <string name="di_connect_theme_directions_preview_running">Se muestran todos los tipos de giro en el cuadro y el HUD durante 36 segundos. Android Auto debe estar conectado.</string>
     <string name="di_connect_theme_hud">HUD a juego con el tema</string>
     <string name="di_connect_themes_same">Un tema para ambos</string>
     <string name="di_connect_on">Activado</string>

@@ -18,6 +18,8 @@ object DiConnectViews {
         val remainingSeconds: Int,
         val arrivalText: String? = null,
         val roundaboutImage: ByteArray? = null,
+        /** Google's arrow image for the next turn, when the phone sends one (any turn type). */
+        val turnImage: ByteArray? = null,
     )
 
     data class Music(
@@ -46,6 +48,9 @@ object DiConnectViews {
     /** The map window the chosen cluster theme wants; read when an Android Auto session starts. */
     @Volatile var clusterMapWindow: ((Context) -> MapWindow)? = null
 
+    /** True while Di-Connect's own directions card is wanted on the cluster (a Themes setting). */
+    @Volatile var clusterDirectionsWanted: (() -> Boolean)? = null
+
     /** Set by Di-Connect's D-Play side at start-up; while null, DiAuto's own views are used. */
     @Volatile var cluster: ((Context) -> Layer)? = null
     /** [anchor]: 0 left, 1 centre, 2 right, as both apps store it. */
@@ -58,6 +63,6 @@ object DiConnectViews {
     }
 
     internal fun from(guidance: BydGuidance?): Guidance? = guidance?.let {
-        Guidance(it.clusterIcon, it.roundaboutExit, it.distanceMeters, it.road, it.remainingMeters, it.remainingSeconds, it.arrivalText, it.roundaboutImage?.toByteArray())
+        Guidance(it.clusterIcon, it.roundaboutExit, it.distanceMeters, it.road, it.remainingMeters, it.remainingSeconds, it.arrivalText, it.roundaboutImage?.toByteArray(), it.turnImage?.toByteArray())
     }
 }

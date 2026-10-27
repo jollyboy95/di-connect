@@ -236,4 +236,39 @@ class ClusterThemesRenderTest {
             bitmap.recycle()
         }
     }
+
+    @Test fun directionsCardDrawsOnAndroidAutoOnlyWhenSwitchedOn() {
+        val (width, height) = 1920 to 720
+        fun draw(theme: ClusterTheme): Bitmap {
+            val view = ThemedClusterView(context, theme, ClusterConnection.ANDROID_AUTO)
+            view.setGuidance(ClusterTurnGuidance(3, 0, 300, "King St"))
+            view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+            view.layout(0, 0, width, height)
+            return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
+                it.eraseColor(Color.MAGENTA); view.draw(Canvas(it))
+            }
+        }
+        val mono = ClusterThemes.byId("mono-line")!!
+        ClusterThemeStore.setDirectionsCard(context, false)
+        draw(mono).let { assertEquals(Color.MAGENTA, it.getPixel(width / 2, (height * .2f).toInt())); it.recycle() }
+        ClusterThemeStore.setDirectionsCard(context, true)
+        draw(mono).let { assertNotEquals(Color.MAGENTA, it.getPixel(width / 2, (height * .2f).toInt())); it.recycle() }
+        // A theme with its own map window puts the card at the top of that window.
+        draw(ClusterThemes.byId("split-test")!!).let {
+            assertNotEquals(Color.MAGENTA, it.getPixel((width * .75f).toInt(), (height * .2f).toInt())); it.recycle()
+        }
+        ClusterThemeStore.setDirectionsCard(context, false)
+    }
+
+    @Test fun thePreviewRunsThroughEveryTurnAndEnds() {
+        assertEquals(null, NavDemo.current())
+        assertTrue(NavDemo.steps.size >= 10)
+        assertTrue(NavDemo.steps.map { it.icon }.toSet().containsAll(listOf(2, 3, 8, 11, 15)))
+        NavDemo.start()
+        assertEquals(NavDemo.steps.first(), NavDemo.current())
+        assertTrue(NavDemo.active)
+        NavDemo.stop()
+        assertEquals(null, NavDemo.current())
+    }
 }

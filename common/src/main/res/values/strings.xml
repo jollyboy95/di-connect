@@ -1116,6 +1116,9 @@
     <string name="di_connect_themes_download_failed">Could not get themes. Check the internet connection and try again.</string>
     <string name="di_connect_themes_import_failed">That file has no themes Di-Connect can use.</string>
     <string name="di_connect_theme_split_reconnect">The map changes size the next time Android Auto connects. Tap Restart on the home screen to do it now.</string>
+    <string name="di_connect_theme_directions">Di-Connect directions (test)</string>
+    <string name="di_connect_theme_directions_preview">Preview directions</string>
+    <string name="di_connect_theme_directions_preview_running">Showing every kind of turn on the cluster and HUD for 36 seconds. Android Auto must be connected.</string>
     <string name="di_connect_theme_hud">HUD matches theme</string>
     <string name="di_connect_themes_same">One theme for both</string>
     <string name="di_connect_on">On</string>

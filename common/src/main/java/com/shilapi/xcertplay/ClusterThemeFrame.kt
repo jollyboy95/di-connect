@@ -20,6 +20,8 @@ import com.shilapi.xcertplay.media.CarPlayNowPlaying
 internal class ClusterThemeFrame(context: Context, private val connection: ClusterConnection) : FrameLayout(context) {
     private var snapshot: GwmVehicleData.Snapshot? = null
     private var guidance: ClusterTurnGuidance? = null
+    private var turnImageBytes: ByteArray? = null
+    private var turnImage: android.graphics.Bitmap? = null
     private var current: View? = null
     private var currentId: String? = null
     private var stopObserving: (() -> Unit)? = null
@@ -33,6 +35,17 @@ internal class ClusterThemeFrame(context: Context, private val connection: Clust
 
     fun setGuidance(next: ClusterTurnGuidance?) {
         guidance = next
+        push()
+    }
+
+    /** Google's arrow for the next turn, as the phone sent it (PNG), or null to draw our own arrow. */
+    fun setTurnImage(bytes: ByteArray?) {
+        if (bytes == null && turnImageBytes == null) return
+        if (bytes != null && turnImageBytes?.contentEquals(bytes) == true) return
+        turnImageBytes = bytes?.copyOf()
+        turnImage = bytes?.takeIf { it.size <= 262_144 }?.let {
+            runCatching { android.graphics.BitmapFactory.decodeByteArray(it, 0, it.size) }.getOrNull()
+        }
         push()
     }
 
@@ -63,7 +76,7 @@ internal class ClusterThemeFrame(context: Context, private val connection: Clust
 
     private fun push() {
         when (val view = current) {
-            is ThemedClusterView -> { view.setSnapshot(snapshot); view.setGuidance(guidance) }
+            is ThemedClusterView -> { view.setSnapshot(snapshot); view.setGuidance(guidance); view.setTurnImage(turnImage) }
             is GwmAndroidAutoClusterView -> { view.setSnapshot(snapshot); view.setGuidance(guidance) }
             is GwmClusterHudView -> { view.setSnapshot(snapshot); view.setGuidance(guidance) }
         }

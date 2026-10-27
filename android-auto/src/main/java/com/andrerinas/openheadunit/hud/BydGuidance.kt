@@ -13,4 +13,6 @@ internal data class BydGuidance(
     val updatedNs: Long = System.nanoTime(),
     val arrivalText: String? = null,
     val roundaboutImage: com.google.protobuf.ByteString? = null,
+    /** Google's own arrow for the next turn, any type, when the head unit asked for images. */
+    val turnImage: com.google.protobuf.ByteString? = null,
 )

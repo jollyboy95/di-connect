@@ -74,6 +74,15 @@ internal class ThemedClusterView(
         invalidate()
     }
 
+    private var turnImage: Bitmap? = null
+
+    /** Google's arrow for the next turn, drawn in the directions card instead of our own when present. */
+    fun setTurnImage(next: Bitmap?) {
+        if (next === turnImage) return
+        turnImage = next
+        invalidate()
+    }
+
     /** Sample music for gallery previews, which are never attached to a window. */
     fun setPreviewMusic(next: ClusterMusicState.Snapshot) {
         music = next
@@ -134,6 +143,9 @@ internal class ThemedClusterView(
             }
         }
         if (connection == ClusterConnection.CARPLAY) guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it) }
+        // Android Auto: Di-Connect's own directions card, when switched on or while the preview runs.
+        else if (!preview && (NavDemo.active || ClusterThemeStore.directionsCard(context)))
+            guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it, directionsBox(w, h)) }
     }
 
     // ---- type and panels ------------------------------------------------------------------
@@ -1800,9 +1812,20 @@ internal class ThemedClusterView(
 
     // ---- CarPlay directions card ----------------------------------------------------------
 
-    private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance) {
+    /**
+     * Where Di-Connect's directions card goes on Android Auto: top centre under the clock, like the
+     * car's own navigation card, or top centre of the map for a theme with its own map window.
+     */
+    private fun directionsBox(w: Float, h: Float): RectF {
+        val (from, to) = theme.mapWindow ?: (0f to 1f)
+        val centre = (from + to) / 2f * w
+        val half = .135f * w
+        return RectF(centre - half, .12f * h, centre + half, .33f * h)
+    }
+
+    private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance,
+                         box: RectF = RectF(CARD_LEFT * w, CARD_TOP * h, CARD_RIGHT * w, CARD_BOTTOM * h)) {
         val s = h / 720f
-        val box = RectF(CARD_LEFT * w, CARD_TOP * h, CARD_RIGHT * w, CARD_BOTTOM * h)
         cardPanel(canvas, box, .03f * h)
         val side = .1f * h
         val gx = box.left + .03f * h
@@ -1814,8 +1837,13 @@ internal class ThemedClusterView(
             if (res != glyphRes) { glyph = ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(theme.accent) }; glyphRes = res }
             glyph
         }
-        icon?.setBounds(gx.toInt(), gy.toInt(), (gx + side).toInt(), (gy + side).toInt())
-        icon?.draw(canvas)
+        val image = turnImage?.takeUnless { it.isRecycled || NavDemo.active }
+        if (image != null) {
+            rect.set(gx, gy, gx + side, gy + side); canvas.drawBitmap(image, null, rect, art)
+        } else {
+            icon?.setBounds(gx.toInt(), gy.toInt(), (gx + side).toInt(), (gy + side).toInt())
+            icon?.draw(canvas)
+        }
         val textLeft = gx + side + .025f * h
         val textWidth = box.right - .03f * h - textLeft
         type(.055f * h, theme.text, 700)
@@ -1825,6 +1853,8 @@ internal class ThemedClusterView(
             type(.032f * h, theme.text, 400)
             canvas.drawText(fit(road, textWidth), textLeft, gy + .11f * h, text)
         }
+        // Android Auto sends no arrival time with the turn, so the short card stops at the road.
+        if (box.height() < .25f * h) return
         fill.shader = null; fill.color = Color.argb(46, 255, 255, 255)
         canvas.drawRect(box.left + .03f * h, box.top + .19f * h, box.right - .03f * h, box.top + .19f * h + 1.2f * s, fill)
         next.arrivalEpochSeconds?.takeIf { it > 0 }?.let { epoch ->

@@ -1073,6 +1073,9 @@
     <string name="di_connect_themes_download_failed">无法获取主题。请检查网络连接后重试。</string>
     <string name="di_connect_themes_import_failed">该文件中没有 Di-Connect 可用的主题。</string>
     <string name="di_connect_theme_split_reconnect">地图大小将在下次连接 Android Auto 时改变。点按主屏幕上的“重启”可立即生效。</string>
+    <string name="di_connect_theme_directions">Di-Connect 路线指引（测试）</string>
+    <string name="di_connect_theme_directions_preview">预览路线指引</string>
+    <string name="di_connect_theme_directions_preview_running">将在仪表盘和 HUD 上显示各种转弯 36 秒。需要连接 Android Auto。</string>
     <string name="di_connect_theme_hud">HUD 跟随主题</string>
     <string name="di_connect_themes_same">两者使用同一主题</string>
     <string name="di_connect_on">开</string>

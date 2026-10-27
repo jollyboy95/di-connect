@@ -47,6 +47,10 @@ internal object BydNavigationMapper {
                     (snapshot.nextTurnDetail?.updatedAtElapsedRealtimeMs ?: -1L) >=
                     (snapshot.navigationState?.updatedAtElapsedRealtimeMs ?: -1L) &&
                     (codes.exit == 0 || !it.hasTurnNumber() || it.turnNumber == codes.exit)
+            }?.image?.takeIf { !it.isEmpty && it.size() <= 262144 },
+            turnImage = legacy?.takeIf {
+                it.hasImage() && (snapshot.nextTurnDetail?.updatedAtElapsedRealtimeMs ?: -1L) >=
+                    (snapshot.navigationState?.updatedAtElapsedRealtimeMs ?: -1L)
             }?.image?.takeIf { !it.isEmpty && it.size() <= 262144 })
     }
 

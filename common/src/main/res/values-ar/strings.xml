@@ -1062,6 +1062,9 @@
     <string name="di_connect_themes_download_failed">تعذّر الحصول على السمات. تحقّق من الاتصال بالإنترنت وحاول مرة أخرى.</string>
     <string name="di_connect_themes_import_failed">لا يحتوي هذا الملف على سمات يمكن لـ Di-Connect استخدامها.</string>
     <string name="di_connect_theme_split_reconnect">يتغيّر حجم الخريطة عند اتصال Android Auto في المرة القادمة. اضغط إعادة التشغيل في الشاشة الرئيسية لتطبيق ذلك الآن.</string>
+    <string name="di_connect_theme_directions">اتجاهات Di-Connect (تجريبي)</string>
+    <string name="di_connect_theme_directions_preview">معاينة الاتجاهات</string>
+    <string name="di_connect_theme_directions_preview_running">يتم عرض كل أنواع المنعطفات على لوحة العدادات وشاشة HUD لمدة 36 ثانية. يجب أن يكون Android Auto متصلًا.</string>
     <string name="di_connect_theme_hud">شاشة HUD تطابق السمة</string>
     <string name="di_connect_themes_same">سمة واحدة لكليهما</string>
     <string name="di_connect_on">تشغيل</string>
