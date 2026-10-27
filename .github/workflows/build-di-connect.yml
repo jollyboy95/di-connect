@@ -78,6 +78,25 @@ jobs:
       - name: Check Android Auto roundabout and arrival mapping
         timeout-minutes: 15
         run: ./gradlew :android-auto:testDebugUnitTest --tests '*BydNavigationMapperTest' --tests '*PrivateDiagnosticExportTest' $GRADLE_ARGS
+      - name: Publish theme catalogue
+        if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          # The Themes screen's "Get more themes" downloads themes.json from the releases repo's
+          # themes branch. Publishing it first means a new theme is live in a minute, with no APK.
+          if [ -z "$GH_TOKEN" ] || [ ! -f _integration/themes.json ]; then exit 0; fi
+          python3 -c "import json; d=json.load(open('_integration/themes.json')); assert d['themes']"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/jollyboy95/di-connect-releases.git"
+          dir="$RUNNER_TEMP/theme-catalogue"; rm -rf "$dir"
+          if ! git clone --quiet --depth 1 --branch themes "$remote" "$dir" 2>/dev/null; then
+            git init --quiet "$dir"; git -C "$dir" checkout --quiet --orphan themes; git -C "$dir" remote add origin "$remote"
+          fi
+          cp _integration/themes.json "$dir/themes.json"
+          cd "$dir"; git add -A
+          git -c user.name="Di-Connect CI" -c user.email="ci@users.noreply.github.com" commit --quiet -m "Theme catalogue from ${GITHUB_SHA::7}" || exit 0
+          git push --quiet origin HEAD:themes
       - name: Render actual Android Auto cluster and check protected regions
         timeout-minutes: 15
         run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' --tests '*ClusterThemesRenderTest' $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
