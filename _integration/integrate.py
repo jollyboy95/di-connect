@@ -2413,8 +2413,12 @@ for name in ['GwmEngineRpmTest.kt']:
     (root/'common/src/test/java/com/shilapi/xcertplay'/name).write_text((Path('target/_integration')/name).read_text())
 
 # Stock receiver map negotiation experiments: canonical sources, UI and evidence tests.
-for source in (root/'_integration/map-tests').rglob('*'):
+# Read from the copied integration folder, as every other step does: the generated tree has no
+# _integration folder of its own, so the old path copied nothing and regeneration dropped these.
+map_tests = Path('target/_integration/map-tests')
+require(map_tests.is_dir(), 'Missing map-tests sources')
+for source in map_tests.rglob('*'):
     if source.is_file() and source.suffix in ('.kt', '.xml'):
-        target = root/'android-auto'/source.relative_to(root/'_integration/map-tests')
+        target = root/'android-auto'/source.relative_to(map_tests)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, target)
