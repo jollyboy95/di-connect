@@ -50,12 +50,13 @@ internal object ClusterDisplayServices {
     fun build(context: android.content.Context, settings: Settings): List<Control.Service> {
         if (!settings.clusterMapEnabled) return emptyList()
         val p = profile(context, settings)
+        val gwm = com.andrerinas.openheadunit.gwm.GwmMode.clusterRoute(context)
+        val experiment = if (gwm) com.andrerinas.openheadunit.gwm.GwmClusterProfile.declaredExperiment
+            else com.andrerinas.openheadunit.gwm.GwmMapExperiments.Mode.CURRENT
+        AppLog.i("NAV-EXPERIMENT negotiation profile=${experiment.key} content=${p.contentWidth}x${p.contentHeight} dpi=${p.density} insets=${p.contentInsets}")
         AppLog.i("[ServiceDiscovery] Announcing dashboard display: gwm=${com.andrerinas.openheadunit.gwm.GwmMode.clusterRoute(context)} theme=${theme(context, settings)} " +
             "codec=${p.codecWidth}x${p.codecHeight} content=${p.contentWidth}x${p.contentHeight} " +
             "density=${p.density} insets=${p.contentInsets}")
-
-        fun insets(i: ClusterMapConfig.Insets) = Media.Insets.newBuilder()
-            .setTop(i.top).setBottom(i.bottom).setLeft(i.left).setRight(i.right).build()
 
         val video = Control.Service.MediaSinkService.VideoConfiguration.newBuilder()
             .setCodecResolution(
@@ -70,14 +71,7 @@ internal object ClusterDisplayServices {
             .setViewingDistance(VIEWING_DISTANCE_MM)
             .setPixelAspectRatioE4(10000)
             .setVideoCodecType(Media.MediaCodecType.MEDIA_CODEC_VIDEO_H264_BP)
-            .setUiConfig(
-                Media.UiConfig.newBuilder()
-                    .setMargins(insets(p.margins))
-                    .setContentInsets(insets(p.contentInsets))
-                    .setStableContentInsets(insets(p.contentInsets))
-                    .setUiTheme(0) // automatic: follow the phone's day/night
-                    .build()
-            )
+            .setUiConfig(com.andrerinas.openheadunit.gwm.GwmMapExperiments.uiConfig(p, experiment))
             .build()
 
         val sink = Control.Service.MediaSinkService.newBuilder()

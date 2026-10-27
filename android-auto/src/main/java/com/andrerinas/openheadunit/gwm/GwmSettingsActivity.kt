@@ -207,6 +207,22 @@ class GwmSettingsActivity : BaseActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun renderDiagnostics() {
         section(R.string.aa_gwm_section_diagnostics)
+        note(getString(R.string.aa_gwm_map_tests_note))
+        val modes = GwmMapExperiments.Mode.entries
+        val labels = resources.getStringArray(R.array.aa_gwm_map_test_modes)
+        choice(getString(R.string.aa_gwm_map_tests_title), labels,
+            modes.indexOf(GwmMapExperiments.mode(this)), getString(R.string.aa_gwm_map_tests_reconnect)) {
+            GwmMapExperiments.saveMode(this, modes[it])
+            toast(getString(R.string.aa_gwm_map_tests_reconnect))
+        }
+        toggle(R.string.aa_gwm_nav_images_test, getString(R.string.aa_gwm_nav_images_test_note), GwmMapExperiments.images(this)) {
+            GwmMapExperiments.saveImages(this, it)
+            toast(getString(R.string.aa_gwm_map_tests_reconnect))
+        }
+        toggle(R.string.aa_gwm_nav_evidence, getString(R.string.aa_gwm_nav_evidence_note), GwmMapExperiments.diagnostics(this)) {
+            GwmMapExperiments.saveDiagnostics(this, it)
+        }
+        note(getString(R.string.aa_gwm_map_tests_active, GwmClusterProfile.declaredExperiment.key))
         button(getString(R.string.aa_gwm_scan)) {
             scanResult = getString(R.string.aa_gwm_scanning)
             render()

@@ -32,6 +32,22 @@ class AapNavigation(
     fun process(message: AapMessage): Boolean {
         if (message.channel != Channel.ID_NAV) return false
 
+        if (com.andrerinas.openheadunit.gwm.GwmMapExperiments.diagnostics(context)) {
+            // Opt-in, bounded logging; no extra vehicle reads and no navigation text exported.
+            try {
+                val parsed: com.google.protobuf.Message? = when (message.type) {
+                    NavigationStatus.MsgType.INSTRUMENT_CLUSTER_NAVIGATION_STATE_VALUE -> message.parse(NavigationStatus.NavigationState.newBuilder()).buildPartial()
+                    NavigationStatus.MsgType.INSTRUMENT_CLUSTER_NAVIGATION_CURRENT_POSITION_VALUE -> message.parse(NavigationStatus.NavigationCurrentPosition.newBuilder()).buildPartial()
+                    NavigationStatus.MsgType.NEXTTURNDETAILS_VALUE -> message.parse(NavigationStatus.NextTurnDetail.newBuilder()).buildPartial()
+                    NavigationStatus.MsgType.NEXTTURNDISTANCEANDTIME_VALUE -> message.parse(NavigationStatus.NextTurnDistanceEvent.newBuilder()).buildPartial()
+                    else -> null
+                }
+                AppLog.i("NAV-EXPERIMENT received type=${message.type} bytes=${message.size - message.dataOffset} " +
+                    (parsed?.let { com.andrerinas.openheadunit.gwm.GwmNavigationEvidence.describe(it) } ?: "unparsed-type"))
+            } catch (error: Exception) {
+                AppLog.i("NAV-EXPERIMENT parse-failed type=${message.type} error=${error.javaClass.simpleName}")
+            }
+        }
         return when (message.type) {
             NavigationStatus.MsgType.INSTRUMENT_CLUSTER_START_VALUE -> {
                 AppLog.d("Nav: Instrument cluster start")

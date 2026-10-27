@@ -2411,3 +2411,10 @@ for name in ['GwmVehicleData.kt']:
     (root/'common/src/main/java/com/shilapi/xcertplay'/name).write_text((Path('target/_integration')/name).read_text())
 for name in ['GwmEngineRpmTest.kt']:
     (root/'common/src/test/java/com/shilapi/xcertplay'/name).write_text((Path('target/_integration')/name).read_text())
+
+# Stock receiver map negotiation experiments: canonical sources, UI and evidence tests.
+for source in (root/'_integration/map-tests').rglob('*'):
+    if source.is_file() and source.suffix in ('.kt', '.xml'):
+        target = root/'android-auto'/source.relative_to(root/'_integration/map-tests')
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
