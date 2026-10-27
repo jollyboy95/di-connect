@@ -1713,32 +1713,86 @@ internal class ThemedClusterView(
     private fun drawBavarian(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
         studioPanel(canvas, w, h, centre = true)
         val s = h / 720f
-        for (right in listOf(false, true)) {
-            val x0 = (if (right) .775f else .025f) * w
-            val x1 = (if (right) .975f else .225f) * w
-            val p = Path().apply {
-                moveTo(x0, .24f * h); lineTo(x0 + .035f * w, .17f * h)
-                lineTo(x1, .30f * h); lineTo(x1, .64f * h)
-                lineTo(x0 + .035f * w, .74f * h); lineTo(x0, .67f * h)
-            }
-            line.shader = null; line.color = withAlpha(theme.accent, 70); line.strokeWidth = 9f * s
-            canvas.drawPath(p, line)
-            line.color = theme.accent; line.strokeWidth = 2f * s; canvas.drawPath(p, line)
-            for (i in 0..8) {
-                val y = (.28f + .045f * i) * h
-                line.color = withAlpha(theme.text, if (i % 2 == 0) 180 else 60)
-                canvas.drawLine(x0, y, x0 + (if (i % 2 == 0) .015f else .008f) * w, y, line)
+        // Opposing open hexagons: the long diagonal shoulders are the reference's defining shape.
+        // All painted pixels stay outside the negotiated centre map window.
+        fun point(right: Boolean, x: Float, y: Float) =
+            android.graphics.PointF((if (right) 1f - x else x) * w, y * h)
+        fun path(right: Boolean, vararg xy: Float): Path = Path().apply {
+            for (i in xy.indices step 2) {
+                val p = point(right, xy[i], xy[i + 1])
+                if (i == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y)
             }
         }
-        studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .125f * w, .51f * h,
-            .17f * h, weight = 500, align = Paint.Align.CENTER)
-        studioText(canvas, "km/h", .125f * w, .57f * h, .028f * h, theme.secondary, align = Paint.Align.CENTER)
-        studioText(canvas, "BATTERY", .875f * w, .38f * h, .022f * h, theme.secondary, align = Paint.Align.CENTER)
-        studioText(canvas, kwNow()?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", .875f * w,
-            .49f * h, .052f * h, kwColor(kwNow()), width = .17f * w, align = Paint.Align.CENTER)
-        studioFlow(canvas, RectF(.79f * w, .55f * h, .96f * w, .57f * h), false)
-        studioText(canvas, "CHARGE / DRAW", .875f * w, .625f * h, .018f * h, theme.secondary, align = Paint.Align.CENTER)
-        if (showMusic) studioMusic(canvas, RectF(.78f * w, .735f * h, .97f * w, .81f * h), false)
+        for (right in listOf(false, true)) {
+            val outline = path(right, .232f, .19f, .125f, .19f, .025f, .46f,
+                .125f, .78f, .236f, .78f)
+            line.shader = null
+            line.strokeWidth = 10f * s
+            line.color = Color.argb(38, 175, 209, 236)
+            canvas.drawPath(outline, line)
+            line.strokeWidth = 3.2f * s
+            line.color = Color.rgb(213, 225, 237)
+            canvas.drawPath(outline, line)
+            val inner = path(right, .227f, .215f, .14f, .215f, .052f, .46f,
+                .14f, .752f, .232f, .752f)
+            line.strokeWidth = 1f * s
+            line.color = Color.argb(65, 146, 185, 218)
+            canvas.drawPath(inner, line)
+
+            // Illuminated bevel, tapering diagonally rather than a horizontal progress strip.
+            val band = path(right, .074f, .49f, .105f, .44f, .224f, .735f, .173f, .735f).apply { close() }
+            val a = point(right, .095f, .47f)
+            val b = point(right, .19f, .735f)
+            fill.shader = LinearGradient(a.x, a.y, b.x, b.y,
+                intArrayOf(Color.argb(15, 39, 112, 163), Color.rgb(25, 119, 174),
+                    Color.rgb(174, 225, 247), Color.rgb(233, 237, 232)),
+                floatArrayOf(0f, .45f, .9f, 1f), Shader.TileMode.CLAMP)
+            canvas.drawPath(band, fill)
+            fill.shader = null
+
+            // Scale follows the angular outside rail, with real speed / signed battery flow.
+            for (i in 0..10) {
+                val t = i / 10f
+                val y = .755f - .54f * t
+                val x = if (y >= .46f) .025f + (y - .46f) / .32f * .10f
+                    else .025f + (.46f - y) / .27f * .10f
+                val p = point(right, x + .006f, y)
+                val q = point(right, x + (if (i % 2 == 0) .022f else .015f), y)
+                line.color = Color.argb(if (i % 2 == 0) 220 else 110, 221, 232, 244)
+                line.strokeWidth = (if (i % 2 == 0) 2f else 1f) * s
+                canvas.drawLine(p.x, p.y, q.x, q.y, line)
+                if (i % 2 == 0) {
+                    val label = if (right) (-65 + i * 13).toString() else (i * 22).toString()
+                    val pText = point(right, x + .035f, y + .009f)
+                    studioText(canvas, label, pText.x, pText.y, .023f * h,
+                        theme.secondary, align = if (right) Paint.Align.RIGHT else Paint.Align.LEFT)
+                }
+            }
+            val value = if (right) kwNow()?.coerceIn(-65f, 65f)?.let { (it + 65f) / 130f }
+                else snapshot?.speedKph?.let { (it / 220f).coerceIn(0f, 1f) }
+            value?.let { t ->
+                val y = .755f - .54f * t
+                val x = if (y >= .46f) .025f + (y - .46f) / .32f * .10f
+                    else .025f + (.46f - y) / .27f * .10f
+                val p = point(right, x, y)
+                val q = point(right, x + .035f, y)
+                line.color = if (right) kwColor(kwNow()) else theme.text
+                line.strokeWidth = 4f * s
+                canvas.drawLine(p.x, p.y, q.x, q.y, line)
+            }
+        }
+        studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—",
+            .185f * w, .48f * h, .135f * h, weight = 400, align = Paint.Align.CENTER)
+        studioText(canvas, "km/h", .185f * w, .53f * h, .026f * h,
+            theme.secondary, align = Paint.Align.CENTER)
+        studioText(canvas, "BATTERY FLOW", .87f * w, .165f * h, .021f * h,
+            theme.secondary, align = Paint.Align.CENTER)
+        studioText(canvas, kwNow()?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—",
+            .815f * w, .48f * h, .06f * h, kwColor(kwNow()),
+            width = .12f * w, align = Paint.Align.CENTER)
+        studioText(canvas, "CHG  /  DRAW", .815f * w, .535f * h, .018f * h,
+            theme.secondary, align = Paint.Align.CENTER)
+        if (showMusic) studioMusic(canvas, RectF(.775f * w, .81f * h, .975f * w, .88f * h), false)
         drawHeader(canvas, w, h)
         studioFooter(canvas, w, h, centre = true)
     }
