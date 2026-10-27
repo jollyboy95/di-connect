@@ -674,6 +674,14 @@ internal class ThemedClusterView(
         canvas.drawRect(left + size * .15f, top + size * .17f, left + size * .47f, top + size * .38f, fill)
         canvas.drawLine(left + size * .62f, top + size * .3f, left + size * .86f, top + size * .46f, line)
         canvas.drawLine(left + size * .86f, top + size * .46f, left + size * .86f, top + size * .86f, line)
+        // The H7's filler is on the left; keep the direction visible in every pump style.
+        val arrow = Path().apply {
+            moveTo(left - size * .55f, top + size * .5f)
+            lineTo(left - size * .2f, top + size * .25f)
+            lineTo(left - size * .2f, top + size * .75f)
+            close()
+        }
+        canvas.drawPath(arrow, fill)
     }
 
     // ---- music ----------------------------------------------------------------------------
