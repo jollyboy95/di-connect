@@ -145,7 +145,7 @@ internal class ThemedClusterView(
         if (connection == ClusterConnection.CARPLAY) guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it) }
         // Android Auto: Di-Connect's own directions card, when switched on or while the preview runs.
         else if (!preview && (NavDemo.active || ClusterThemeStore.directionsCard(context)))
-            guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it, directionsBox(w, h)) }
+            guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it, directionsBox(w, h, journeyLine(it) != null)) }
     }
 
     // ---- type and panels ------------------------------------------------------------------
@@ -1816,11 +1816,28 @@ internal class ThemedClusterView(
      * Where Di-Connect's directions card goes on Android Auto: top centre under the clock, like the
      * car's own navigation card, or top centre of the map for a theme with its own map window.
      */
-    private fun directionsBox(w: Float, h: Float): RectF {
+    private fun directionsBox(w: Float, h: Float, withJourney: Boolean): RectF {
         val (from, to) = theme.mapWindow ?: (0f to 1f)
         val centre = (from + to) / 2f * w
         val half = .135f * w
-        return RectF(centre - half, .12f * h, centre + half, .33f * h)
+        // Taller only when the phone sent journey details (time left, distance, arrival).
+        return RectF(centre - half, .12f * h, centre + half, (if (withJourney) .41f else .33f) * h)
+    }
+
+    /** "12min · 9.7 km · Arrive 2:54 pm" from whatever journey details the phone sent, or null. */
+    private fun journeyLine(next: ClusterTurnGuidance): String? {
+        val parts = mutableListOf<String>()
+        next.remainingSeconds?.takeIf { it > 0 }?.let { seconds ->
+            val hours = (seconds / 3600).toInt()
+            val minutes = ((seconds % 3600) / 60).toInt()
+            parts += if (hours > 0) context.getString(R.string.turn_card_info_duration_hm, hours, minutes)
+                else context.getString(R.string.turn_card_info_duration_m, minutes)
+        }
+        next.remainingMeters?.takeIf { it > 0 }?.let { parts += context.getString(R.string.turn_card_info_km, it / 1000f) }
+        next.arrivalEpochSeconds?.takeIf { it > 0 }?.let {
+            parts += context.getString(R.string.turn_card_info_arrival, SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(it * 1000L)))
+        }
+        return parts.takeIf { it.isNotEmpty() }?.joinToString("  ·  ")
     }
 
     private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance,
@@ -1857,8 +1874,7 @@ internal class ThemedClusterView(
         if (box.height() < .25f * h) return
         fill.shader = null; fill.color = Color.argb(46, 255, 255, 255)
         canvas.drawRect(box.left + .03f * h, box.top + .19f * h, box.right - .03f * h, box.top + .19f * h + 1.2f * s, fill)
-        next.arrivalEpochSeconds?.takeIf { it > 0 }?.let { epoch ->
-            val info = context.getString(R.string.turn_card_info_arrival, SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(epoch * 1000L)))
+        journeyLine(next)?.let { info ->
             type(.028f * h, theme.secondary, 500)
             canvas.drawText(fit(info, box.width() - .06f * h), box.left + .03f * h, box.top + .25f * h, text)
         }

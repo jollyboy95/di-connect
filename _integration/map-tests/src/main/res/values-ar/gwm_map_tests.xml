@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">اختبار بروتوكول الإرشاد (تجريبي)</string>
+    <string name="aa_gwm_nav_protocol_note">إصدار بروتوكول Android Auto الذي يطلبه Di-Connect. بدءًا من 1.6 قد يرسل الهاتف إرشادًا أغنى يشمل وقت الوصول؛ ويتيح 4.3 أيضًا قراءة علامات الشاشة. قد يتغير سلوك آخر للهاتف أيضًا. يُطبَّق بعد إعادة الاتصال. يعيد الأساس الإصدار الحالي.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>الأساس — البروتوكول 1.2</item>
+        <item>إرشاد أغنى — البروتوكول 1.6</item>
+        <item>إرشاد أغنى وعلامات الشاشة — البروتوكول 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">إبلاغ الهاتف بأن السيارة تعرض بطاقة المنعطف (تجريبي)</string>
+    <string name="aa_gwm_nav_turn_card_note">يتطلب البروتوكول 4.3. يطلب من Android Auto عدم رسم بطاقة المنعطف الخاصة به على لوحة العدادات. قد يلتزم Google Maps بذلك أو لا، لذا فعّل اتجاهات Di-Connect في شاشة السمات. يُطبَّق بعد إعادة الاتصال.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">إشارة جاهزية لوحة العدادات (تجريبي)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">يرسل رسالة توفر لوحة العدادات (0x8001) عند فتح قناة الملاحة. غير مثبت. يُطبَّق بعد إعادة الاتصال.</string>
+    <string name="aa_gwm_nav_protocol_active">آخر اتصال: الطلب %1$s، ورد الهاتف %2$s</string>
 </resources>

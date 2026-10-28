@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">Test al protocolului de ghidare (experimental)</string>
+    <string name="aa_gwm_nav_protocol_note">Ce versiune a protocolului Android Auto solicită Di-Connect. De la 1.6 telefonul poate trimite ghidare mai bogată, inclusiv ora sosirii; 4.3 îi permite și să citească indicatoarele ecranului. Se poate schimba și alt comportament al telefonului. Se aplică după reconectare. Implicit restabilește versiunea actuală.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Implicit — protocolul 1.2</item>
+        <item>Ghidare mai bogată — protocolul 1.6</item>
+        <item>Ghidare mai bogată și indicatoare de ecran — protocolul 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Anunță telefonul că mașina afișează cardul de viraj (experimental)</string>
+    <string name="aa_gwm_nav_turn_card_note">Necesită protocolul 4.3. Cere Android Auto să nu deseneze propriul card de viraj pe bordul de instrumente. Google Maps s-ar putea să nu respecte acest lucru, așa că activează indicațiile Di-Connect în ecranul Teme. Se aplică după reconectare.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Semnal bord pregătit (experimental)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Trimite mesajul de bord de instrumente disponibil (0x8001) când se deschide canalul de navigație. Nedovedit. Se aplică după reconectare.</string>
+    <string name="aa_gwm_nav_protocol_active">Ultima conexiune: solicitat %1$s, telefonul a răspuns %2$s</string>
 </resources>

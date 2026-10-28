@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">Test del protocollo di guida (sperimentale)</string>
+    <string name="aa_gwm_nav_protocol_note">Quale versione del protocollo Android Auto richiede Di-Connect. Dalla 1.6 il telefono può inviare indicazioni più ricche, incluso l\'orario di arrivo; la 4.3 gli consente anche di leggere i flag del display. Può cambiare anche altro comportamento del telefono. Si applica dopo la riconnessione. Base ripristina la versione attuale.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Base — protocollo 1.2</item>
+        <item>Indicazioni più ricche — protocollo 1.6</item>
+        <item>Indicazioni più ricche e flag del display — protocollo 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Comunica al telefono che l\'auto mostra la scheda di svolta (sperimentale)</string>
+    <string name="aa_gwm_nav_turn_card_note">Richiede il protocollo 4.3. Chiede ad Android Auto di non disegnare la propria scheda di svolta sul quadro. Google Maps potrebbe non rispettarlo, quindi attiva le indicazioni Di-Connect nella schermata Temi. Si applica dopo la riconnessione.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Segnale quadro pronto (sperimentale)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Invia il messaggio di quadro strumenti disponibile (0x8001) all\'apertura del canale di navigazione. Non verificato. Si applica dopo la riconnessione.</string>
+    <string name="aa_gwm_nav_protocol_active">Ultima connessione: richiesto %1$s, il telefono ha risposto %2$s</string>
 </resources>

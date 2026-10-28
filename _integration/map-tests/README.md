@@ -22,3 +22,20 @@ The stock constructor has insets top=140, bottom=100, left=240, right=240 at 128
 NAV-EXPERIMENT negotiation lines record the actual profile, stream content, DPI and insets. Opt-in received lines record message IDs, field presence, byte counts, timing values and unknown field numbers; new evidence does not export road/destination text, coordinates or image contents. Unknown fields are evidence only, never guessed into timing values. The arrow-image capability test asks for 128x128/32-bit images and does not itself add a new renderer or guarantee richer ETA data.
 
 CarPlay map-window negotiation is a separate pending implementation; these tests affect Android Auto only.
+
+## Guidance protocol experiments (added 28 Oct 2026)
+
+Access: same Diagnostics section, below the map test. All default off/baseline; each applies at the next Android Auto connection (Restart).
+
+| Experiment | What changes | Evidence level | Look for | Revert |
+| --- | --- | --- | --- | --- |
+| Guidance protocol 1.6 | Version request 1.6 instead of 1.2 | Gate confirmed in decompiled AA 16.1/16.2 (open-android-auto); not yet seen on the H7 | `NAV-EXPERIMENT version ... phone=` reply; `received type=32774/32775`; ETA/time left in Di-Connect directions and the HUD | Baseline 1.2 |
+| Guidance protocol 4.3 | Version request 4.3 (phone answers 6.1 per 17.3 traces) | 4.3 gate for hidden UI elements confirmed static in AA 17.3; other gates between 1.7 and 4.3 not documented | Same as 1.6, plus whether anything else on the main screen changes | Baseline 1.2 |
+| Turn-card flag | Cluster video config adds hidden UI element 5 (field 5, value 5); only sent when 4.3 is selected | Static trace: phone passes EXTRA_SHOW_TURN_CARD=false to the cluster nav service; Google Maps' reaction unverified | Whether Google's card disappears from the cluster video; `cluster hidden_ui_elements=[5]` | Switch off |
+| Cluster-ready signal | Sends empty 0x8001 on the navigation channel after its open response | Direction HU→phone agreed by open-android-auto (16.2 handler, confidence "unverified"), AARE notes and AARE's head unit; effect unknown | `cluster-ready sent type=32769`; any change in received message types | Switch off |
+
+Notes:
+- Our 0x8007 decoder matches open-android-auto field-for-field (ETA string field 2, time-to-arrival field 3); those messages were never received because of the 1.2 request.
+- 0x8006 step field 2 is the instruction text and field 4 the road names; the mapper now prefers field 4.
+- ImageOptions field 1 is height and field 2 width (aa-proxy-rs, open-android-auto); our generated names are swapped. Both are 128, so the bytes are unchanged.
+- Licences: open-android-auto GPL-3.0, aa-proxy-rs GPL-2.0, AARE GPL-3.0, open-headunit AGPL-3.0 (read for facts); mh2p-cluster is CC BY-NC-SA 4.0, read only, nothing copied. No code was copied from any of them.

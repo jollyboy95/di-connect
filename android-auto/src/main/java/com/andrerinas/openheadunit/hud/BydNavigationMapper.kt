@@ -26,7 +26,8 @@ internal object BydNavigationMapper {
             ?: snapshot.nextTurnDistance?.payload?.takeIf { it.hasDistanceMeters() }?.distanceMeters
             ?: return null // Do not present unknown distance as zero/"Now".
         if (distance < 0) return null
-        val road = step?.takeIf { it.hasRoad() && it.road.hasName() }?.road?.name?.takeIf { it.isNotBlank() }
+        val road = step?.takeIf { it.hasCue() }?.cue?.alternateTextList?.firstOrNull { it.isNotBlank() }
+            ?: step?.takeIf { it.hasRoad() && it.road.hasName() }?.road?.name?.takeIf { it.isNotBlank() }
             ?: legacy?.road?.takeIf { it.isNotBlank() } ?: snapshot.currentStreet?.payload.orEmpty()
         val destination = position?.destinationDistancesList?.firstOrNull()
         val remaining = destination?.takeIf { it.hasDistance() && it.distance.hasMeters() }?.distance?.meters ?: -1

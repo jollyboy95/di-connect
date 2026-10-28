@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">Тест протокола навигации (экспериментально)</string>
+    <string name="aa_gwm_nav_protocol_note">Какую версию протокола Android Auto запрашивает Di-Connect. С 1.6 телефон может присылать более подробные подсказки, включая время прибытия; 4.3 также позволяет ему читать флаги дисплея. Может измениться и другое поведение телефона. Применяется после повторного подключения. Базовый вариант возвращает текущую версию.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Базовый — протокол 1.2</item>
+        <item>Подробные подсказки — протокол 1.6</item>
+        <item>Подробные подсказки и флаги дисплея — протокол 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Сообщить телефону, что карточку поворота показывает автомобиль (экспериментально)</string>
+    <string name="aa_gwm_nav_turn_card_note">Нужен протокол 4.3. Просит Android Auto не рисовать собственную карточку поворота на приборной панели. Google Карты могут этого не учитывать, поэтому включите подсказки Di-Connect на экране «Темы». Применяется после повторного подключения.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Сигнал готовности приборной панели (экспериментально)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Отправляет сообщение о доступности приборной панели (0x8001) при открытии канала навигации. Не подтверждено. Применяется после повторного подключения.</string>
+    <string name="aa_gwm_nav_protocol_active">Последнее подключение: запрошено %1$s, телефон ответил %2$s</string>
 </resources>

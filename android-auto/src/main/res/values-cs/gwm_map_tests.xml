@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">Test protokolu navádění (experimentální)</string>
+    <string name="aa_gwm_nav_protocol_note">Kterou verzi protokolu Android Auto Di-Connect požaduje. Od 1.6 může telefon posílat bohatší navádění včetně času příjezdu; 4.3 mu navíc umožní číst příznaky displeje. Může se změnit i jiné chování telefonu. Platí po opětovném připojení. Výchozí obnoví současnou verzi.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Výchozí — protokol 1.2</item>
+        <item>Bohatší navádění — protokol 1.6</item>
+        <item>Bohatší navádění a příznaky displeje — protokol 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Sdělit telefonu, že kartu odbočky zobrazuje auto (experimentální)</string>
+    <string name="aa_gwm_nav_turn_card_note">Vyžaduje protokol 4.3. Žádá Android Auto, aby na přístrojovém štítu nekreslil vlastní kartu odbočky. Google Maps to nemusí dodržet, proto zapněte navádění Di-Connect na obrazovce Motivy. Platí po opětovném připojení.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Signál připravenosti přístrojového štítu (experimentální)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Při otevření navigačního kanálu odešle zprávu o dostupnosti přístrojového štítu (0x8001). Neověřeno. Platí po opětovném připojení.</string>
+    <string name="aa_gwm_nav_protocol_active">Poslední připojení: požadováno %1$s, telefon odpověděl %2$s</string>
 </resources>

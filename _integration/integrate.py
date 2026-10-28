@@ -2496,3 +2496,50 @@ edit(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt',
             hud.setRoundaboutImage(if (demo == null) guidance?.roundaboutImage else null)
             hud.setTurnImage(if (demo == null) guidance?.turnImage else null)
             hud.setGuidance(demo ?: guidance(guidance))'''))
+
+# Guidance protocol experiments (Oct 2026), all off by default; see map-tests/README.md.
+# Evidence: open-android-auto's decompiled AA 16.1/16.2/17.3 traces, aa-proxy-rs and AARE. The
+# phone picks rich guidance (0x8006/0x8007, with ETA) by the protocol version the head unit
+# REQUESTS (>= 1.6); Di-Connect requested 1.2, which selects the legacy 0x8004/0x8005 path.
+transport=aa_java/'aap/AapTransport.kt'
+edit(transport,
+    ('''            val version = Messages.versionRequest
+''','''            // Map-tests: the requested protocol version selects the phone's guidance (1.2 baseline).
+            val protocol = if (com.andrerinas.openheadunit.gwm.GwmMode.active(context))
+                com.andrerinas.openheadunit.gwm.GwmMapExperiments.protocol(context)
+            else com.andrerinas.openheadunit.gwm.GwmMapExperiments.Protocol.BASELINE
+            com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionProtocol = protocol
+            com.andrerinas.openheadunit.gwm.GwmMapExperiments.phoneVersion = "—"
+            val version = if (protocol == com.andrerinas.openheadunit.gwm.GwmMapExperiments.Protocol.BASELINE) Messages.versionRequest
+                else Messages.createRawMessage(0, 3, 1, com.andrerinas.openheadunit.gwm.GwmMapExperiments.versionPayload(protocol))
+            AppLog.i("NAV-EXPERIMENT version requested=${protocol.key}")
+'''),
+    ('''                        AppLog.i("Handshake: Version response received (ret=$ret, attempt=$attempt).")
+''','''                        AppLog.i("Handshake: Version response received (ret=$ret, attempt=$attempt).")
+                        if (ret >= 12) {
+                            fun u16(i: Int) = ((buffer[i].toInt() and 0xFF) shl 8) or (buffer[i + 1].toInt() and 0xFF)
+                            com.andrerinas.openheadunit.gwm.GwmMapExperiments.phoneVersion = "${u16(6)}.${u16(8)}"
+                            AppLog.i("NAV-EXPERIMENT version requested=${protocol.key} phone=${u16(6)}.${u16(8)} status=${u16(10)}")
+                        }
+'''))
+# InstrumentClusterStart (0x8001) is head unit -> phone (open-android-auto 16.2 handler trace, AARE's
+# decompiled notes and its own head unit). Optional: sent once the navigation channel is open.
+edit(aa_java/'aap/AapControl.kt',
+    ('''        aapTransport.send(msg)
+
+        if (channel == Channel.ID_SEN) {''','''        aapTransport.send(msg)
+
+        if (channel == Channel.ID_NAV && com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterReady) {
+            aapTransport.send(AapMessage(Channel.ID_NAV,
+                com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus.MsgType.INSTRUMENT_CLUSTER_START_VALUE,
+                com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus.NavigationStatusStart.getDefaultInstance()))
+            com.andrerinas.openheadunit.utils.AppLog.i("NAV-EXPERIMENT cluster-ready sent type=32769 after-channel-open")
+        }
+
+        if (channel == Channel.ID_SEN) {'''))
+# Modern steps (0x8006): field 2 is the instruction text and field 4 the road names
+# (open-android-auto NavigationNotification). Our generated names call them road and cue.
+edit(aa_java/'hud/BydNavigationMapper.kt',
+    ('''        val road = step?.takeIf { it.hasRoad() && it.road.hasName() }?.road?.name?.takeIf { it.isNotBlank() }''',
+     '''        val road = step?.takeIf { it.hasCue() }?.cue?.alternateTextList?.firstOrNull { it.isNotBlank() }
+            ?: step?.takeIf { it.hasRoad() && it.road.hasName() }?.road?.name?.takeIf { it.isNotBlank() }'''))

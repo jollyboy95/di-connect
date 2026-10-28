@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">მიმართულების პროტოკოლის ტესტი (ექსპერიმენტული)</string>
+    <string name="aa_gwm_nav_protocol_note">Android Auto-ის პროტოკოლის რომელ ვერსიას ითხოვს Di-Connect. 1.6-დან ტელეფონმა შეიძლება უფრო სრული მიმართულება გამოგზავნოს, ჩასვლის დროის ჩათვლით; 4.3 ასევე ეკრანის ნიშნების წაკითხვის საშუალებას იძლევა. ტელეფონის სხვა ქცევაც შეიძლება შეიცვალოს. მოქმედებს ხელახლა დაკავშირების შემდეგ. საბაზისო აღადგენს მიმდინარე ვერსიას.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>საბაზისო — პროტოკოლი 1.2</item>
+        <item>უფრო სრული მიმართულება — პროტოკოლი 1.6</item>
+        <item>უფრო სრული მიმართულება და ეკრანის ნიშნები — პროტოკოლი 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">ტელეფონს ეცნობოს, რომ მოხვევის ბარათს მანქანა აჩვენებს (ექსპერიმენტული)</string>
+    <string name="aa_gwm_nav_turn_card_note">საჭიროებს პროტოკოლს 4.3. სთხოვს Android Auto-ს, საკუთარი მოხვევის ბარათი ხელსაწყოთა პანელზე არ დახატოს. Google Maps შეიძლება ამას არ დაემორჩილოს, ამიტომ ჩართეთ Di-Connect-ის მიმართულება თემების ეკრანზე. მოქმედებს ხელახლა დაკავშირების შემდეგ.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">ხელსაწყოთა პანელის მზადყოფნის სიგნალი (ექსპერიმენტული)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">ნავიგაციის არხის გახსნისას აგზავნის ხელსაწყოთა პანელის ხელმისაწვდომობის შეტყობინებას (0x8001). დაუდასტურებელია. მოქმედებს ხელახლა დაკავშირების შემდეგ.</string>
+    <string name="aa_gwm_nav_protocol_active">ბოლო კავშირი: მოთხოვნილი %1$s, ტელეფონმა უპასუხა %2$s</string>
 </resources>

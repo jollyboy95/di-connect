@@ -23,7 +23,16 @@ internal object GwmNavigationEvidence {
                 }
                 append(' ')
             }
-            if (value.unknownFields.asMap().isNotEmpty()) append("unknownFields=").append(value.unknownFields.asMap().keys).append(' ')
+            if (value.unknownFields.asMap().isNotEmpty()) {
+                append("unknownFields=").append(value.unknownFields.asMap().keys).append(' ')
+                // Wire type of each unknown field, never its contents.
+                append("unknownWire=").append(value.unknownFields.asMap().map { (n, f) ->
+                    "$n:" + listOfNotNull(
+                        "varint".takeIf { f.varintList.isNotEmpty() }, "fixed32".takeIf { f.fixed32List.isNotEmpty() },
+                        "fixed64".takeIf { f.fixed64List.isNotEmpty() }, "len".takeIf { f.lengthDelimitedList.isNotEmpty() },
+                        "group".takeIf { f.groupList.isNotEmpty() }).joinToString("+")
+                }).append(' ')
+            }
         }
         fields(message, 0)
     }.take(1800)

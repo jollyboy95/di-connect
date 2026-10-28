@@ -50,6 +50,13 @@ internal object ClusterDisplayServices {
     fun build(context: android.content.Context, settings: Settings): List<Control.Service> {
         if (!settings.clusterMapEnabled) return emptyList()
         val p = profile(context, settings)
+        // Decided here because the cluster video config is built before the navigation service.
+        // The phone only reads hidden UI elements when the head unit requested protocol 4.3+.
+        val turnCard = com.andrerinas.openheadunit.gwm.GwmMapExperiments.let { x ->
+            com.andrerinas.openheadunit.gwm.GwmMode.active(context) && x.turnCard(context) && x.sessionProtocol.readsHiddenUiElements
+        }
+        com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionTurnCard = turnCard
+        AppLog.i("NAV-EXPERIMENT cluster hidden_ui_elements=${if (turnCard) "[5]" else "[]"}")
         val gwm = com.andrerinas.openheadunit.gwm.GwmMode.clusterRoute(context)
         val experiment = if (gwm) com.andrerinas.openheadunit.gwm.GwmClusterProfile.declaredExperiment
             else com.andrerinas.openheadunit.gwm.GwmMapExperiments.Mode.CURRENT
@@ -71,7 +78,7 @@ internal object ClusterDisplayServices {
             .setViewingDistance(VIEWING_DISTANCE_MM)
             .setPixelAspectRatioE4(10000)
             .setVideoCodecType(Media.MediaCodecType.MEDIA_CODEC_VIDEO_H264_BP)
-            .setUiConfig(com.andrerinas.openheadunit.gwm.GwmMapExperiments.uiConfig(p, experiment))
+            .setUiConfig(com.andrerinas.openheadunit.gwm.GwmMapExperiments.uiConfig(p, experiment, turnCard = turnCard))
             .build()
 
         val sink = Control.Service.MediaSinkService.newBuilder()

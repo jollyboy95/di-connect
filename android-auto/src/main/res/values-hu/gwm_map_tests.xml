@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">Navigációs protokoll teszt (kísérleti)</string>
+    <string name="aa_gwm_nav_protocol_note">Melyik Android Auto protokollverziót kéri a Di-Connect. 1.6-tól a telefon gazdagabb navigációt küldhet, érkezési idővel együtt; a 4.3 kijelzőjelzők olvasását is lehetővé teszi. A telefon más viselkedése is változhat. Újracsatlakozás után érvényes. Az alap visszaállítja a jelenlegi verziót.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Alap — 1.2-es protokoll</item>
+        <item>Gazdagabb navigáció — 1.6-os protokoll</item>
+        <item>Gazdagabb navigáció és kijelzőjelzők — 4.3-as protokoll</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">A telefon tudja, hogy az autó mutatja a kanyarkártyát (kísérleti)</string>
+    <string name="aa_gwm_nav_turn_card_note">4.3-as protokoll szükséges. Arra kéri az Android Autót, hogy ne rajzolja ki saját kanyarkártyáját a műszerfalon. A Google Térkép ezt nem feltétlenül követi, ezért kapcsolja be a Di-Connect útbaigazítást a Témák képernyőn. Újracsatlakozás után érvényes.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Műszerfal-készenléti jel (kísérleti)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">A navigációs csatorna megnyitásakor elküldi a műszerfal elérhető üzenetet (0x8001). Nem igazolt. Újracsatlakozás után érvényes.</string>
+    <string name="aa_gwm_nav_protocol_active">Utolsó kapcsolat: kérve %1$s, a telefon válasza %2$s</string>
 </resources>

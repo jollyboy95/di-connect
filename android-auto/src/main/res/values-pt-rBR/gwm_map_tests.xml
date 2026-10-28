@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">Teste do protocolo de orientação (experimental)</string>
+    <string name="aa_gwm_nav_protocol_note">Qual versão do protocolo do Android Auto o Di-Connect solicita. A partir da 1.6 o telefone pode enviar orientação mais completa, incluindo o horário de chegada; a 4.3 também permite ler sinalizadores da tela. Outros comportamentos do telefone podem mudar. Vale após reconectar. Padrão restaura a versão atual.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Padrão — protocolo 1.2</item>
+        <item>Orientação mais completa — protocolo 1.6</item>
+        <item>Orientação mais completa e sinalizadores da tela — protocolo 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Informar ao telefone que o carro mostra o cartão de curva (experimental)</string>
+    <string name="aa_gwm_nav_turn_card_note">Requer o protocolo 4.3. Pede ao Android Auto que não desenhe o próprio cartão de curva no painel. O Google Maps pode não seguir isso, então ative as orientações do Di-Connect na tela Temas. Vale após reconectar.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Sinal de painel pronto (experimental)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Envia a mensagem de painel de instrumentos disponível (0x8001) quando o canal de navegação abre. Não comprovado. Vale após reconectar.</string>
+    <string name="aa_gwm_nav_protocol_active">Última conexão: solicitado %1$s, o telefone respondeu %2$s</string>
 </resources>

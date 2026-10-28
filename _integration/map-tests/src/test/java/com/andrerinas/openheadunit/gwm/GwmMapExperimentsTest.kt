@@ -65,4 +65,35 @@ class GwmMapExperimentsTest {
         assertFalse(evidence.contains("SECRET"))
         assertTrue(evidence.length <= 1800)
     }
+
+    @Test fun protocolVersionsEncodeAsBigEndianMajorAndMinor() {
+        assertArrayEquals(byteArrayOf(0, 1, 0, 2), GwmMapExperiments.versionPayload(GwmMapExperiments.Protocol.BASELINE))
+        assertArrayEquals(byteArrayOf(0, 1, 0, 6), GwmMapExperiments.versionPayload(GwmMapExperiments.Protocol.RICH_GUIDANCE))
+        assertArrayEquals(byteArrayOf(0, 4, 0, 3), GwmMapExperiments.versionPayload(GwmMapExperiments.Protocol.DISPLAY_FLAGS))
+        assertEquals(GwmMapExperiments.Protocol.BASELINE, GwmMapExperiments.Protocol.of("unrecognised"))
+        assertFalse(GwmMapExperiments.Protocol.RICH_GUIDANCE.readsHiddenUiElements)
+        assertTrue(GwmMapExperiments.Protocol.DISPLAY_FLAGS.readsHiddenUiElements)
+    }
+    @Test fun turnCardFlagIsWrittenAsHiddenUiElementFiveOnlyWhenAsked() {
+        val p = GwmClusterProfile.profile(1920, 720, ClusterMapConfig.Detail.NORMAL, 0, 0)
+        val plain = GwmMapExperiments.uiConfig(p, GwmMapExperiments.Mode.CURRENT)
+        assertTrue(plain.unknownFields.asMap().isEmpty())
+        val flagged = GwmMapExperiments.uiConfig(p, GwmMapExperiments.Mode.CURRENT, turnCard = true)
+        assertEquals(listOf(5L), flagged.unknownFields.getField(5).varintList)
+        // On the wire: field 5, varint (tag 0x28), value 5; everything else unchanged.
+        val bytes = flagged.toByteArray()
+        assertTrue(bytes.toList().windowed(2).any { it == listOf(0x28.toByte(), 5.toByte()) })
+        assertEquals(plain, com.andrerinas.openheadunit.aap.protocol.proto.Media.UiConfig.parseFrom(bytes).toBuilder()
+            .setUnknownFields(UnknownFieldSet.getDefaultInstance()).build())
+    }
+    @Test fun evidenceNamesTheWireTypeOfUnknownFields() {
+        val position = NavigationStatus.NavigationCurrentPosition.newBuilder()
+            .setUnknownFields(UnknownFieldSet.newBuilder()
+                .addField(9, UnknownFieldSet.Field.newBuilder().addVarint(3).build())
+                .addField(12, UnknownFieldSet.Field.newBuilder().addLengthDelimited(com.google.protobuf.ByteString.copyFromUtf8("SECRET")).build())
+                .build()).build()
+        val evidence = GwmNavigationEvidence.describe(position)
+        assertTrue(evidence, evidence.contains("9:varint") && evidence.contains("12:len"))
+        assertFalse(evidence.contains("SECRET"))
+    }
 }

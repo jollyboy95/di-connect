@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">Guidance protocol test (experimental)</string>
+    <string name="aa_gwm_nav_protocol_note">Which Android Auto protocol version Di-Connect asks for. From 1.6 the phone may send richer guidance, including arrival time; 4.3 also lets it read display flags. Other phone behaviour may change too. Applies after reconnecting. Baseline restores the current version.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Baseline — protocol 1.2</item>
+        <item>Richer guidance — protocol 1.6</item>
+        <item>Richer guidance and display flags — protocol 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Tell the phone the car shows the turn card (experimental)</string>
+    <string name="aa_gwm_nav_turn_card_note">Needs protocol 4.3. Asks Android Auto not to draw its own turn card on the cluster. Google Maps may or may not follow it, so turn on Di-Connect directions on the Themes screen. Applies after reconnecting.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Cluster-ready signal (experimental)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Sends the instrument-cluster-available message (0x8001) when the navigation channel opens. Unproven. Applies after reconnecting.</string>
+    <string name="aa_gwm_nav_protocol_active">Last connection: requested %1$s, phone answered %2$s</string>
 </resources>

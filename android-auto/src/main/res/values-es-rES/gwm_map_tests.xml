@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">Prueba del protocolo de indicaciones (experimental)</string>
+    <string name="aa_gwm_nav_protocol_note">Qué versión del protocolo de Android Auto solicita Di-Connect. Desde 1.6 el teléfono puede enviar indicaciones más completas, incluida la hora de llegada; 4.3 además le permite leer indicadores de pantalla. También puede cambiar otro comportamiento del teléfono. Se aplica al volver a conectar. Base restaura la versión actual.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Base — protocolo 1.2</item>
+        <item>Indicaciones más completas — protocolo 1.6</item>
+        <item>Indicaciones más completas e indicadores de pantalla — protocolo 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Indicar al teléfono que el coche muestra la tarjeta de giro (experimental)</string>
+    <string name="aa_gwm_nav_turn_card_note">Requiere el protocolo 4.3. Pide a Android Auto que no dibuje su propia tarjeta de giro en el cuadro. Google Maps puede no respetarlo, así que activa las indicaciones de Di-Connect en la pantalla Temas. Se aplica al volver a conectar.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Señal de cuadro listo (experimental)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Envía el mensaje de cuadro de instrumentos disponible (0x8001) al abrirse el canal de navegación. Sin comprobar. Se aplica al volver a conectar.</string>
+    <string name="aa_gwm_nav_protocol_active">Última conexión: solicitado %1$s, el teléfono respondió %2$s</string>
 </resources>

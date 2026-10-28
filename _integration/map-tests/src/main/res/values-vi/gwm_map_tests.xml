@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">Thử giao thức chỉ đường (thử nghiệm)</string>
+    <string name="aa_gwm_nav_protocol_note">Phiên bản giao thức Android Auto mà Di-Connect yêu cầu. Từ 1.6, điện thoại có thể gửi chỉ đường chi tiết hơn, gồm cả giờ đến; 4.3 còn cho phép đọc các cờ màn hình. Hành vi khác của điện thoại cũng có thể thay đổi. Áp dụng sau khi kết nối lại. Cơ bản khôi phục phiên bản hiện tại.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Cơ bản — giao thức 1.2</item>
+        <item>Chỉ đường chi tiết hơn — giao thức 1.6</item>
+        <item>Chỉ đường chi tiết hơn và cờ màn hình — giao thức 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Báo cho điện thoại rằng xe hiển thị thẻ rẽ (thử nghiệm)</string>
+    <string name="aa_gwm_nav_turn_card_note">Cần giao thức 4.3. Yêu cầu Android Auto không vẽ thẻ rẽ riêng trên bảng đồng hồ. Google Maps có thể không làm theo, vì vậy hãy bật chỉ đường Di-Connect trong màn hình Chủ đề. Áp dụng sau khi kết nối lại.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Tín hiệu bảng đồng hồ sẵn sàng (thử nghiệm)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Gửi thông báo bảng đồng hồ khả dụng (0x8001) khi kênh dẫn đường mở. Chưa được chứng minh. Áp dụng sau khi kết nối lại.</string>
+    <string name="aa_gwm_nav_protocol_active">Lần kết nối gần nhất: yêu cầu %1$s, điện thoại trả lời %2$s</string>
 </resources>

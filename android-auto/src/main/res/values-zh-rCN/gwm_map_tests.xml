@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">导航协议测试（实验性）</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect 请求的 Android Auto 协议版本。从 1.6 起，手机可能发送更丰富的导航信息，包括到达时间；4.3 还允许手机读取显示标志。手机的其他行为也可能改变。重新连接后生效。基准会恢复当前版本。</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>基准 — 协议 1.2</item>
+        <item>更丰富的导航 — 协议 1.6</item>
+        <item>更丰富的导航和显示标志 — 协议 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">告诉手机由车辆显示转弯卡片（实验性）</string>
+    <string name="aa_gwm_nav_turn_card_note">需要协议 4.3。请求 Android Auto 不在仪表盘上绘制自己的转弯卡片。Google 地图不一定遵循，因此请在主题界面打开 Di-Connect 路线指引。重新连接后生效。</string>
+    <string name="aa_gwm_nav_cluster_ready_test">仪表盘就绪信号（实验性）</string>
+    <string name="aa_gwm_nav_cluster_ready_note">导航通道打开时发送仪表盘可用消息 (0x8001)。尚未证实。重新连接后生效。</string>
+    <string name="aa_gwm_nav_protocol_active">上次连接：请求 %1$s，手机回复 %2$s</string>
 </resources>

@@ -16,4 +16,16 @@
         <item>Minimal reserved areas — 3% each edge</item>
         <item>Phone default — omit content insets</item>
     </string-array>
+    <string name="aa_gwm_nav_protocol_test">導航協定測試（實驗性）</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect 要求的 Android Auto 協定版本。從 1.6 起，手機可能傳送更豐富的導航資訊，包括抵達時間；4.3 還允許手機讀取顯示旗標。手機的其他行為也可能改變。重新連線後生效。基準會還原目前版本。</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>基準 — 協定 1.2</item>
+        <item>更豐富的導航 — 協定 1.6</item>
+        <item>更豐富的導航與顯示旗標 — 協定 4.3</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">告訴手機由車輛顯示轉彎卡片（實驗性）</string>
+    <string name="aa_gwm_nav_turn_card_note">需要協定 4.3。要求 Android Auto 不要在儀表板上繪製自己的轉彎卡片。Google 地圖不一定會遵循，因此請在主題畫面開啟 Di-Connect 路線指引。重新連線後生效。</string>
+    <string name="aa_gwm_nav_cluster_ready_test">儀表板就緒訊號（實驗性）</string>
+    <string name="aa_gwm_nav_cluster_ready_note">導航通道開啟時傳送儀表板可用訊息 (0x8001)。尚未證實。重新連線後生效。</string>
+    <string name="aa_gwm_nav_protocol_active">上次連線：要求 %1$s，手機回覆 %2$s</string>
 </resources>
