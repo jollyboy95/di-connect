@@ -666,6 +666,15 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 append(GwmVehicleData.describe(this@DiPlayActivity))
             }.trim()
             render()
+            val app = applicationContext
+            Thread({
+                val probe = HotspotBandProbe.run(app)
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    gwmScanResult = listOfNotNull(gwmScanResult, probe).joinToString("\n\n")
+                    render()
+                }
+            }, "hotspot-band-probe").start()
         }, matchButton(10, 56))
         gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true) }) }
 
@@ -6574,6 +6583,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             "writeSettings=${CarHotspotTethering.permitted(appContext)} " +
             "bydHeadUnit=${runCatching { CarHotspotSetup.isBydHeadUnit(appContext) }.getOrNull()} " +
             "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")
+        appendLine(HotspotBandProbe.report())
         appendLine(WheelKeyService.report(appContext))
         WheelKeyLog.report(WheelKeyService.connected()).forEach { appendLine(it) }
         appendLine()

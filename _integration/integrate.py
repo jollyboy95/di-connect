@@ -2576,3 +2576,28 @@ edit(aa_java/'hud/BydNavigationMapper.kt',
     }
 
     fun codes(type: Int, exit: Int = 0): Codes? = when (type) {'''))
+
+# Hotspot band probe (Oct 2026). The H7's hotspot band falls back to "Both", which can choose
+# 2.4 GHz and makes Android Auto audio stutter. Before forcing 5 GHz, find where the car keeps the
+# band: the display scan also runs a read-only probe over local ADB, and the report includes it.
+(root/'common/src/main/java/com/shilapi/xcertplay/HotspotBandProbe.kt').write_text(
+    Path('target/_integration/HotspotBandProbe.kt').read_text())
+edit(D,
+    ('''                append(GwmVehicleData.describe(this@DiPlayActivity))
+            }.trim()
+            render()''', '''                append(GwmVehicleData.describe(this@DiPlayActivity))
+            }.trim()
+            render()
+            val app = applicationContext
+            Thread({
+                val probe = HotspotBandProbe.run(app)
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    gwmScanResult = listOfNotNull(gwmScanResult, probe).joinToString("\\n\\n")
+                    render()
+                }
+            }, "hotspot-band-probe").start()'''),
+    ('''            "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")
+''', '''            "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")
+        appendLine(HotspotBandProbe.report())
+'''))
