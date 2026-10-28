@@ -22,6 +22,7 @@
         <item>基準 — プロトコル 1.2</item>
         <item>詳しい案内 — プロトコル 1.6</item>
         <item>詳しい案内と表示フラグ — プロトコル 4.3</item>
+        <item>最新の電話バージョン、音声と映像が変わる場合あり — プロトコル 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">曲がり角カードは車が表示するとスマートフォンに伝える（実験的機能）</string>
     <string name="aa_gwm_nav_turn_card_note">プロトコル 4.3 が必要です。メーターに Android Auto 独自の曲がり角カードを描かないよう求めます。Google マップが従うとは限らないため、テーマ画面で Di-Connect の案内をオンにしてください。再接続後に適用されます。</string>

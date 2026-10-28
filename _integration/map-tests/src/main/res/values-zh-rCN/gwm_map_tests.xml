@@ -22,6 +22,7 @@
         <item>基准 — 协议 1.2</item>
         <item>更丰富的导航 — 协议 1.6</item>
         <item>更丰富的导航和显示标志 — 协议 4.3</item>
+        <item>最新手机版本，可能改变音频和视频 — 协议 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">告诉手机由车辆显示转弯卡片（实验性）</string>
     <string name="aa_gwm_nav_turn_card_note">需要协议 4.3。请求 Android Auto 不在仪表盘上绘制自己的转弯卡片。Google 地图不一定遵循，因此请在主题界面打开 Di-Connect 路线指引。重新连接后生效。</string>

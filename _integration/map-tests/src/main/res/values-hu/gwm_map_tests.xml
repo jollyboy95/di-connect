@@ -22,6 +22,7 @@
         <item>Alap — 1.2-es protokoll</item>
         <item>Gazdagabb navigáció — 1.6-os protokoll</item>
         <item>Gazdagabb navigáció és kijelzőjelzők — 4.3-as protokoll</item>
+        <item>Legújabb telefonverzió, módosíthatja a hangot és a videót — 6.2-es protokoll</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">A telefon tudja, hogy az autó mutatja a kanyarkártyát (kísérleti)</string>
     <string name="aa_gwm_nav_turn_card_note">4.3-as protokoll szükséges. Arra kéri az Android Autót, hogy ne rajzolja ki saját kanyarkártyáját a műszerfalon. A Google Térkép ezt nem feltétlenül követi, ezért kapcsolja be a Di-Connect útbaigazítást a Témák képernyőn. Újracsatlakozás után érvényes.</string>

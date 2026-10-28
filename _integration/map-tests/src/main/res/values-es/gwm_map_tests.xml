@@ -22,6 +22,7 @@
         <item>Base — protocolo 1.2</item>
         <item>Indicaciones más completas — protocolo 1.6</item>
         <item>Indicaciones más completas e indicadores de pantalla — protocolo 4.3</item>
+        <item>Versión más reciente del teléfono, puede cambiar audio y video — protocolo 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">Indicar al teléfono que el coche muestra la tarjeta de giro (experimental)</string>
     <string name="aa_gwm_nav_turn_card_note">Requiere el protocolo 4.3. Pide a Android Auto que no dibuje su propia tarjeta de giro en el cuadro. Google Maps puede no respetarlo, así que activa las indicaciones de Di-Connect en la pantalla Temas. Se aplica al volver a conectar.</string>

@@ -22,6 +22,7 @@
         <item>Baseline — protocol 1.2</item>
         <item>Richer guidance — protocol 1.6</item>
         <item>Richer guidance and display flags — protocol 4.3</item>
+        <item>Newest phone version, may change audio and video — protocol 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">Tell the phone the car shows the turn card (experimental)</string>
     <string name="aa_gwm_nav_turn_card_note">Needs protocol 4.3. Asks Android Auto not to draw its own turn card on the cluster. Google Maps may or may not follow it, so turn on Di-Connect directions on the Themes screen. Applies after reconnecting.</string>

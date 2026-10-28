@@ -22,6 +22,7 @@
         <item>Cơ bản — giao thức 1.2</item>
         <item>Chỉ đường chi tiết hơn — giao thức 1.6</item>
         <item>Chỉ đường chi tiết hơn và cờ màn hình — giao thức 4.3</item>
+        <item>Phiên bản điện thoại mới nhất, có thể thay đổi âm thanh và video — giao thức 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">Báo cho điện thoại rằng xe hiển thị thẻ rẽ (thử nghiệm)</string>
     <string name="aa_gwm_nav_turn_card_note">Cần giao thức 4.3. Yêu cầu Android Auto không vẽ thẻ rẽ riêng trên bảng đồng hồ. Google Maps có thể không làm theo, vì vậy hãy bật chỉ đường Di-Connect trong màn hình Chủ đề. Áp dụng sau khi kết nối lại.</string>

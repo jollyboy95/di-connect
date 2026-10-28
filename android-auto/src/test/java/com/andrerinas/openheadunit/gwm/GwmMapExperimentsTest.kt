@@ -73,6 +73,8 @@ class GwmMapExperimentsTest {
         assertEquals(GwmMapExperiments.Protocol.BASELINE, GwmMapExperiments.Protocol.of("unrecognised"))
         assertFalse(GwmMapExperiments.Protocol.RICH_GUIDANCE.readsHiddenUiElements)
         assertTrue(GwmMapExperiments.Protocol.DISPLAY_FLAGS.readsHiddenUiElements)
+        assertArrayEquals(byteArrayOf(0, 6, 0, 2), GwmMapExperiments.versionPayload(GwmMapExperiments.Protocol.NEWEST))
+        assertTrue(GwmMapExperiments.Protocol.NEWEST.readsHiddenUiElements)
     }
     @Test fun turnCardFlagIsWrittenAsHiddenUiElementFiveOnlyWhenAsked() {
         val p = GwmClusterProfile.profile(1920, 720, ClusterMapConfig.Detail.NORMAL, 0, 0)

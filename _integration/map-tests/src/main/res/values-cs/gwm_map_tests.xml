@@ -22,6 +22,7 @@
         <item>Výchozí — protokol 1.2</item>
         <item>Bohatší navádění — protokol 1.6</item>
         <item>Bohatší navádění a příznaky displeje — protokol 4.3</item>
+        <item>Nejnovější verze telefonu, může změnit zvuk a video — protokol 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">Sdělit telefonu, že kartu odbočky zobrazuje auto (experimentální)</string>
     <string name="aa_gwm_nav_turn_card_note">Vyžaduje protokol 4.3. Žádá Android Auto, aby na přístrojovém štítu nekreslil vlastní kartu odbočky. Google Maps to nemusí dodržet, proto zapněte navádění Di-Connect na obrazovce Motivy. Platí po opětovném připojení.</string>

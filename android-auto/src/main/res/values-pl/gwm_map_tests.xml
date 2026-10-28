@@ -22,6 +22,7 @@
         <item>Podstawowy — protokół 1.2</item>
         <item>Bogatsze wskazówki — protokół 1.6</item>
         <item>Bogatsze wskazówki i flagi wyświetlacza — protokół 4.3</item>
+        <item>Najnowsza wersja telefonu, może zmienić dźwięk i obraz — protokół 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">Poinformuj telefon, że kartę skrętu pokazuje samochód (eksperymentalne)</string>
     <string name="aa_gwm_nav_turn_card_note">Wymaga protokołu 4.3. Prosi Android Auto, by nie rysował własnej karty skrętu na zestawie wskaźników. Mapy Google mogą tego nie respektować, więc włącz wskazówki Di-Connect na ekranie Motywy. Działa po ponownym połączeniu.</string>

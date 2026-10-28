@@ -22,6 +22,7 @@
         <item>Basis — protocol 1.2</item>
         <item>Uitgebreidere navigatie — protocol 1.6</item>
         <item>Uitgebreidere navigatie en schermvlaggen — protocol 4.3</item>
+        <item>Nieuwste telefoonversie, kan audio en video wijzigen — protocol 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">De telefoon laten weten dat de auto de afslagkaart toont (experimenteel)</string>
     <string name="aa_gwm_nav_turn_card_note">Vereist protocol 4.3. Vraagt Android Auto om op het instrumentenpaneel geen eigen afslagkaart te tekenen. Google Maps volgt dit misschien niet, zet daarom de Di-Connect-routebeschrijving aan in het scherm Thema\'s. Geldt na opnieuw verbinden.</string>

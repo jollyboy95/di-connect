@@ -22,6 +22,7 @@
         <item>Standard — Protokoll 1.2</item>
         <item>Umfangreichere Zielführung — Protokoll 1.6</item>
         <item>Umfangreichere Zielführung und Anzeige-Flags — Protokoll 4.3</item>
+        <item>Neueste Telefonversion, kann Audio und Video ändern — Protokoll 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">Dem Telefon melden, dass das Auto die Abbiegekarte zeigt (experimentell)</string>
     <string name="aa_gwm_nav_turn_card_note">Erfordert Protokoll 4.3. Bittet Android Auto, im Kombiinstrument keine eigene Abbiegekarte zu zeichnen. Google Maps hält sich eventuell nicht daran, deshalb die Di-Connect-Zielführung im Bildschirm Designs einschalten. Gilt nach erneutem Verbinden.</string>

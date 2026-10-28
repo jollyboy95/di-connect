@@ -29,7 +29,9 @@ internal object GwmMapExperiments {
      * "navigation turn data available" (value 5) for the cluster. Baseline keeps 1.2.
      */
     enum class Protocol(val key: String, val major: Int, val minor: Int) {
-        BASELINE("1.2", 1, 2), RICH_GUIDANCE("1.6", 1, 6), DISPLAY_FLAGS("4.3", 4, 3);
+        BASELINE("1.2", 1, 2), RICH_GUIDANCE("1.6", 1, 6), DISPLAY_FLAGS("4.3", 4, 3),
+        /** What the H7 phone answers when asked for 4.3. May switch on newer audio and video behaviour. */
+        NEWEST("6.2", 6, 2);
         val readsHiddenUiElements: Boolean get() = major > 4 || (major == 4 && minor >= 3)
         companion object { fun of(key: String?) = entries.firstOrNull { it.key == key } ?: BASELINE }
     }

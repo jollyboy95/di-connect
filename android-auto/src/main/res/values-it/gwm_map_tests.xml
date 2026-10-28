@@ -22,6 +22,7 @@
         <item>Base — protocollo 1.2</item>
         <item>Indicazioni più ricche — protocollo 1.6</item>
         <item>Indicazioni più ricche e flag del display — protocollo 4.3</item>
+        <item>Versione più recente del telefono, può cambiare audio e video — protocollo 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">Comunica al telefono che l\'auto mostra la scheda di svolta (sperimentale)</string>
     <string name="aa_gwm_nav_turn_card_note">Richiede il protocollo 4.3. Chiede ad Android Auto di non disegnare la propria scheda di svolta sul quadro. Google Maps potrebbe non rispettarlo, quindi attiva le indicazioni Di-Connect nella schermata Temi. Si applica dopo la riconnessione.</string>

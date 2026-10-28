@@ -22,6 +22,7 @@
         <item>基準 — 協定 1.2</item>
         <item>更豐富的導航 — 協定 1.6</item>
         <item>更豐富的導航與顯示旗標 — 協定 4.3</item>
+        <item>最新手機版本，可能改變音訊和影像 — 協定 6.2</item>
     </string-array>
     <string name="aa_gwm_nav_turn_card_test">告訴手機由車輛顯示轉彎卡片（實驗性）</string>
     <string name="aa_gwm_nav_turn_card_note">需要協定 4.3。要求 Android Auto 不要在儀表板上繪製自己的轉彎卡片。Google 地圖不一定會遵循，因此請在主題畫面開啟 Di-Connect 路線指引。重新連線後生效。</string>
