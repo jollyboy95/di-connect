@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">Guidance protocol test (experimental)</string>
-    <string name="aa_gwm_nav_protocol_note">Which Android Auto protocol version Di-Connect asks for. From 1.6 the phone may send richer guidance, including arrival time; 4.3 also lets it read display flags. Other phone behaviour may change too. Applies after reconnecting. Baseline restores the current version.</string>
+    <string name="aa_gwm_nav_protocol_note">Which Android Auto protocol version Di-Connect asks for. From 1.6 the phone may send richer guidance, including arrival time; 4.3 also lets it read display flags. Other phone behaviour may change too. Restart the head unit to apply; otherwise the phone may not join the car\'s Wi-Fi. Baseline restores the current version.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>Baseline — protocol 1.2</item>
         <item>Richer guidance — protocol 1.6</item>

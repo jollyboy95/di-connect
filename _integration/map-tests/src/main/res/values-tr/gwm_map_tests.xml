@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">Yol tarifi protokolü testi (deneysel)</string>
-    <string name="aa_gwm_nav_protocol_note">Di-Connect hangi Android Auto protokol sürümünü istiyor. 1.6 ve sonrasında telefon varış saati dahil daha ayrıntılı yol tarifi gönderebilir; 4.3 ayrıca ekran işaretlerini okumasına izin verir. Telefonun diğer davranışları da değişebilir. Yeniden bağlandıktan sonra geçerli olur. Temel, mevcut sürüme döner.</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect hangi Android Auto protokol sürümünü istiyor. 1.6 ve sonrasında telefon varış saati dahil daha ayrıntılı yol tarifi gönderebilir; 4.3 ayrıca ekran işaretlerini okumasına izin verir. Telefonun diğer davranışları da değişebilir. Uygulamak için ana üniteyi yeniden başlatın; aksi halde telefon aracın Wi-Fi ağına bağlanamayabilir. Temel, mevcut sürüme döner.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>Temel — protokol 1.2</item>
         <item>Daha ayrıntılı yol tarifi — protokol 1.6</item>

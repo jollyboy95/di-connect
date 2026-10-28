@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">Test del protocollo di guida (sperimentale)</string>
-    <string name="aa_gwm_nav_protocol_note">Quale versione del protocollo Android Auto richiede Di-Connect. Dalla 1.6 il telefono può inviare indicazioni più ricche, incluso l\'orario di arrivo; la 4.3 gli consente anche di leggere i flag del display. Può cambiare anche altro comportamento del telefono. Si applica dopo la riconnessione. Base ripristina la versione attuale.</string>
+    <string name="aa_gwm_nav_protocol_note">Quale versione del protocollo Android Auto richiede Di-Connect. Dalla 1.6 il telefono può inviare indicazioni più ricche, incluso l\'orario di arrivo; la 4.3 gli consente anche di leggere i flag del display. Può cambiare anche altro comportamento del telefono. Riavvia l\'unità principale per applicarlo; altrimenti il telefono potrebbe non collegarsi al Wi-Fi dell\'auto. Base ripristina la versione attuale.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>Base — protocollo 1.2</item>
         <item>Indicazioni più ricche — protocollo 1.6</item>

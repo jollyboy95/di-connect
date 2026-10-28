@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">Test protokolu navádění (experimentální)</string>
-    <string name="aa_gwm_nav_protocol_note">Kterou verzi protokolu Android Auto Di-Connect požaduje. Od 1.6 může telefon posílat bohatší navádění včetně času příjezdu; 4.3 mu navíc umožní číst příznaky displeje. Může se změnit i jiné chování telefonu. Platí po opětovném připojení. Výchozí obnoví současnou verzi.</string>
+    <string name="aa_gwm_nav_protocol_note">Kterou verzi protokolu Android Auto Di-Connect požaduje. Od 1.6 může telefon posílat bohatší navádění včetně času příjezdu; 4.3 mu navíc umožní číst příznaky displeje. Může se změnit i jiné chování telefonu. Pro použití restartujte jednotku; jinak se telefon nemusí připojit k Wi-Fi vozu. Výchozí obnoví současnou verzi.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>Výchozí — protokol 1.2</item>
         <item>Bohatší navádění — protokol 1.6</item>

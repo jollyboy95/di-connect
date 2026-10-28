@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">Test protokołu prowadzenia (eksperymentalne)</string>
-    <string name="aa_gwm_nav_protocol_note">Którą wersję protokołu Android Auto żąda Di-Connect. Od 1.6 telefon może wysyłać bogatsze wskazówki, w tym godzinę przyjazdu; 4.3 pozwala mu też odczytać flagi wyświetlacza. Inne zachowanie telefonu również może się zmienić. Działa po ponownym połączeniu. Podstawowy przywraca obecną wersję.</string>
+    <string name="aa_gwm_nav_protocol_note">Którą wersję protokołu Android Auto żąda Di-Connect. Od 1.6 telefon może wysyłać bogatsze wskazówki, w tym godzinę przyjazdu; 4.3 pozwala mu też odczytać flagi wyświetlacza. Inne zachowanie telefonu również może się zmienić. Aby zastosować, uruchom ponownie radio; inaczej telefon może nie połączyć się z Wi-Fi auta. Podstawowy przywraca obecną wersję.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>Podstawowy — protokół 1.2</item>
         <item>Bogatsze wskazówki — protokół 1.6</item>

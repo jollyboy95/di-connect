@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">Thử giao thức chỉ đường (thử nghiệm)</string>
-    <string name="aa_gwm_nav_protocol_note">Phiên bản giao thức Android Auto mà Di-Connect yêu cầu. Từ 1.6, điện thoại có thể gửi chỉ đường chi tiết hơn, gồm cả giờ đến; 4.3 còn cho phép đọc các cờ màn hình. Hành vi khác của điện thoại cũng có thể thay đổi. Áp dụng sau khi kết nối lại. Cơ bản khôi phục phiên bản hiện tại.</string>
+    <string name="aa_gwm_nav_protocol_note">Phiên bản giao thức Android Auto mà Di-Connect yêu cầu. Từ 1.6, điện thoại có thể gửi chỉ đường chi tiết hơn, gồm cả giờ đến; 4.3 còn cho phép đọc các cờ màn hình. Hành vi khác của điện thoại cũng có thể thay đổi. Khởi động lại đầu màn hình để áp dụng; nếu không, điện thoại có thể không kết nối được Wi-Fi của xe. Cơ bản khôi phục phiên bản hiện tại.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>Cơ bản — giao thức 1.2</item>
         <item>Chỉ đường chi tiết hơn — giao thức 1.6</item>

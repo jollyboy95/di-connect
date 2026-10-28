@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">Test des Zielführungsprotokolls (experimentell)</string>
-    <string name="aa_gwm_nav_protocol_note">Welche Android-Auto-Protokollversion Di-Connect anfordert. Ab 1.6 kann das Telefon umfangreichere Zielführung inklusive Ankunftszeit senden; 4.3 lässt es zusätzlich Anzeige-Flags lesen. Auch anderes Telefonverhalten kann sich ändern. Gilt nach erneutem Verbinden. Standard stellt die aktuelle Version wieder her.</string>
+    <string name="aa_gwm_nav_protocol_note">Welche Android-Auto-Protokollversion Di-Connect anfordert. Ab 1.6 kann das Telefon umfangreichere Zielführung inklusive Ankunftszeit senden; 4.3 lässt es zusätzlich Anzeige-Flags lesen. Auch anderes Telefonverhalten kann sich ändern. Zum Übernehmen das Infotainment neu starten; sonst verbindet sich das Telefon eventuell nicht mit dem WLAN des Autos. Standard stellt die aktuelle Version wieder her.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>Standard — Protokoll 1.2</item>
         <item>Umfangreichere Zielführung — Protokoll 1.6</item>

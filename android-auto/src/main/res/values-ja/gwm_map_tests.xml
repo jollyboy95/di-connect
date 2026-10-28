@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">案内プロトコルのテスト（実験的機能）</string>
-    <string name="aa_gwm_nav_protocol_note">Di-Connect が要求する Android Auto のプロトコルバージョン。1.6 以上ではスマートフォンが到着時刻を含む詳しい案内を送る場合があり、4.3 では表示フラグも読み取れます。スマートフォンの他の動作も変わることがあります。再接続後に適用されます。基準に戻すと現在のバージョンに戻ります。</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect が要求する Android Auto のプロトコルバージョン。1.6 以上ではスマートフォンが到着時刻を含む詳しい案内を送る場合があり、4.3 では表示フラグも読み取れます。スマートフォンの他の動作も変わることがあります。適用するにはヘッドユニットを再起動してください。再起動しないとスマートフォンが車の Wi-Fi に接続できない場合があります。基準に戻すと現在のバージョンに戻ります。</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>基準 — プロトコル 1.2</item>
         <item>詳しい案内 — プロトコル 1.6</item>

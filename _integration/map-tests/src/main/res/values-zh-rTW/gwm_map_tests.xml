@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">導航協定測試（實驗性）</string>
-    <string name="aa_gwm_nav_protocol_note">Di-Connect 要求的 Android Auto 協定版本。從 1.6 起，手機可能傳送更豐富的導航資訊，包括抵達時間；4.3 還允許手機讀取顯示旗標。手機的其他行為也可能改變。重新連線後生效。基準會還原目前版本。</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect 要求的 Android Auto 協定版本。從 1.6 起，手機可能傳送更豐富的導航資訊，包括抵達時間；4.3 還允許手機讀取顯示旗標。手機的其他行為也可能改變。需重新啟動車機後生效；否則手機可能無法連上車輛 Wi-Fi。基準會還原目前版本。</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>基準 — 協定 1.2</item>
         <item>更豐富的導航 — 協定 1.6</item>

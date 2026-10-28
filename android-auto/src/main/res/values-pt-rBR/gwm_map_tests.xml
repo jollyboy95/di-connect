@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">Teste do protocolo de orientação (experimental)</string>
-    <string name="aa_gwm_nav_protocol_note">Qual versão do protocolo do Android Auto o Di-Connect solicita. A partir da 1.6 o telefone pode enviar orientação mais completa, incluindo o horário de chegada; a 4.3 também permite ler sinalizadores da tela. Outros comportamentos do telefone podem mudar. Vale após reconectar. Padrão restaura a versão atual.</string>
+    <string name="aa_gwm_nav_protocol_note">Qual versão do protocolo do Android Auto o Di-Connect solicita. A partir da 1.6 o telefone pode enviar orientação mais completa, incluindo o horário de chegada; a 4.3 também permite ler sinalizadores da tela. Outros comportamentos do telefone podem mudar. Reinicie a central multimídia para aplicar; caso contrário, o telefone pode não se conectar ao Wi-Fi do carro. Padrão restaura a versão atual.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>Padrão — protocolo 1.2</item>
         <item>Orientação mais completa — protocolo 1.6</item>

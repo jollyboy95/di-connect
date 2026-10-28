@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">Prueba del protocolo de indicaciones (experimental)</string>
-    <string name="aa_gwm_nav_protocol_note">Qué versión del protocolo de Android Auto solicita Di-Connect. Desde 1.6 el teléfono puede enviar indicaciones más completas, incluida la hora de llegada; 4.3 además le permite leer indicadores de pantalla. También puede cambiar otro comportamiento del teléfono. Se aplica al volver a conectar. Base restaura la versión actual.</string>
+    <string name="aa_gwm_nav_protocol_note">Qué versión del protocolo de Android Auto solicita Di-Connect. Desde 1.6 el teléfono puede enviar indicaciones más completas, incluida la hora de llegada; 4.3 además le permite leer indicadores de pantalla. También puede cambiar otro comportamiento del teléfono. Reinicia la unidad principal para aplicarlo; si no, el teléfono puede no conectarse al Wi-Fi del coche. Base restaura la versión actual.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>Base — protocolo 1.2</item>
         <item>Indicaciones más completas — protocolo 1.6</item>

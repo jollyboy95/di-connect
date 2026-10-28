@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">导航协议测试（实验性）</string>
-    <string name="aa_gwm_nav_protocol_note">Di-Connect 请求的 Android Auto 协议版本。从 1.6 起，手机可能发送更丰富的导航信息，包括到达时间；4.3 还允许手机读取显示标志。手机的其他行为也可能改变。重新连接后生效。基准会恢复当前版本。</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect 请求的 Android Auto 协议版本。从 1.6 起，手机可能发送更丰富的导航信息，包括到达时间；4.3 还允许手机读取显示标志。手机的其他行为也可能改变。需重启车机后生效；否则手机可能无法连接车辆 Wi-Fi。基准会恢复当前版本。</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>基准 — 协议 1.2</item>
         <item>更丰富的导航 — 协议 1.6</item>

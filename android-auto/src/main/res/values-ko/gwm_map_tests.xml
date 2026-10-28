@@ -17,7 +17,7 @@
         <item>Phone default — omit content insets</item>
     </string-array>
     <string name="aa_gwm_nav_protocol_test">길안내 프로토콜 테스트(실험적)</string>
-    <string name="aa_gwm_nav_protocol_note">Di-Connect가 요청하는 Android Auto 프로토콜 버전입니다. 1.6부터 휴대전화가 도착 시간을 포함한 더 자세한 길안내를 보낼 수 있고, 4.3에서는 디스플레이 플래그도 읽을 수 있습니다. 휴대전화의 다른 동작도 바뀔 수 있습니다. 다시 연결한 후 적용됩니다. 기본값은 현재 버전으로 되돌립니다.</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect가 요청하는 Android Auto 프로토콜 버전입니다. 1.6부터 휴대전화가 도착 시간을 포함한 더 자세한 길안내를 보낼 수 있고, 4.3에서는 디스플레이 플래그도 읽을 수 있습니다. 휴대전화의 다른 동작도 바뀔 수 있습니다. 적용하려면 헤드 유닛을 다시 시작하세요. 그렇지 않으면 휴대전화가 차량 Wi-Fi에 연결되지 않을 수 있습니다. 기본값은 현재 버전으로 되돌립니다.</string>
     <string-array name="aa_gwm_nav_protocol_modes">
         <item>기본 — 프로토콜 1.2</item>
         <item>더 자세한 길안내 — 프로토콜 1.6</item>
