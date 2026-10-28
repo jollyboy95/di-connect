@@ -132,6 +132,10 @@ internal class ThemedClusterView(
             ClusterTheme.Layout.HYBRID_SPORT -> drawHybridSport(canvas, w, h, showMusic)
             ClusterTheme.Layout.VAPORWAVE_STEREO -> drawVaporwaveStereo(canvas, w, h, showMusic)
             ClusterTheme.Layout.MUSIC_LOUNGE -> drawMusicLounge(canvas, w, h, showMusic)
+            ClusterTheme.Layout.TURBINE_LUXURY -> drawTurbineLuxury(canvas, w, h)
+            ClusterTheme.Layout.PERFORMANCE_COCKPIT -> drawPerformanceCockpit(canvas, w, h)
+            ClusterTheme.Layout.MUSIC_PANORAMA -> drawMusicPanorama(canvas, w, h)
+            ClusterTheme.Layout.DAYLIGHT_FUTURE -> drawDaylightFuture(canvas, w, h)
             ClusterTheme.Layout.BAVARIAN -> drawBavarian(canvas, w, h, showMusic)
             ClusterTheme.Layout.CLASSIC -> {
             drawHeader(canvas, w, h)
@@ -145,9 +149,7 @@ internal class ThemedClusterView(
         }
         if (connection == ClusterConnection.CARPLAY) guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it) }
         // Android Auto: Di-Connect's own directions card, when switched on or while the preview runs.
-        // The full-map instrument layout covers the side where Google draws its card, so it always shows ours.
-        else if (!preview && (NavDemo.active || ClusterThemeStore.directionsCard(context) ||
-                theme.layout == ClusterTheme.Layout.BAVARIAN))
+        else if (!preview && (NavDemo.active || ClusterThemeStore.directionsCard(context)))
             guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it, directionsBox(w, h, journeyLine(it) != null)) }
     }
 
@@ -1724,22 +1726,105 @@ internal class ThemedClusterView(
         studioFooter(canvas, w, h)
     }
 
+    /** Metallic radial instrument shared by the turbine and performance concepts. */
+    private fun conceptDial(canvas: Canvas, cx: Float, cy: Float, r: Float, value: Float?, maximum: Float,
+                            turbine: Boolean = false) {
+        fill.shader = RadialGradient(cx, cy, r, intArrayOf(Color.rgb(7,12,19), Color.rgb(24,34,45), Color.rgb(5,10,17)),
+            floatArrayOf(0f,.86f,1f), Shader.TileMode.CLAMP)
+        canvas.drawCircle(cx,cy,r,fill); fill.shader=null
+        line.shader=null; line.strokeWidth=r*.012f; line.color=Color.rgb(205,214,225)
+        canvas.drawCircle(cx,cy,r,line)
+        if (turbine) for (i in 0 until 36) {
+            val a=i*Math.PI/18
+            val b=a+.23
+            line.color=Color.argb(90,113,140,162);line.strokeWidth=r*.018f
+            canvas.drawLine(cx+(cos(a)*r*.46).toFloat(),cy+(sin(a)*r*.46).toFloat(),
+                cx+(cos(b)*r*.94).toFloat(),cy+(sin(b)*r*.94).toFloat(),line)
+        }
+        for(i in 0..40) {
+            val a=Math.toRadians(140.0+i*6.5)
+            val major=i%5==0
+            line.color=if(major) theme.text else withAlpha(theme.text,105)
+            line.strokeWidth=r*(if(major) .014f else .006f)
+            val inner=if(major) .83f else .89f
+            canvas.drawLine(cx+(cos(a)*r*inner).toFloat(),cy+(sin(a)*r*inner).toFloat(),
+                cx+(cos(a)*r*.95).toFloat(),cy+(sin(a)*r*.95).toFloat(),line)
+            if(major) studioText(canvas, (maximum*i/40).roundToInt().toString(),
+                cx+(cos(a)*r*.72).toFloat(),cy+(sin(a)*r*.72).toFloat()+r*.035f,r*.10f,
+                align=Paint.Align.CENTER)
+        }
+        value?.let {
+            val a=Math.toRadians(140.0+(it/maximum).coerceIn(0f,1f)*260)
+            line.color=theme.accent;line.strokeWidth=r*.018f
+            canvas.drawLine(cx,cy,cx+(cos(a)*r*.81).toFloat(),cy+(sin(a)*r*.81).toFloat(),line)
+        }
+        fill.color=theme.text;canvas.drawCircle(cx,cy,r*.035f,fill)
+    }
+
+    private fun drawTurbineLuxury(canvas: Canvas,w:Float,h:Float) {
+        val r=.38f*h
+        conceptDial(canvas,.17f*w,.46f*h,r,snapshot?.speedKph,240f,true)
+        conceptDial(canvas,.83f*w,.46f*h,r,kwNow()?.let { (it+60f).coerceIn(0f,120f) },120f,true)
+        for(right in listOf(false,true)) {
+            val x=if(right) .83f*w else .17f*w
+            fill.color=Color.rgb(7,12,19);canvas.drawCircle(x,.46f*h,r*.40f,fill)
+            studioText(canvas,if(right) kwNow()?.roundToInt()?.toString() ?: "—" else snapshot?.speedKph?.roundToInt()?.toString() ?: "—",
+                x,.49f*h,.12f*h,weight=400,align=Paint.Align.CENTER)
+            studioText(canvas,if(right) "kW" else "km/h",x,.55f*h,.026f*h,theme.secondary,align=Paint.Align.CENTER)
+        }
+        drawHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+    }
+
+    private fun drawPerformanceCockpit(canvas:Canvas,w:Float,h:Float) {
+        fill.color=Color.rgb(10,12,15);canvas.drawRect(0f,0f,.65f*w,h,fill)
+        conceptDial(canvas,.465f*w,.46f*h,.39f*h,snapshot?.engineRpm,8000f)
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.13f*w,.43f*h,.20f*h,weight=500,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",.13f*w,.49f*h,.033f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioFlow(canvas,RectF(.035f*w,.62f*h,.25f*w,.68f*h),false)
+        studioText(canvas,snapshot?.engineRpm?.roundToInt()?.toString() ?: "—",.465f*w,.70f*h,.055f*h,align=Paint.Align.CENTER)
+        drawHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+    }
+
+    private fun drawMusicPanorama(canvas:Canvas,w:Float,h:Float) {
+        fill.color=Color.rgb(7,25,31);canvas.drawRect(0f,0f,.62f*w,h,fill)
+        fill.shader=LinearGradient(.54f*w,0f,.62f*w,0f,Color.TRANSPARENT,Color.argb(80,0,0,0),Shader.TileMode.CLAMP)
+        canvas.drawRect(.54f*w,0f,.62f*w,h,fill);fill.shader=null
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.035f*w,.47f*h,.20f*h,weight=300)
+        studioText(canvas,"km/h",.045f*w,.53f*h,.03f*h,theme.secondary)
+        studioMusic(canvas,RectF(.20f*w,.26f*h,.59f*w,.68f*h),true)
+        drawHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+    }
+
+    private fun drawDaylightFuture(canvas:Canvas,w:Float,h:Float) {
+        // Pale instruments fade into the real projected map; no fabricated road imagery.
+        fill.shader=LinearGradient(0f,0f,w,0f,intArrayOf(Color.rgb(243,246,247),Color.rgb(243,246,247),
+            Color.TRANSPARENT,Color.TRANSPARENT,Color.rgb(243,246,247),Color.rgb(243,246,247)),
+            floatArrayOf(0f,.20f,.34f,.66f,.80f,1f),Shader.TileMode.CLAMP)
+        canvas.drawRect(0f,0f,w,h,fill);fill.shader=null
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.15f*w,.48f*h,.23f*h,weight=500,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",.15f*w,.55f*h,.035f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioText(canvas,snapshot?.rangeKm?.roundToInt()?.toString() ?: "—",.85f*w,.48f*h,.15f*h,weight=500,align=Paint.Align.CENTER)
+        studioText(canvas,"km",.85f*w,.55f*h,.035f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioFlow(canvas,RectF(.78f*w,.65f*h,.96f*w,.70f*h),true)
+        drawHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+    }
+
     // ---- Isar Drive: chevron instruments over a full-width map ------------------------------
     // Speed on the left, battery flow on the right, each a chevron pointing outwards with its own
     // scale, in the style of modern German clusters. No badge or logo. The instruments use the
     // full height and run under the car's own symbols, which the car draws on top.
 
-    private val bavTop = .05f
+    private val bavTop = .025f
     private val bavTip = .47f
-    private val bavBottom = .89f
+    private val bavBottom = .965f
     private val bavSpeedMarks = floatArrayOf(0f, 30f, 60f, 100f, 150f, 200f, 260f)
     private val bavKwFull = 60f
     /** Everything that does not move, drawn once per size so a data update only repaints the readings. */
     private var bavBase: Bitmap? = null
 
     private fun bavChevron(y: Float, tipX: Float, slope: Float) = tipX + slope * kotlin.math.abs(y - bavTip)
-    private fun bavRail(y: Float) = bavChevron(y, .02f, .30f)
-    private fun bavScale(y: Float) = bavChevron(y, .112f, .30f)
+    private fun bavRail(y: Float) = bavChevron(y, .015f, .30f)
+    private fun bavScale(y: Float) = bavChevron(y, .107f, .30f)
     /** The well's far side points the other way, so each well is a long hexagon. */
     private fun bavWellEnd(y: Float) = .35f - .22f * kotlin.math.abs(y - bavTip)
     private fun bavY(t: Float) = bavBottom - (bavBottom - bavTop) * t
@@ -1870,6 +1955,22 @@ internal class ThemedClusterView(
             line.color = Color.argb(45, 165, 200, 235)
             canvas.drawPath(bavPath(right, w, h, bavTop, bavBottom, ::bavWellEnd), line)
 
+            // Soft, faceted diagonal accent inside each instrument: a premium glass bevel,
+            // not a solid panel, so the projected map remains visible through it.
+            val bevel = Path().apply {
+                moveTo(bavX(right, .155f, w), .43f * h)
+                lineTo(bavX(right, .19f, w), .37f * h)
+                lineTo(bavX(right, .30f, w), .75f * h)
+                lineTo(bavX(right, .25f, w), .75f * h)
+                close()
+            }
+            fill.shader = LinearGradient(bavX(right, .17f, w), .4f * h,
+                bavX(right, .29f, w), .75f * h,
+                intArrayOf(Color.TRANSPARENT, alpha(if (right) theme.charge else theme.accent, 90),
+                    Color.argb(160, 213, 232, 242)), floatArrayOf(0f, .62f, 1f), Shader.TileMode.CLAMP)
+            canvas.drawPath(bevel, fill)
+            fill.shader = null
+
             // Ticks and figures along the scale.
             val align = if (right) Paint.Align.RIGHT else Paint.Align.LEFT
             for (i in 0..24) {
@@ -1932,9 +2033,20 @@ internal class ThemedClusterView(
      * car's own navigation card, or top centre of the map for a theme with its own map window.
      */
     private fun directionsBox(w: Float, h: Float, withJourney: Boolean): RectF {
+        when (theme.layout) {
+            ClusterTheme.Layout.TURBINE_LUXURY -> return RectF(.32f*w, .14f*h, .68f*w, (if(withJourney) .43f else .35f)*h)
+            ClusterTheme.Layout.PERFORMANCE_COCKPIT -> return RectF(.67f*w, .60f*h, .98f*w, (if(withJourney) .89f else .81f)*h)
+            ClusterTheme.Layout.MUSIC_PANORAMA -> return RectF(.65f*w, .18f*h, .97f*w, (if(withJourney) .47f else .39f)*h)
+            ClusterTheme.Layout.DAYLIGHT_FUTURE -> return RectF(.29f*w, .58f*h, .72f*w, (if(withJourney) .87f else .79f)*h)
+            else -> Unit
+        }
+
         // Isar Drive: a little lower, clear of the gear notch.
         if (theme.layout == ClusterTheme.Layout.BAVARIAN)
             return RectF(.37f * w, .14f * h, .63f * w, (if (withJourney) .43f else .35f) * h)
+        // Music Lounge keeps its guidance on the map side, away from the music instruments.
+        if (theme.layout == ClusterTheme.Layout.MUSIC_LOUNGE)
+            return RectF(.69f * w, (if (withJourney) .59f else .67f) * h, .97f * w, .88f * h)
         val (from, to) = theme.mapWindow ?: (0f to 1f)
         val centre = (from + to) / 2f * w
         val half = .135f * w

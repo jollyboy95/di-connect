@@ -326,6 +326,62 @@
       "charge": "#FF8A3D",
       "surface": "#E8070D16",
       "edge": "#55A9C8E6"
+    },
+    {
+      "id": "studio-turbine-luxury",
+      "name": "Luxury Turbine",
+      "category": "luxury",
+      "layout": "turbine_luxury",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#F3F6F9",
+      "secondary": "#B3C2CE",
+      "accent": "#D6C6A4",
+      "charge": "#22BCB5",
+      "surface": "#0A1019",
+      "edge": "#667E9FAA"
+    },
+    {
+      "id": "studio-performance-cockpit",
+      "name": "Performance Cockpit",
+      "category": "sport",
+      "layout": "performance_cockpit",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#F3F6F9",
+      "secondary": "#B3C2CE",
+      "accent": "#F04A48",
+      "charge": "#22BCB5",
+      "surface": "#0A0C0F",
+      "edge": "#667E9FAA"
+    },
+    {
+      "id": "studio-music-panorama",
+      "name": "Music Lounge Panorama",
+      "category": "everyday",
+      "layout": "music_panorama",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#F3F6F9",
+      "secondary": "#B3C2CE",
+      "accent": "#DDBB86",
+      "charge": "#22BCB5",
+      "surface": "#07191F",
+      "edge": "#667E9FAA"
+    },
+    {
+      "id": "studio-daylight-future",
+      "name": "Daylight Future",
+      "category": "tech",
+      "layout": "daylight_future",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#142632",
+      "secondary": "#455B68",
+      "accent": "#008F9C",
+      "charge": "#22BCB5",
+      "surface": "#F3F6F7",
+      "edge": "#667E9FAA"
     }
   ]
 }
