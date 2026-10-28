@@ -105,6 +105,7 @@ internal class ThemedClusterView(
         stopMusic = null
         removeCallbacks(tick)
         removeCallbacks(clockTick)
+        bavBase?.recycle(); bavBase = null
         super.onDetachedFromWindow()
     }
 
@@ -1723,195 +1724,204 @@ internal class ThemedClusterView(
         studioFooter(canvas, w, h)
     }
 
-    /**
-     * Opposing chevron instruments over a full-width map, in the style of modern German clusters:
-     * speed on the left, battery flow on the right, each on its own scale. No badge or logo.
-     * The car's own lights keep their spots: gear letter top centre, READY and the drive mode on
-     * the bottom line, the speed-limit sign and lane assist low on the left.
-     */
+    // ---- Isar Drive: chevron instruments over a full-width map ------------------------------
+    // Speed on the left, battery flow on the right, each a chevron pointing outwards with its own
+    // scale, in the style of modern German clusters. No badge or logo. The instruments use the
+    // full height and run under the car's own symbols, which the car draws on top.
+
+    private val bavTop = .05f
+    private val bavTip = .47f
+    private val bavBottom = .89f
+    private val bavSpeedMarks = floatArrayOf(0f, 30f, 60f, 100f, 150f, 200f, 260f)
+    private val bavKwFull = 60f
+    /** Everything that does not move, drawn once per size so a data update only repaints the readings. */
+    private var bavBase: Bitmap? = null
+
+    private fun bavChevron(y: Float, tipX: Float, slope: Float) = tipX + slope * kotlin.math.abs(y - bavTip)
+    private fun bavRail(y: Float) = bavChevron(y, .02f, .30f)
+    private fun bavScale(y: Float) = bavChevron(y, .112f, .30f)
+    /** The well's far side points the other way, so each well is a long hexagon. */
+    private fun bavWellEnd(y: Float) = .35f - .22f * kotlin.math.abs(y - bavTip)
+    private fun bavY(t: Float) = bavBottom - (bavBottom - bavTop) * t
+    private fun bavX(right: Boolean, x: Float, w: Float) = (if (right) 1f - x else x) * w
+    private fun bavPath(right: Boolean, w: Float, h: Float, from: Float, to: Float, x: (Float) -> Float) = Path().apply {
+        moveTo(bavX(right, x(from), w), from * h); lineTo(bavX(right, x(bavTip), w), bavTip * h)
+        lineTo(bavX(right, x(to), w), to * h)
+    }
+    private fun bavSpeedT(v: Float): Float {
+        val c = v.coerceIn(0f, bavSpeedMarks.last())
+        for (i in 1 until bavSpeedMarks.size) if (c <= bavSpeedMarks[i])
+            return (i - 1 + (c - bavSpeedMarks[i - 1]) / (bavSpeedMarks[i] - bavSpeedMarks[i - 1])) / (bavSpeedMarks.size - 1)
+        return 1f
+    }
+    private fun bavKwT(kw: Float) = (kw.coerceIn(-bavKwFull, bavKwFull) + bavKwFull) / (2f * bavKwFull)
+    private fun alpha(color: Int, a: Int) = Color.argb(a, Color.red(color), Color.green(color), Color.blue(color))
+
     private fun drawBavarian(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        val base = bavBase?.takeIf { it.width == w.toInt() && it.height == h.toInt() }
+            ?: Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888).also {
+                bavBase?.recycle()
+                bavBase = it
+                drawBavarianBase(Canvas(it), w, h)
+            }
+        canvas.drawBitmap(base, 0f, 0f, null)
+
+        // Lit band from the scale's zero to the reading, brightest at the reading.
+        for (right in listOf(false, true)) {
+            val reading = if (right) kwNow() else snapshot?.speedKph
+            val from = if (right) bavKwT(0f) else 0f
+            val to = reading?.let { if (right) bavKwT(it) else bavSpeedT(it) } ?: from
+            val lo = minOf(from, to)
+            val hi = maxOf(from, to)
+            if (hi <= lo) continue
+            val colour = if (right) kwColor(reading) else theme.accent
+            val blocks = 56
+            val path = Path()
+            for (i in 0 until blocks) {
+                val t0 = maxOf(i / blocks.toFloat(), lo)
+                val t1 = minOf((i + .78f) / blocks, hi)
+                if (t1 <= t0) continue
+                val mid = ((t0 + t1) / 2f - lo) / (hi - lo)
+                val progress = if (to < from) 1f - mid else mid
+                val ya = bavY(t0)
+                val yb = bavY(t1)
+                path.rewind()
+                path.moveTo(bavX(right, bavRail(ya) + .028f, w), ya * h); path.lineTo(bavX(right, bavScale(ya) - .014f, w), ya * h)
+                path.lineTo(bavX(right, bavScale(yb) - .014f, w), yb * h); path.lineTo(bavX(right, bavRail(yb) + .028f, w), yb * h)
+                path.close()
+                fill.shader = null
+                fill.color = alpha(colour, (80 + 175 * progress).roundToInt())
+                canvas.drawPath(path, fill)
+            }
+        }
+
+        // Readings in the wells.
+        studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .238f * w, .55f * h, .21f * h,
+            weight = 500, align = Paint.Align.CENTER)
+        studioText(canvas, "km/h", .238f * w, .635f * h, .04f * h, theme.secondary, 400, align = Paint.Align.CENTER)
+        val kw = kwNow()?.roundToInt()
+        studioText(canvas, kw?.let { if (it < 0) "−${-it}" else "$it" } ?: "—", .762f * w, .55f * h, .21f * h,
+            weight = 500, width = .17f * w, align = Paint.Align.CENTER)
+        studioText(canvas, "kW", .762f * w, .635f * h, .04f * h, theme.secondary, 400, align = Paint.Align.CENTER)
+
+        // Temperature and time in the top corners.
+        snapshot?.outsideTempC?.let {
+            studioText(canvas, "${it.roundToInt()}°C", .03f * w, .075f * h, .036f * h, weight = 500)
+        }
+        studioText(canvas, SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()), .97f * w, .075f * h, .036f * h,
+            weight = 500, align = Paint.Align.RIGHT)
+
+        // Fuel as slanted segments, then the range, bottom right.
+        val lit = snapshot?.fuelPercent?.let { (it / 100f * 8f).roundToInt().coerceIn(0, 8) } ?: 0
+        val step = .0105f * w
+        val bar = Path()
+        for (i in 0 until 8) {
+            val x = .815f * w + i * step
+            bar.rewind()
+            bar.moveTo(x + .003f * w, .93f * h); bar.lineTo(x + step - .0015f * w, .93f * h)
+            bar.lineTo(x + step - .0045f * w, .956f * h); bar.lineTo(x, .956f * h); bar.close()
+            fill.color = if (i < lit) theme.accent else Color.argb(70, 170, 190, 210)
+            canvas.drawPath(bar, fill)
+        }
+        studioText(canvas, snapshot?.rangeKm?.let { "${it.roundToInt()} km" } ?: "— km", .975f * w, .958f * h,
+            .036f * h, weight = 500, align = Paint.Align.RIGHT)
+
+        if (showMusic) studioMusic(canvas, RectF(.025f * w, .915f * h, .33f * w, .99f * h), false)
+    }
+
+    private fun drawBavarianBase(canvas: Canvas, w: Float, h: Float) {
         val s = h / 720f
-        val base = theme.surface
-        fun ink(alpha: Int) = Color.argb(alpha, Color.red(base), Color.green(base), Color.blue(base))
-        fun glow(color: Int, alpha: Int) = Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+        val ink = theme.surface
         // Shade the map's edges so the instruments read; the middle stays clear. This also covers
         // the small "Google Maps" label and recentre button Android Auto prints on the right.
         fill.color = Color.BLACK
         for (right in listOf(false, true)) {
             val a = if (right) w else 0f
-            val b = if (right) .64f * w else .36f * w
-            fill.shader = LinearGradient(a, 0f, b, 0f, intArrayOf(ink(250), ink(238), ink(0)),
+            val b = if (right) .63f * w else .37f * w
+            fill.shader = LinearGradient(a, 0f, b, 0f, intArrayOf(alpha(ink, 245), alpha(ink, 225), alpha(ink, 0)),
                 floatArrayOf(0f, .5f, 1f), Shader.TileMode.CLAMP)
             canvas.drawRect(minOf(a, b), 0f, maxOf(a, b), h, fill)
         }
-        fill.shader = LinearGradient(0f, 0f, 0f, .17f * h, intArrayOf(ink(220), ink(0)), null, Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, 0f, w, .17f * h, fill)
-        fill.shader = LinearGradient(0f, .78f * h, 0f, h, intArrayOf(ink(0), ink(240)), null, Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, .78f * h, w, h, fill)
+        fill.shader = LinearGradient(0f, 0f, 0f, .14f * h, intArrayOf(alpha(ink, 210), alpha(ink, 0)), null, Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, 0f, w, .14f * h, fill)
+        fill.shader = LinearGradient(0f, .84f * h, 0f, h, intArrayOf(alpha(ink, 0), alpha(ink, 235)), null, Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, .84f * h, w, h, fill)
         fill.shader = null
-
-        // Both instruments are chevrons pointing outwards: x grows with the distance from [tip].
-        val top = .12f
-        val tip = .41f
-        val bottom = .73f
-        fun chevron(y: Float, tipX: Float, slope: Float) = tipX + slope * kotlin.math.abs(y - tip)
-        // Parallel chevrons: the rail outside, the scale figures inside, the lit band between.
-        fun bevel(y: Float) = chevron(y, .026f, .36f)
-        fun scale(y: Float) = chevron(y, .118f, .36f)
-        // The well's far side points the other way, so each well is a long hexagon.
-        fun wellEnd(y: Float) = .345f - .25f * kotlin.math.abs(y - tip)
-        fun px(right: Boolean, x: Float) = (if (right) 1f - x else x) * w
-        fun yAt(t: Float) = bottom - (bottom - top) * t
-        fun chevronPath(right: Boolean, x: (Float) -> Float, from: Float = top, to: Float = bottom) = Path().apply {
-            moveTo(px(right, x(from)), from * h); lineTo(px(right, x(tip)), tip * h); lineTo(px(right, x(to)), to * h)
-        }
-        val speedMarks = floatArrayOf(0f, 30f, 60f, 100f, 150f, 200f, 260f)
-        fun speedT(v: Float): Float {
-            val c = v.coerceIn(0f, 260f)
-            for (i in 1 until speedMarks.size) if (c <= speedMarks[i])
-                return (i - 1 + (c - speedMarks[i - 1]) / (speedMarks[i] - speedMarks[i - 1])) / (speedMarks.size - 1)
-            return 1f
-        }
-        val full = 60f
-        fun kwT(kw: Float) = (kw.coerceIn(-full, full) + full) / (2f * full)
         val oldJoin = line.strokeJoin
         line.strokeJoin = Paint.Join.MITER
 
         for (right in listOf(false, true)) {
-            // Dark well holding the reading; its point follows the scale.
+            // Dark well holding the reading.
             val well = Path().apply {
-                moveTo(px(right, scale(top) + .03f), top * h)
-                lineTo(px(right, scale(tip) + .022f), tip * h)
-                lineTo(px(right, scale(bottom) + .03f), bottom * h)
-                lineTo(px(right, wellEnd(bottom)), bottom * h)
-                lineTo(px(right, wellEnd(tip)), tip * h)
-                lineTo(px(right, wellEnd(top)), top * h)
+                moveTo(bavX(right, bavScale(bavTop) + .03f, w), bavTop * h)
+                lineTo(bavX(right, bavScale(bavTip) + .022f, w), bavTip * h)
+                lineTo(bavX(right, bavScale(bavBottom) + .03f, w), bavBottom * h)
+                lineTo(bavX(right, bavWellEnd(bavBottom), w), bavBottom * h)
+                lineTo(bavX(right, bavWellEnd(bavTip), w), bavTip * h)
+                lineTo(bavX(right, bavWellEnd(bavTop), w), bavTop * h)
                 close()
             }
-            fill.shader = LinearGradient(px(right, .14f), 0f, px(right, .345f), 0f,
-                intArrayOf(Color.argb(235, 3, 7, 13), Color.argb(170, 3, 7, 13), Color.argb(0, 3, 7, 13)),
+            fill.shader = LinearGradient(bavX(right, .13f, w), 0f, bavX(right, .35f, w), 0f,
+                intArrayOf(Color.argb(235, 3, 7, 13), Color.argb(175, 3, 7, 13), Color.argb(20, 3, 7, 13)),
                 floatArrayOf(0f, .6f, 1f), Shader.TileMode.CLAMP)
             canvas.drawPath(well, fill); fill.shader = null
             line.shader = null; line.color = Color.argb(120, 165, 200, 235); line.strokeWidth = 1.5f * s
-            canvas.drawPath(chevronPath(right, { scale(it) + if (it == tip) .022f else .03f }), line)
+            canvas.drawPath(bavPath(right, w, h, bavTop, bavBottom) { bavScale(it) + if (it == bavTip) .022f else .03f }, line)
             line.color = Color.argb(45, 165, 200, 235)
-            canvas.drawPath(chevronPath(right, ::wellEnd), line)
-
-            // Lit band from the scale's zero to the reading, brightest at the reading.
-            val reading = if (right) kwNow() else snapshot?.speedKph
-            val from = if (right) kwT(0f) else 0f
-            val to = reading?.let { if (right) kwT(it) else speedT(it) } ?: from
-            val lo = minOf(from, to)
-            val hi = maxOf(from, to)
-            val colour = if (right) kwColor(reading) else theme.accent
-            val blocks = 48
-            for (i in 0 until blocks) {
-                val t0 = maxOf(i / blocks.toFloat(), lo)
-                val t1 = minOf((i + .78f) / blocks, hi)
-                if (t1 <= t0) continue
-                val progress = if (hi > lo) (((t0 + t1) / 2f - lo) / (hi - lo)).let { if (to < from) 1f - it else it } else 1f
-                val ya = yAt(t0)
-                val yb = yAt(t1)
-                val block = Path().apply {
-                    moveTo(px(right, bevel(ya) + .03f), ya * h); lineTo(px(right, scale(ya) - .014f), ya * h)
-                    lineTo(px(right, scale(yb) - .014f), yb * h); lineTo(px(right, bevel(yb) + .03f), yb * h); close()
-                }
-                fill.color = glow(colour, (80 + 175 * progress).roundToInt())
-                canvas.drawPath(block, fill)
-            }
+            canvas.drawPath(bavPath(right, w, h, bavTop, bavBottom, ::bavWellEnd), line)
 
             // Ticks and figures along the scale.
             val align = if (right) Paint.Align.RIGHT else Paint.Align.LEFT
             for (i in 0..24) {
                 val t = i / 24f
-                val y = yAt(t)
+                val y = bavY(t)
                 val major = if (right) i % 6 == 0 else i % 4 == 0
                 line.color = if (major) Color.argb(235, 226, 236, 246) else Color.argb(110, 200, 215, 232)
                 line.strokeWidth = (if (major) 2.2f else 1.2f) * s
-                val x1 = scale(y) - .012f
+                val x1 = bavScale(y) - .012f
                 val x0 = x1 - if (major) .026f else .013f
-                canvas.drawLine(px(right, x0), y * h, px(right, x1), y * h, line)
+                canvas.drawLine(bavX(right, x0, w), y * h, bavX(right, x1, w), y * h, line)
                 if (major) {
-                    val label = if (right) (-full + 2f * full * t).roundToInt().let { if (it < 0) "−${-it}" else "$it" }
-                        else speedMarks[i / 4].roundToInt().toString()
-                    studioText(canvas, label, px(right, scale(y) + .004f), y * h + .011f * h, .031f * h,
+                    val label = if (right) (-bavKwFull + 2f * bavKwFull * t).roundToInt().let { if (it < 0) "−${-it}" else "$it" }
+                        else bavSpeedMarks[i / 4].roundToInt().toString()
+                    studioText(canvas, label, bavX(right, bavScale(y) + .004f, w), y * h + .012f * h, .033f * h,
                         theme.secondary, 500, align = align)
                 }
             }
 
-            // Brushed-metal rail on the outside, with a fine highlight and an accent edge.
-            line.color = Color.BLACK; line.strokeWidth = 15f * s
-            line.shader = LinearGradient(0f, top * h, 0f, bottom * h,
+            // Brushed-metal rail outside, with a fine highlight and an accent edge.
+            line.color = Color.BLACK; line.strokeWidth = 16f * s
+            line.shader = LinearGradient(0f, bavTop * h, 0f, bavBottom * h,
                 intArrayOf(Color.rgb(64, 78, 94), Color.rgb(226, 233, 241), Color.rgb(118, 133, 150), Color.rgb(56, 68, 82)),
                 floatArrayOf(0f, .45f, .62f, 1f), Shader.TileMode.CLAMP)
-            canvas.drawPath(chevronPath(right, ::bevel, top - .012f, bottom + .012f), line)
+            canvas.drawPath(bavPath(right, w, h, bavTop - .01f, bavBottom + .01f, ::bavRail), line)
             line.shader = null
             line.color = Color.argb(210, 242, 246, 250); line.strokeWidth = 1.6f * s
-            canvas.drawPath(chevronPath(right, { bevel(it) + .009f }, top, bottom), line)
-            line.color = glow(theme.accent, 150); line.strokeWidth = 2.4f * s
-            canvas.drawPath(chevronPath(right, { bevel(it) - .011f }, top + .03f, bottom - .02f), line)
-            // Base line under the instrument, fading towards the map.
-            line.shader = LinearGradient(px(right, bevel(bottom)), 0f, px(right, .34f), 0f,
-                glow(theme.accent, 170), glow(theme.accent, 0), Shader.TileMode.CLAMP)
-            line.color = Color.BLACK; line.strokeWidth = 2f * s
-            canvas.drawLine(px(right, bevel(bottom) + .01f), (bottom + .03f) * h, px(right, .34f), (bottom + .03f) * h, line)
-            line.shader = null
+            canvas.drawPath(bavPath(right, w, h, bavTop, bavBottom) { bavRail(it) + .008f }, line)
+            line.color = alpha(theme.accent, 150); line.strokeWidth = 2.4f * s
+            canvas.drawPath(bavPath(right, w, h, bavTop + .03f, bavBottom - .03f) { bavRail(it) - .011f }, line)
         }
         line.strokeJoin = oldJoin
 
-        // Readings in the wells.
-        studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .238f * w, .5f * h, .18f * h,
-            weight = 500, align = Paint.Align.CENTER)
-        studioText(canvas, "km/h", .238f * w, .575f * h, .036f * h, theme.secondary, 400, align = Paint.Align.CENTER)
-        val kw = kwNow()?.roundToInt()
-        studioText(canvas, kw?.let { if (it < 0) "−${-it}" else "$it" } ?: "—", .762f * w, .5f * h, .18f * h,
-            weight = 500, width = .17f * w, align = Paint.Align.CENTER)
-        studioText(canvas, "kW", .762f * w, .575f * h, .036f * h, theme.secondary, 400, align = Paint.Align.CENTER)
-
-        // Notch around the car's own gear letter; temperature and time in the top corners.
+        // Notch around the car's own gear letter.
         val g = GEAR_X * w
         val notch = Path().apply {
             moveTo(g - .09f * w, 0f); lineTo(g - .06f * w, .112f * h); lineTo(g + .06f * w, .112f * h); lineTo(g + .09f * w, 0f)
         }
-        fill.color = ink(235); canvas.drawPath(Path(notch).apply { close() }, fill)
+        fill.color = alpha(ink, 235); canvas.drawPath(Path(notch).apply { close() }, fill)
         line.color = Color.argb(150, 190, 210, 230); line.strokeWidth = 1.5f * s; canvas.drawPath(notch, line)
-        line.color = glow(theme.accent, 200); line.strokeWidth = 2.5f * s
+        line.color = alpha(theme.accent, 200); line.strokeWidth = 2.5f * s
         canvas.drawLine(g - .02f * w, .112f * h, g + .02f * w, .112f * h, line)
-        snapshot?.outsideTempC?.let {
-            studioText(canvas, "${it.roundToInt()}°C", .03f * w, .09f * h, .036f * h, weight = 500)
-        }
-        studioText(canvas, SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()), .97f * w, .09f * h, .036f * h,
-            weight = 500, align = Paint.Align.RIGHT)
 
-        // Fine lines either side of the car's READY, which sits in the middle of the bottom line.
+        // Fine lines either side of the car's READY on the bottom line.
         for (side in listOf(-1f, 1f)) {
             val a = .5f * w + side * .085f * w
-            val b = .5f * w + side * .185f * w
-            line.shader = LinearGradient(a, 0f, b, 0f, glow(theme.accent, 200), glow(theme.accent, 0), Shader.TileMode.CLAMP)
+            val b = .5f * w + side * .2f * w
+            line.shader = LinearGradient(a, 0f, b, 0f, alpha(theme.accent, 200), alpha(theme.accent, 0), Shader.TileMode.CLAMP)
             line.color = Color.BLACK; line.strokeWidth = 2f * s
             canvas.drawLine(a, .9f * h, b, .9f * h, line)
             line.shader = null
         }
-
-        // Fuel as a slanted segment bar and the range, right of the car's drive mode.
-        val fuel = snapshot?.fuelPercent
-        val segments = 8
-        val lit = fuel?.let { (it / 100f * segments).roundToInt().coerceIn(0, segments) } ?: 0
-        val barLeft = .815f * w
-        val step = .0105f * w
-        for (i in 0 until segments) {
-            val x = barLeft + i * step
-            val bar = Path().apply {
-                moveTo(x + .003f * w, .918f * h); lineTo(x + step - .0015f * w, .918f * h)
-                lineTo(x + step - .0045f * w, .944f * h); lineTo(x, .944f * h); close()
-            }
-            fill.color = if (i < lit) theme.accent else Color.argb(70, 170, 190, 210)
-            canvas.drawPath(bar, fill)
-        }
-        studioText(canvas, snapshot?.rangeKm?.let { "${it.roundToInt()} km" } ?: "— km", .975f * w, .946f * h,
-            .036f * h, weight = 500, align = Paint.Align.RIGHT)
-
-        if (showMusic) studioMusic(canvas, RectF(.74f * w, .785f * h, .97f * w, .87f * h), false)
     }
 
 
@@ -1922,6 +1932,9 @@ internal class ThemedClusterView(
      * car's own navigation card, or top centre of the map for a theme with its own map window.
      */
     private fun directionsBox(w: Float, h: Float, withJourney: Boolean): RectF {
+        // Isar Drive: a little lower, clear of the gear notch.
+        if (theme.layout == ClusterTheme.Layout.BAVARIAN)
+            return RectF(.37f * w, .14f * h, .63f * w, (if (withJourney) .43f else .35f) * h)
         val (from, to) = theme.mapWindow ?: (0f to 1f)
         val centre = (from + to) / 2f * w
         val half = .135f * w
