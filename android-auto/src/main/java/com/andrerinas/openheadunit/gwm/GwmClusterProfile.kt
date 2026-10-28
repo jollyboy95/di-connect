@@ -26,8 +26,31 @@ internal object GwmClusterProfile {
     /** Marker steps reuse DiAuto's dashboard settings; this many percent per step. */
     private const val STEP = 5
 
+    /**
+     * The map window declared to the phone for this connection. The map view follows it until the
+     * next connection, so a theme change mid-session never puts a full map in a half window.
+     */
+    @Volatile var declaredWindow: com.andrerinas.openheadunit.DiConnectViews.MapWindow =
+        com.andrerinas.openheadunit.DiConnectViews.MapWindow.FULL
+        private set
+
+    @Volatile var declaredExperiment = GwmMapExperiments.Mode.CURRENT
+        private set
+
     /** The profile declared to the phone this connection, for the selected cluster display. */
     fun forSession(context: Context): ClusterMapConfig.Profile {
+        declaredExperiment = GwmMapExperiments.mode(context)
+        val window = runCatching { com.andrerinas.openheadunit.DiConnectViews.clusterMapWindow?.invoke(context) }
+            .getOrNull()?.takeIf { it.width in 0.2f..1f && it.left >= 0f && it.right <= 1f }
+            ?: com.andrerinas.openheadunit.DiConnectViews.MapWindow.FULL
+        val changed = window != declaredWindow
+        declaredWindow = window
+        // The cluster window can already be up (it is after a restart, before the phone asks for
+        // the services): rebuild it so the map view takes the new window and crop.
+        if (changed) {
+            val app = context.applicationContext
+            android.os.Handler(android.os.Looper.getMainLooper()).post { GwmOutputs.refresh(app) }
+        }
         val id = GwmSettings(context).clusterDisplayId
         val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
             (context.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager)?.getDisplay(id) else null
@@ -46,15 +69,21 @@ internal object GwmClusterProfile {
             w = size.x
             h = size.y
         }
-        return profile(w, h, ClusterMapConfig.Detail.of(settings.clusterMapDetail), 0, 0)
+        // A split theme's map is drawn for its window, not the whole panel.
+        val window = declaredWindow
+        if (!window.full) {
+            if (w <= 0 || h <= 0) { w = ClusterMapConfig.PANEL_WIDTH; h = ClusterMapConfig.PANEL_HEIGHT }
+            w = (w * window.width).toInt()
+        }
+        return profile(w, h, ClusterMapConfig.Detail.of(settings.clusterMapDetail), 0, 0, declaredExperiment)
     }
 
     /**
      * @param panelWidth size of the selected cluster display, or 0 when it is not present yet
      * (then the H7's 8:3 panel is assumed).
      */
-    fun profile(panelWidth: Int, panelHeight: Int, detail: ClusterMapConfig.Detail, markerX: Int, markerY: Int): ClusterMapConfig.Profile {
-        val size = ClusterMapConfig.Size.NORMAL
+    fun profile(panelWidth: Int, panelHeight: Int, detail: ClusterMapConfig.Detail, markerX: Int, markerY: Int, experiment: GwmMapExperiments.Mode = GwmMapExperiments.Mode.CURRENT): ClusterMapConfig.Profile {
+        val size = if (experiment == GwmMapExperiments.Mode.STOCK_STREAM) ClusterMapConfig.Size.LARGE else ClusterMapConfig.Size.NORMAL
         val pw = if (panelWidth > 0 && panelHeight > 0) panelWidth else ClusterMapConfig.PANEL_WIDTH
         val ph = if (panelWidth > 0 && panelHeight > 0) panelHeight else ClusterMapConfig.PANEL_HEIGHT
         // Keep the panel's shape inside the 16:9 codec frame; anything taller than 16:9 is
@@ -73,8 +102,9 @@ internal object GwmClusterProfile {
             heightMargin = size.codecHeight - contentHeight,
             contentWidth = contentWidth,
             contentHeight = contentHeight,
-            density = detail.dpi,
-            contentInsets = insets(contentWidth, contentHeight, markerX, markerY),
+            density = if (experiment == GwmMapExperiments.Mode.STOCK_STREAM || experiment == GwmMapExperiments.Mode.STOCK_DPI) 160 else detail.dpi,
+            contentInsets = GwmMapExperiments.insets(experiment, contentWidth, contentHeight,
+                insets(contentWidth, contentHeight, markerX, markerY)),
         )
     }
 

@@ -467,7 +467,7 @@ class CarPlayHostActivity : ComponentActivity() {
     // Aston-style GWM layer over the live map: turn card with ETA strip, and the vehicle strip.
     // GWM head-up display strip (turn arrow, distance, road, arrival) on its own display.
     private var gwmHudOverlay: GwmHudOverlay? = null
-    private var gwmHud: GwmClusterHudView? = null
+    private var gwmHud: ClusterThemeFrame? = null
     private val gwmVehicleListener: (GwmVehicleData.Snapshot?) -> Unit = { snapshot ->
         gwmHud?.let { hud -> hud.post { hud.setSnapshot(snapshot) } }
     }
@@ -1420,7 +1420,7 @@ class CarPlayHostActivity : ComponentActivity() {
             .also { gwmProjectionOverlay = it }
         val styled = AirPlayPersistence.loadGwmClusterStyle(this)
         val decor = if (!styled) null else GwmLiveProjectionOverlay.DecorFactory { displayContext ->
-            GwmClusterHudView(displayContext).also { hud ->
+            ClusterThemeFrame(displayContext, ClusterConnection.CARPLAY).also { hud ->
                 hud.setGuidance(clusterTurnGuidance)
                 gwmHud = hud
             }

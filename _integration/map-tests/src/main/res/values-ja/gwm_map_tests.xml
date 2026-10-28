@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aa_gwm_map_tests_title">Map layout tests (experimental)</string>
+    <string name="aa_gwm_map_tests_note">Android Auto only. Test while parked, using the same theme and route. These options ask the phone to lay out its map differently; they do not remove Google’s card or change the car’s own indicators. Baseline restores the existing map configuration.</string>
+    <string name="aa_gwm_map_tests_reconnect">Saved for the next Android Auto connection. Return home and tap Restart, or disconnect and reconnect. The current session keeps its negotiated map.</string>
+    <string name="aa_gwm_nav_images_test">Arrow image capability (experimental)</string>
+    <string name="aa_gwm_nav_images_test_note">Advertise support for 128 × 128 arrow images instead of codes only. This tests which guidance messages the phone sends; it does not promise timing data. Applies after reconnecting Android Auto. Leave off for the map tests first.</string>
+    <string name="aa_gwm_nav_evidence">Record navigation test evidence</string>
+    <string name="aa_gwm_nav_evidence_note">Includes message types, field presence and received timing values in diagnostic logs. Does not add road names, destination text, coordinates or image contents to these test logs. Save a diagnostic report after each test.</string>
+    <string name="aa_gwm_map_tests_active">Last negotiated map test: %1$s</string>
+    <string-array name="aa_gwm_map_test_modes">
+        <item>Baseline — current layout</item>
+        <item>Stock reserved areas — current stream and DPI</item>
+        <item>Stock areas — 160 DPI, current stream</item>
+        <item>Stock areas — 1280 stream and 160 DPI</item>
+        <item>Minimal reserved areas — 3% each edge</item>
+        <item>Phone default — omit content insets</item>
+    </string-array>
+    <string name="aa_gwm_nav_protocol_test">案内プロトコルのテスト（実験的機能）</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect が要求する Android Auto のプロトコルバージョン。1.6 以上ではスマートフォンが到着時刻を含む詳しい案内を送る場合があり、4.3 では表示フラグも読み取れます。スマートフォンの他の動作も変わることがあります。適用するにはヘッドユニットを再起動してください。再起動しないとスマートフォンが車の Wi-Fi に接続できない場合があります。基準に戻すと現在のバージョンに戻ります。</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>基準 — プロトコル 1.2</item>
+        <item>詳しい案内 — プロトコル 1.6</item>
+        <item>詳しい案内と表示フラグ — プロトコル 4.3</item>
+        <item>最新の電話バージョン、音声と映像が変わる場合あり — プロトコル 6.2</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">曲がり角カードは車が表示するとスマートフォンに伝える（実験的機能）</string>
+    <string name="aa_gwm_nav_turn_card_note">プロトコル 4.3 が必要です。メーターに Android Auto 独自の曲がり角カードを描かないよう求めます。Google マップが従うとは限らないため、テーマ画面で Di-Connect の案内をオンにしてください。再接続後に適用されます。</string>
+    <string name="aa_gwm_nav_cluster_ready_test">メーター準備完了の信号（実験的機能）</string>
+    <string name="aa_gwm_nav_cluster_ready_note">ナビゲーションチャネルが開いたときに、メーター利用可能メッセージ (0x8001) を送ります。未検証です。再接続後に適用されます。</string>
+    <string name="aa_gwm_nav_protocol_active">前回の接続: 要求 %1$s、スマートフォンの応答 %2$s</string>
+</resources>

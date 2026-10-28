@@ -666,6 +666,15 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 append(GwmVehicleData.describe(this@DiPlayActivity))
             }.trim()
             render()
+            val app = applicationContext
+            Thread({
+                val probe = HotspotBandProbe.run(app)
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    gwmScanResult = listOfNotNull(gwmScanResult, probe).joinToString("\n\n")
+                    render()
+                }
+            }, "hotspot-band-probe").start()
         }, matchButton(10, 56))
         gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true) }) }
 
@@ -974,6 +983,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             when (page) {
                 "connection" -> connectionSetup(content)
                 "setup" -> setupGuide(content)
+                "themes" -> themes(content)
                 "settings" -> settingsCategoryContent(content)
                 "backup" -> backup(content)
                 else -> home(content)
@@ -1326,6 +1336,14 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 setOnClickListener { openAvailableUpdate(release) }
             }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
         }
+        right.addView(row().apply {
+            gravity = Gravity.END
+            addView(homeButton(getString(R.string.di_connect_themes), false) { page = "themes"; render() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 46 else 52), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(homeButton(getString(R.string.di_connect_restart), false) { confirmRestart() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 46 else 52), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
         if (compact && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             val compactRight = column().apply {
                 addView(space(8))
@@ -3061,6 +3079,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 val actual = UpdateChecksums.sha256Hex(apkFile)
                 if (!UpdateChecksums.matches(expected, release.apkName, actual)) {
                     throw IOException("Checksum mismatch for ${release.apkName}")
+                }
+                // Same app, same signing key: anything else is refused before the installer opens.
+                if (!com.shilapi.xcertplay.update.UpdateSignature.matchesInstalled(applicationContext, apkFile)) {
+                    throw IOException(getString(R.string.di_connect_update_wrong_signer))
                 }
                 apkFile
             }.onFailure { directory.deleteRecursively() }
@@ -6038,6 +6060,205 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         parent.addView(space(12))
     }
 
+    private fun confirmRestart() {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.di_connect_restart_title))
+            .setMessage(getString(R.string.di_connect_restart_message))
+            .setPositiveButton(getString(R.string.di_connect_restart)) { _, _ -> DiConnectRestart.restart(this) }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    private var themesTab = 0
+    /** The category the gallery shows; null until the driver picks one (then the theme in use decides). */
+    private var themesCategory: ThemeCategory? = null
+
+    /** A theme file the driver picked: read it (small files only) and add its themes. */
+    private val themeFilePicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        Thread {
+            val result = runCatching {
+                val text = contentResolver.openInputStream(uri)?.use { input ->
+                    val bytes = input.readBytes()
+                    require(bytes.size <= 1_000_000) { "Too large" }
+                    String(bytes, Charsets.UTF_8)
+                } ?: throw IllegalArgumentException("Unreadable")
+                ThemePacks.install(applicationContext, text)
+            }
+            runOnUiThread { themesInstalled(result, R.string.di_connect_themes_import_failed) }
+        }.start()
+    }
+
+    /** Downloads the shared theme catalogue from the releases repo and adds what is new. */
+    private fun downloadThemes() {
+        android.widget.Toast.makeText(this, getString(R.string.di_connect_themes_getting), android.widget.Toast.LENGTH_SHORT).show()
+        Thread {
+            val result = runCatching {
+                val text = com.shilapi.xcertplay.update.UpdateClient.fetchText(ThemePacks.CATALOGUE_URL, "application/json", "Di-Connect")
+                ThemePacks.install(applicationContext, text)
+            }
+            runOnUiThread { themesInstalled(result, R.string.di_connect_themes_download_failed) }
+        }.start()
+    }
+
+    private fun themesInstalled(result: Result<ThemePacks.Result>, failure: Int) {
+        if (isFinishing || isDestroyed) return
+        val message = result.fold(
+            onSuccess = { counts ->
+                if (counts.added + counts.updated == 0) getString(R.string.di_connect_themes_up_to_date)
+                else getString(R.string.di_connect_themes_added, counts.added + counts.updated)
+            },
+            onFailure = { getString(failure) })
+        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
+        if (page == "themes") render()
+    }
+
+    /** Co-Pilot photo: copied small into the app, so the original stays in the driver's gallery. */
+    private val coPilotPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        if (ClusterThemeStore.saveCoPilot(this, uri)) {
+            ClusterThemes.all.filter { it.speed == ClusterTheme.Speed.DOG_TAG }.forEach { ClusterThemePreview.forget(it.id) }
+            render()
+        }
+        else android.widget.Toast.makeText(this, getString(R.string.di_connect_theme_photo_failed), android.widget.Toast.LENGTH_LONG).show()
+    }
+
+    /**
+     * The theme engine's screen: Android Auto and CarPlay tabs over one gallery grouped by
+     * category. Each preview is drawn by the real renderer. A choice applies to the cluster at once.
+     */
+    private fun themes(content: LinearLayout) {
+        val compact = isCompactLayout
+        val same = ClusterThemeStore.sameForBoth(this)
+        val connection = if (themesTab == 0) ClusterConnection.ANDROID_AUTO else ClusterConnection.CARPLAY
+        content.addView(label(getString(R.string.di_connect_themes), if (compact) 24 else 32, TEXT, true))
+        content.addView(label(getString(R.string.di_connect_themes_subtitle), 16, MUTED).apply {
+            setPadding(0, dp(6), 0, dp(SETTINGS_BLOCK_GAP_DP))
+        })
+        content.addView(row().apply {
+            listOf(R.string.di_connect_android_auto, R.string.di_connect_carplay).forEachIndexed { index, title ->
+                if (index > 0) addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                addView(button(getString(title), themesTab == index) { themesTab = index; render() },
+                    LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            }
+        })
+        content.addView(button("${getString(R.string.di_connect_themes_same)} · " +
+            getString(if (same) R.string.di_connect_on else R.string.di_connect_off), false) {
+            ClusterThemeStore.setSameForBoth(this, !same)
+            render()
+        }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        val hudFollows = ClusterThemeStore.hudFollowsTheme(this)
+        content.addView(button("${getString(R.string.di_connect_theme_hud)} · " +
+            getString(if (hudFollows) R.string.di_connect_on else R.string.di_connect_off), false) {
+            ClusterThemeStore.setHudFollowsTheme(this, !hudFollows)
+            render()
+        }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        val directions = ClusterThemeStore.directionsCard(this)
+        content.addView(row().apply {
+            addView(button("${getString(R.string.di_connect_theme_directions)} · " +
+                getString(if (directions) R.string.di_connect_on else R.string.di_connect_off), false) {
+                ClusterThemeStore.setDirectionsCard(this@DiPlayActivity, !directions)
+                render()
+            }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(button(getString(R.string.di_connect_theme_directions_preview), false) {
+                NavDemo.start()
+                android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_directions_preview_running),
+                    android.widget.Toast.LENGTH_LONG).show()
+            }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+        content.addView(row().apply {
+            addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(button(getString(R.string.di_connect_themes_import), false) { themeFilePicker.launch("*/*") },
+                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+        val selected = ClusterThemeStore.selected(this, connection)
+        // Two across at most: three made each preview too small to tell the themes apart.
+        val columns = if (compact) 1 else 2
+        // One category at a time, picked from a row of buttons, so the gallery is not one long scroll.
+        val categories = ThemeCategory.entries.filter { c -> ClusterThemes.availableFor(connection).any { it.category == c } }
+        val shown = themesCategory?.takeIf { it in categories } ?: selected.category.takeIf { it in categories } ?: categories.firstOrNull()
+        content.addView(android.widget.HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(row().apply {
+                categories.forEachIndexed { index, category ->
+                    if (index > 0) addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                    addView(button(getString(themeCategoryName(category)), category == shown) { themesCategory = category; render() },
+                        LinearLayout.LayoutParams(-2, dp(if (compact) 44 else 52)))
+                }
+            })
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+        ThemeCategory.entries.forEach { category ->
+            if (category != shown) return@forEach
+            val themes = ClusterThemes.availableFor(connection).filter { it.category == category }
+            if (themes.isEmpty()) return@forEach
+            content.addView(label(getString(themeCategoryName(category)), 18, TEXT, true).apply {
+                setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
+            })
+            themes.chunked(columns).forEach { group ->
+                val line = row()
+                for (index in 0 until columns) {
+                    if (index > 0) line.addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                    val theme = group.getOrNull(index)
+                    line.addView(if (theme == null) View(this) else themeCard(theme, connection, theme.id == selected.id),
+                        LinearLayout.LayoutParams(0, -2, 1f))
+                }
+                content.addView(line, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+            }
+        }
+        content.addView(label(getString(R.string.di_connect_themes_more), 15, MUTED).apply {
+            setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
+        })
+    }
+
+    private fun themeCategoryName(category: ThemeCategory) = when (category) {
+        ThemeCategory.EVERYDAY -> R.string.di_connect_theme_category_everyday
+        ThemeCategory.TECH -> R.string.di_connect_theme_category_tech
+        ThemeCategory.LUXURY -> R.string.di_connect_theme_category_luxury
+        ThemeCategory.SPORT -> R.string.di_connect_theme_category_sport
+        ThemeCategory.NIGHT -> R.string.di_connect_theme_category_night
+        ThemeCategory.PETS -> R.string.di_connect_theme_category_pets
+    }
+
+    private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean): View {
+        val card = column().apply {
+            background = rounded(SURFACE, if (selected) ACCENT else BORDER)
+            setPadding(dp(10), dp(10), dp(10), dp(12))
+            isClickable = true
+            isFocusable = true
+            contentDescription = theme.name
+            setOnClickListener {
+                val before = ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow
+                ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
+                // Android Auto's map is sized when it connects: a split theme needs a reconnect.
+                if (ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow != before)
+                    android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_split_reconnect), android.widget.Toast.LENGTH_LONG).show()
+                render()
+            }
+        }
+        card.addView(ImageView(this).apply {
+            setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection))
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(-1, -2))
+        card.addView(row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(label(theme.name, 17, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
+            if (selected) addView(label(getString(R.string.di_connect_theme_in_use), 14, ACCENT, true))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.
+        if (theme.speed == ClusterTheme.Speed.DOG_TAG) {
+            card.addView(button(getString(R.string.di_connect_theme_choose_photo), true) {
+                ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
+                coPilotPicker.launch("image/*")
+            }, LinearLayout.LayoutParams(-1, dp(if (isCompactLayout) 48 else 56)).apply { topMargin = dp(8) })
+        }
+        return card
+    }
+
     private fun connect(wireless: Boolean) {
         if (com.andrerinas.openheadunit.DiConnectEngine.needsStop()) {
             com.andrerinas.openheadunit.DiConnectEngine.stopThen {
@@ -6289,6 +6510,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     /** The text of a diagnostic report. It reads the session logs, so call it off the main thread. */
     private fun diagnosticReportText(appContext: Context): String = buildString {
         appendLine("DiPlay ${version()} · private beta diagnostic report")
+        appendLine("--- Android Auto and GWM HUD ---")
+        appendLine(runCatching {
+            com.andrerinas.openheadunit.utils.DiagnosticReport.build(appContext)
+        }.getOrElse { "Android Auto diagnostics unavailable: ${it.javaClass.simpleName}" })
+        appendLine("--- CarPlay diagnostics ---")
         appendLine("Android ${Build.VERSION.RELEASE} / API ${Build.VERSION.SDK_INT}")
         appendLine("Head unit: ${Build.MANUFACTURER} ${Build.MODEL}")
         appendLine("Connection: ${if (AirPlayPersistence.loadWirelessEnabled(appContext)) "wireless" else "USB"}")
@@ -6357,6 +6583,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             "writeSettings=${CarHotspotTethering.permitted(appContext)} " +
             "bydHeadUnit=${runCatching { CarHotspotSetup.isBydHeadUnit(appContext) }.getOrNull()} " +
             "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")
+        appendLine(HotspotBandProbe.report())
         appendLine(WheelKeyService.report(appContext))
         WheelKeyLog.report(WheelKeyService.connected()).forEach { appendLine(it) }
         appendLine()

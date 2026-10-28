@@ -17,7 +17,13 @@ import com.shilapi.xcertplay.media.CarPlayNowPlaying
 internal object DiConnectPlayViews {
     fun install(app: Context) {
         DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }
+        DiConnectViews.clusterDirectionsWanted = { NavDemo.active || ClusterThemeStore.directionsCard(app) }
+        DiConnectViews.clusterMapWindow = { context ->
+            ClusterThemeStore.selected(context, ClusterConnection.ANDROID_AUTO).mapWindow
+                ?.let { DiConnectViews.MapWindow(it.first, it.second) } ?: DiConnectViews.MapWindow.FULL
+        }
         DiConnectViews.hud = { displayContext, anchor -> HudLayer(displayContext, anchor) }
+        DiConnectViews.hudTestLabel = { it.getString(com.shilapi.xcertplay.host.R.string.settings_gwm_hud_test) }
     }
 
     fun guidance(next: DiConnectViews.Guidance?): ClusterTurnGuidance? = next?.takeIf { it.icon != 0 }?.let {
@@ -34,7 +40,7 @@ internal object DiConnectPlayViews {
     }
 
     private class ClusterLayer(displayContext: Context, private val app: Context) : DiConnectViews.Layer {
-        private val hud = GwmClusterHudView(displayContext)
+        private val hud = ClusterThemeFrame(displayContext, ClusterConnection.ANDROID_AUTO)
         private val vehicle: (GwmVehicleData.Snapshot?) -> Unit = { snapshot -> hud.post { hud.setSnapshot(snapshot) } }
         private val stopMusic = DiConnectViews.observeMusic { music ->
             ClusterMusicState.publish(CarPlayNowPlaying(
@@ -46,7 +52,12 @@ internal object DiConnectPlayViews {
 
         init { GwmVehicleData.addListener(app, vehicle) }
 
-        override fun setGuidance(guidance: DiConnectViews.Guidance?) = hud.setGuidance(guidance(guidance))
+        override fun setGuidance(guidance: DiConnectViews.Guidance?) {
+            // The parked preview replaces real guidance while it runs.
+            val demo = NavDemo.current()
+            hud.setTurnImage(if (demo == null) guidance?.turnImage else null)
+            hud.setGuidance(demo ?: guidance(guidance))
+        }
 
         override fun release() {
             GwmVehicleData.removeListener(vehicle)
@@ -56,11 +67,18 @@ internal object DiConnectPlayViews {
     }
 
     private class HudLayer(displayContext: Context, anchor: Int) : DiConnectViews.Layer {
-        private val hud = GwmHeadUpView(displayContext).apply {
-            setAnchor(GwmHeadUpView.Anchor.entries.getOrElse(anchor) { GwmHeadUpView.Anchor.CENTRE })
+        private val hud = GwmAndroidAutoHeadUpView(displayContext).apply {
+            setBackgroundColor(android.graphics.Color.BLACK)
+            setAnchor(GwmAndroidAutoHeadUpView.Anchor.entries.getOrElse(anchor) { GwmAndroidAutoHeadUpView.Anchor.LEFT })
         }
         override val view: View get() = hud
-        override fun setGuidance(guidance: DiConnectViews.Guidance?) = hud.setGuidance(guidance(guidance))
+        override fun setGuidance(guidance: DiConnectViews.Guidance?) {
+            val demo = NavDemo.current()
+            hud.setArrivalText(if (demo == null) guidance?.arrivalText else null)
+            hud.setRoundaboutImage(if (demo == null) guidance?.roundaboutImage else null)
+            hud.setTurnImage(if (demo == null) guidance?.turnImage else null)
+            hud.setGuidance(demo ?: guidance(guidance))
+        }
         override fun release() = Unit
     }
 }

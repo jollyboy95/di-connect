@@ -19,23 +19,65 @@ internal object BydNavigationMapper {
         val type = modern?.type?.number ?: legacy?.takeIf { it.hasNextTurn() }?.let {
             legacyType(it.nextTurn.number, if (it.hasSide()) it.side.number else 3, it.turnNumber, leftHandTraffic)
         } ?: return null
-        val codes = codes(type, modern?.roundaboutExitNumber ?: legacy?.turnNumber ?: 0) ?: return null
+        val codes = codes(type, modern?.takeIf { it.hasRoundaboutExitNumber() }?.roundaboutExitNumber ?: legacy?.turnNumber ?: 0) ?: return null
         val position = snapshot.currentPosition?.payload
         val distance = position?.takeIf { it.hasStepDistance() && it.stepDistance.hasDistance() && it.stepDistance.distance.hasMeters() }
             ?.stepDistance?.distance?.meters
+            ?: position?.takeIf { it.hasStepDistance() && it.stepDistance.hasDistance() }?.stepDistance?.distance?.let(::shownMeters)
             ?: snapshot.nextTurnDistance?.payload?.takeIf { it.hasDistanceMeters() }?.distanceMeters
             ?: return null // Do not present unknown distance as zero/"Now".
         if (distance < 0) return null
-        val road = step?.takeIf { it.hasRoad() && it.road.hasName() }?.road?.name?.takeIf { it.isNotBlank() }
+        val road = step?.takeIf { it.hasCue() }?.cue?.alternateTextList?.firstOrNull { it.isNotBlank() }
+            ?: step?.takeIf { it.hasRoad() && it.road.hasName() }?.road?.name?.takeIf { it.isNotBlank() }
             ?: legacy?.road?.takeIf { it.isNotBlank() } ?: snapshot.currentStreet?.payload.orEmpty()
         val destination = position?.destinationDistancesList?.firstOrNull()
         val remaining = destination?.takeIf { it.hasDistance() && it.distance.hasMeters() }?.distance?.meters ?: -1
-        val seconds = destination?.takeIf { it.hasTimeToArrivalSeconds() }?.timeToArrivalSeconds
-            ?.coerceIn(0, Int.MAX_VALUE.toLong())?.toInt() ?: -1
-        return BydGuidance(codes.cluster, codes.gaode, codes.arrow, codes.exit, distance, road, remaining, seconds)
+        val arrival = snapshot.arrival()
+        val arrivalAge = ((snapshot.currentPosition?.updatedAtElapsedRealtimeMs ?: 0L) -
+            (arrival?.updatedAtElapsedRealtimeMs ?: 0L)).coerceAtLeast(0L) / 1000L
+        val seconds = arrival?.payload?.takeIf { it.hasTimeToArrivalSeconds() && it.timeToArrivalSeconds >= 0 }
+            ?.timeToArrivalSeconds?.let { (it - arrivalAge).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt() } ?: -1
+        // Some phones send the formatted ETA without a numeric remaining duration.
+        // Preserve it verbatim instead of inventing a duration or dropping arrival from the HUD.
+        val arrivalText = arrival?.payload?.takeIf { it.hasEstimatedTimeAtArrival() }
+            ?.estimatedTimeAtArrival?.trim()?.takeIf { it.isNotEmpty() }
+        return BydGuidance(codes.cluster, codes.gaode, codes.arrow, codes.exit, distance, road, remaining, seconds,
+            arrivalText = arrivalText,
+            roundaboutImage = legacy?.takeIf {
+                codes.cluster in setOf(11, 12, 17, 18) && it.hasImage() &&
+                    it.nextTurn.number in setOf(11, 12, 13) &&
+                    (snapshot.nextTurnDetail?.updatedAtElapsedRealtimeMs ?: -1L) >=
+                    (snapshot.navigationState?.updatedAtElapsedRealtimeMs ?: -1L) &&
+                    (codes.exit == 0 || !it.hasTurnNumber() || it.turnNumber == codes.exit)
+            }?.image?.takeIf { !it.isEmpty && it.size() <= 262144 },
+            turnImage = legacy?.takeIf {
+                it.hasImage() && (snapshot.nextTurnDetail?.updatedAtElapsedRealtimeMs ?: -1L) >=
+                    (snapshot.navigationState?.updatedAtElapsedRealtimeMs ?: -1L)
+            }?.image?.takeIf { !it.isEmpty && it.size() <= 262144 })
     }
 
     data class Codes(val cluster: Int, val gaode: Int, val arrow: Int, val exit: Int = 0)
+
+    /**
+     * Metres from the figure the phone shows ("300" with METERS, "1.2" or "1,2" with KILOMETERS),
+     * for rich guidance that leaves out the exact metres. Null when there is no usable figure.
+     */
+    fun shownMeters(distance: NavigationStatus.NavigationDistance): Int? {
+        if (!distance.hasDisplayValue() || !distance.hasDisplayUnits()) return null
+        val value = distance.displayValue.trim().replace(',', '.').filter { it.isDigit() || it == '.' }
+            .toDoubleOrNull()?.takeIf { it >= 0 && !it.isNaN() } ?: return null
+        val metres = when (distance.displayUnits) {
+            NavigationStatus.NavigationDistance.DistanceUnits.METERS -> 1.0
+            NavigationStatus.NavigationDistance.DistanceUnits.KILOMETERS,
+            NavigationStatus.NavigationDistance.DistanceUnits.KILOMETERS_P1 -> 1000.0
+            NavigationStatus.NavigationDistance.DistanceUnits.MILES,
+            NavigationStatus.NavigationDistance.DistanceUnits.MILES_P1 -> 1609.344
+            NavigationStatus.NavigationDistance.DistanceUnits.FEET -> 0.3048
+            NavigationStatus.NavigationDistance.DistanceUnits.YARDS -> 0.9144
+            else -> return null
+        }
+        return (value * metres).takeIf { it < 10_000_000 }?.let { Math.round(it).toInt() }
+    }
 
     fun codes(type: Int, exit: Int = 0): Codes? = when (type) {
         7, 15, 23 -> Codes(2, 1, 1)

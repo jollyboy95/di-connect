@@ -31,7 +31,7 @@ class DiagnosticsFragment : Fragment(R.layout.aa_fragment_diagnostics) {
     override fun onViewCreated(view: View, state: Bundle?) {
         view.findViewById<MaterialToolbar>(R.id.aa_toolbar).setNavigationOnClickListener { findNavController().popBackStack() }
         view.findViewById<View>(R.id.aa_save_diagnostic_report).setOnClickListener {
-            if (Build.VERSION.SDK_INT >= 29) export() else chooseLocation()
+            export() // Android 9 saves privately instead of launching an OEM picker/interceptor.
         }
         view.findViewById<View>(R.id.aa_choose_diagnostic_location).setOnClickListener { chooseLocation() }
     }
@@ -56,9 +56,10 @@ class DiagnosticsFragment : Fragment(R.layout.aa_fragment_diagnostics) {
                     if (destination != null) {
                         DiagnosticExportStore.write(context.contentResolver, destination, report)
                         destination
-                    } else {
-                        check(Build.VERSION.SDK_INT >= 29)
+                    } else if (Build.VERSION.SDK_INT >= 29) {
                         DiagnosticExportStore.saveToDownloads(context.contentResolver, fileName, report)
+                    } else {
+                        DiagnosticExportStore.savePrivate(context, fileName, report)
                     }
                 }
             }
@@ -69,7 +70,11 @@ class DiagnosticsFragment : Fragment(R.layout.aa_fragment_diagnostics) {
             result.onSuccess { uri ->
                 MaterialAlertDialogBuilder(requireContext(), R.style.aa_DarkAlertDialog)
                     .setTitle(getString(R.string.aa_diagnostic_report_saved))
-                    .setMessage(if (destination == null) "Downloads/DiAuto/$fileName" else getString(R.string.aa_diagnostic_saved_to_your_selected_location))
+                    .setMessage(when {
+                        destination != null -> getString(R.string.aa_diagnostic_saved_to_your_selected_location)
+                        Build.VERSION.SDK_INT >= 29 -> "Downloads/DiAuto/$fileName"
+                        else -> null // The saved report is available through the Share button below.
+                    })
                     .setPositiveButton(R.string.aa_share) { _, _ ->
                         runCatching {
                             startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {

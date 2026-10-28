@@ -32,6 +32,22 @@ class AapNavigation(
     fun process(message: AapMessage): Boolean {
         if (message.channel != Channel.ID_NAV) return false
 
+        if (com.andrerinas.openheadunit.gwm.GwmMapExperiments.diagnostics(context)) {
+            // Opt-in, bounded logging; no extra vehicle reads and no navigation text exported.
+            try {
+                val parsed: com.google.protobuf.Message? = when (message.type) {
+                    NavigationStatus.MsgType.INSTRUMENT_CLUSTER_NAVIGATION_STATE_VALUE -> message.parse(NavigationStatus.NavigationState.newBuilder()).buildPartial()
+                    NavigationStatus.MsgType.INSTRUMENT_CLUSTER_NAVIGATION_CURRENT_POSITION_VALUE -> message.parse(NavigationStatus.NavigationCurrentPosition.newBuilder()).buildPartial()
+                    NavigationStatus.MsgType.NEXTTURNDETAILS_VALUE -> message.parse(NavigationStatus.NextTurnDetail.newBuilder()).buildPartial()
+                    NavigationStatus.MsgType.NEXTTURNDISTANCEANDTIME_VALUE -> message.parse(NavigationStatus.NextTurnDistanceEvent.newBuilder()).buildPartial()
+                    else -> null
+                }
+                AppLog.i("NAV-EXPERIMENT received type=${message.type} bytes=${message.size - message.dataOffset} " +
+                    (parsed?.let { com.andrerinas.openheadunit.gwm.GwmNavigationEvidence.describe(it) } ?: "unparsed-type"))
+            } catch (error: Exception) {
+                AppLog.i("NAV-EXPERIMENT parse-failed type=${message.type} error=${error.javaClass.simpleName}")
+            }
+        }
         return when (message.type) {
             NavigationStatus.MsgType.INSTRUMENT_CLUSTER_START_VALUE -> {
                 AppLog.d("Nav: Instrument cluster start")
@@ -103,6 +119,9 @@ class AapNavigation(
             NavigationStatus.MsgType.INSTRUMENT_CLUSTER_NAVIGATION_STATE_VALUE -> {
                 try {
                     val state = message.parse(NavigationStatus.NavigationState.newBuilder()).build()
+                    val previousDestinations = snapshot.navigationState?.payload?.destinationsList
+                    if (!previousDestinations.isNullOrEmpty() && state.destinationsCount > 0 &&
+                        previousDestinations != state.destinationsList) snapshot.destinationArrival = null
                     snapshot.navigationState = AapNavigationHelper.TimedMessage(state, helper.nowElapsedRealtimeMs())
                     val firstStepRoad = state.stepsList.firstOrNull()
                         ?.takeIf { it.hasRoad() && it.road.hasName() }
@@ -122,7 +141,7 @@ class AapNavigation(
             NavigationStatus.MsgType.INSTRUMENT_CLUSTER_NAVIGATION_CURRENT_POSITION_VALUE -> {
                 try {
                     val position = message.parse(NavigationStatus.NavigationCurrentPosition.newBuilder()).build()
-                    snapshot.currentPosition = AapNavigationHelper.TimedMessage(position, helper.nowElapsedRealtimeMs())
+                    snapshot.updatePosition(position, helper.nowElapsedRealtimeMs())
                     val road = position
                         .takeIf { it.hasCurrentRoad() && it.currentRoad.hasName() }
                         ?.currentRoad
@@ -152,6 +171,7 @@ class AapNavigation(
         snapshot.nextTurnDistance = null
         snapshot.navigationState = null
         snapshot.currentPosition = null
+        snapshot.destinationArrival = null
         snapshot.currentStreet = null
     }
 
@@ -185,7 +205,10 @@ class AapNavigation(
         AppLog.i("BYD nav input event=$navEventType enabled=${settings.bydNavigationEnabled} " +
             "status=${snapshot.clusterStatus?.payload?.status} steps=${snapshot.navigationState?.payload?.stepsCount} " +
             "legacy=${snapshot.nextTurnDetail?.payload?.nextTurn} position=${snapshot.currentPosition != null} " +
-            "distance=${bydFrame?.distanceMeters} icon=${bydFrame?.clusterIcon}")
+            "distance=${mapped?.distanceMeters} icon=${mapped?.clusterIcon} " +
+            "roundaboutExit=${mapped?.roundaboutExit} arrivalSeconds=${mapped?.remainingSeconds} " +
+            "arrivalTextPresent=${!mapped?.arrivalText.isNullOrBlank()} " +
+            "destinationCount=${snapshot.currentPosition?.payload?.destinationDistancesCount}")
         com.andrerinas.openheadunit.hud.BydNavigationOutputs.update(bydFrame)
         pendingNavEventType = navEventType
         if (isBroadcastScheduled) return

@@ -75,6 +75,63 @@ jobs:
       # One Gradle task (or a small group) per step, so the Actions page shows which one failed
       # or ran long. Later checks still run after an earlier test or lint failure, but none run
       # once the APK itself has failed to compile.
+      - name: Check Android Auto roundabout and arrival mapping
+        timeout-minutes: 15
+        run: ./gradlew :android-auto:testDebugUnitTest --tests '*BydNavigationMapperTest' --tests '*PrivateDiagnosticExportTest' --tests '*GwmMapExperimentsTest' $GRADLE_ARGS
+      - name: Publish theme catalogue
+        if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          # The Themes screen's "Get more themes" downloads themes.json from the releases repo's
+          # themes branch. Publishing it first means a new theme is live in a minute, with no APK.
+          if [ -z "$GH_TOKEN" ] || [ ! -f _integration/themes.json ]; then exit 0; fi
+          python3 -c "import json; d=json.load(open('_integration/themes.json')); assert d['themes']"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/jollyboy95/di-connect-releases.git"
+          dir="$RUNNER_TEMP/theme-catalogue"; rm -rf "$dir"
+          if ! git clone --quiet --depth 1 --branch themes "$remote" "$dir" 2>/dev/null; then
+            git init --quiet "$dir"; git -C "$dir" checkout --quiet --orphan themes; git -C "$dir" remote add origin "$remote"
+          fi
+          cp _integration/themes.json "$dir/themes.json"
+          cd "$dir"; git add -A
+          git -c user.name="Di-Connect CI" -c user.email="ci@users.noreply.github.com" commit --quiet -m "Theme catalogue from ${GITHUB_SHA::7}" || exit 0
+          git push --quiet origin HEAD:themes
+      - name: Render actual Android Auto cluster and check protected regions
+        timeout-minutes: 15
+        run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' --tests '*ClusterThemesRenderTest' $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
+      - name: Share theme pictures for review
+        if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          # Small pictures of every theme on the theme-renders branch of the public releases repo,
+          # so a build's themes can be reviewed before anyone installs it. Never fails the build.
+          if [ -z "$GH_TOKEN" ] || ! ls common/build/reports/gwm-cluster/themes/*.png >/dev/null 2>&1; then exit 0; fi
+          remote="https://x-access-token:${GH_TOKEN}@github.com/jollyboy95/di-connect-releases.git"
+          dir="$RUNNER_TEMP/theme-renders"; rm -rf "$dir"
+          if ! git clone --quiet --depth 1 --branch theme-renders "$remote" "$dir" 2>/dev/null; then
+            git init --quiet "$dir"; git -C "$dir" checkout --quiet --orphan theme-renders; git -C "$dir" remote add origin "$remote"
+          fi
+          rm -f "$dir"/*.jpg "$dir"/*.png
+          for f in common/build/reports/gwm-cluster/themes/*.png; do
+            name="$(basename "${f%.png}")"
+            if command -v convert >/dev/null; then convert "$f" -resize 960x -quality 82 "$dir/$name.jpg"; else cp "$f" "$dir/$name.png"; fi
+          done
+          echo "Theme pictures from ${GITHUB_SHA}" > "$dir/README.md"
+          cd "$dir"; git add -A
+          git -c user.name="Di-Connect CI" -c user.email="ci@users.noreply.github.com" commit --quiet -m "Theme pictures for ${GITHUB_SHA::7}" || exit 0
+          git push --quiet origin HEAD:theme-renders
+      - name: Upload actual cluster renders
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-Auto-cluster-renders
+          path: |
+            common/build/reports/gwm-cluster/*.png
+            common/build/reports/gwm-cluster/themes/*.png
+          if-no-files-found: warn
       - name: Compile preview APK
         id: compile
         timeout-minutes: 30
@@ -204,6 +261,29 @@ jobs:
           if lines:
               print('::notice title=Slowest Gradle tasks::' + ' | '.join(lines))
           PY
+      # In-app updates: a fully checked build is published to the public APK-only repository that
+      # Di-Connect's updater reads. Needs the RELEASES_TOKEN secret (a fine-grained token limited to
+      # jollyboy95/di-connect-releases, Contents: read and write). Skipped while it is not set.
+      - name: Publish update to di-connect-releases
+        if: ${{ success() && github.event_name != 'pull_request' || success() && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "RELEASES_TOKEN is not set; not publishing."; exit 0; fi
+          apk=$(ls mobile/build/outputs/apk/debug/*.apk | head -1)
+          name=$("$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk" | head -1 | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")
+          [ -n "$name" ] || { echo "::error::No versionName in $apk"; exit 1; }
+          tag="v$name"; file="Di-Connect-$name.apk"; dir="$RUNNER_TEMP/release"
+          mkdir -p "$dir"; cp "$apk" "$dir/$file"
+          ( cd "$dir" && sha256sum "$file" > SHA256SUMS.txt )
+          gh release create "$tag" "$dir/$file" "$dir/SHA256SUMS.txt" --repo jollyboy95/di-connect-releases \
+            --title "Di-Connect $name" \
+            --notes "Built from ${GITHUB_SHA::7} (${GITHUB_REF_NAME}). Signed with the GWM development key; install over Di-Connect to keep settings. Source code is available on request (GPL-3.0 / AGPL-3.0)."
+          echo "### Published update" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`$file\` → jollyboy95/di-connect-releases ($tag)" >> "$GITHUB_STEP_SUMMARY"
+          # Keep the five newest releases.
+          gh release list --repo jollyboy95/di-connect-releases --limit 100 --json tagName --jq '.[5:][].tagName' |
+            while read -r old; do gh release delete "$old" --repo jollyboy95/di-connect-releases --yes --cleanup-tag; done
       - name: Reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -215,3 +295,4 @@ jobs:
             common/build/reports/di-connect-home/
             **/build/reports/lint-results-debug.html
             build/reports/profile/
+

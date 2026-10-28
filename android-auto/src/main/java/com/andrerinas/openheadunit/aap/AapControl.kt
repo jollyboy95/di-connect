@@ -477,6 +477,13 @@ internal class AapControlGateway(
                 .build())
         aapTransport.send(msg)
 
+        if (channel == Channel.ID_NAV && com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterReady) {
+            aapTransport.send(AapMessage(Channel.ID_NAV,
+                com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus.MsgType.INSTRUMENT_CLUSTER_START_VALUE,
+                com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus.NavigationStatusStart.getDefaultInstance()))
+            com.andrerinas.openheadunit.utils.AppLog.i("NAV-EXPERIMENT cluster-ready sent type=32769 after-channel-open")
+        }
+
         if (channel == Channel.ID_SEN) {
             aapTransport.send(DrivingStatusEvent(Sensors.SensorBatch.DrivingStatusData.Status.UNRESTRICTED))
         }

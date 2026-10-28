@@ -37,8 +37,27 @@ class AapNavigationHelper(
         var nextTurnDistance: TimedMessage<NavigationStatus.NextTurnDistanceEvent>? = null,
         var navigationState: TimedMessage<NavigationStatus.NavigationState>? = null,
         var currentPosition: TimedMessage<NavigationStatus.NavigationCurrentPosition>? = null,
-        var currentStreet: TimedMessage<String>? = null
-    )
+        var currentStreet: TimedMessage<String>? = null,
+        var destinationArrival: TimedMessage<NavigationStatus.NavigationDestinationDistance>? = null,
+    ) {
+        /** Position messages may update only distance. Keep ETA separately within this route. */
+        fun updatePosition(position: NavigationStatus.NavigationCurrentPosition, now: Long) {
+            currentPosition = TimedMessage(position, now)
+            position.destinationDistancesList.firstOrNull()?.takeIf {
+                it.hasTimeToArrivalSeconds() || (it.hasEstimatedTimeAtArrival() && it.estimatedTimeAtArrival.isNotBlank())
+            }?.let { destinationArrival = TimedMessage(it, now) }
+        }
+
+        fun arrival(): TimedMessage<NavigationStatus.NavigationDestinationDistance>? {
+            val position = currentPosition ?: return null
+            position.payload.destinationDistancesList.firstOrNull()?.takeIf {
+                it.hasTimeToArrivalSeconds() || (it.hasEstimatedTimeAtArrival() && it.estimatedTimeAtArrival.isNotBlank())
+            }?.let { return TimedMessage(it, position.updatedAtElapsedRealtimeMs) }
+            return destinationArrival?.takeIf {
+                position.updatedAtElapsedRealtimeMs - it.updatedAtElapsedRealtimeMs in 0L..120_000L
+            }
+        }
+    }
 
     private data class FullNavigationMessage(
         val distanceMeters: Int?,

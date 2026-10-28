@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aa_gwm_map_tests_title">Map layout tests (experimental)</string>
+    <string name="aa_gwm_map_tests_note">Android Auto only. Test while parked, using the same theme and route. These options ask the phone to lay out its map differently; they do not remove Google’s card or change the car’s own indicators. Baseline restores the existing map configuration.</string>
+    <string name="aa_gwm_map_tests_reconnect">Saved for the next Android Auto connection. Return home and tap Restart, or disconnect and reconnect. The current session keeps its negotiated map.</string>
+    <string name="aa_gwm_nav_images_test">Arrow image capability (experimental)</string>
+    <string name="aa_gwm_nav_images_test_note">Advertise support for 128 × 128 arrow images instead of codes only. This tests which guidance messages the phone sends; it does not promise timing data. Applies after reconnecting Android Auto. Leave off for the map tests first.</string>
+    <string name="aa_gwm_nav_evidence">Record navigation test evidence</string>
+    <string name="aa_gwm_nav_evidence_note">Includes message types, field presence and received timing values in diagnostic logs. Does not add road names, destination text, coordinates or image contents to these test logs. Save a diagnostic report after each test.</string>
+    <string name="aa_gwm_map_tests_active">Last negotiated map test: %1$s</string>
+    <string-array name="aa_gwm_map_test_modes">
+        <item>Baseline — current layout</item>
+        <item>Stock reserved areas — current stream and DPI</item>
+        <item>Stock areas — 160 DPI, current stream</item>
+        <item>Stock areas — 1280 stream and 160 DPI</item>
+        <item>Minimal reserved areas — 3% each edge</item>
+        <item>Phone default — omit content insets</item>
+    </string-array>
+    <string name="aa_gwm_nav_protocol_test">اختبار بروتوكول الإرشاد (تجريبي)</string>
+    <string name="aa_gwm_nav_protocol_note">إصدار بروتوكول Android Auto الذي يطلبه Di-Connect. بدءًا من 1.6 قد يرسل الهاتف إرشادًا أغنى يشمل وقت الوصول؛ ويتيح 4.3 أيضًا قراءة علامات الشاشة. قد يتغير سلوك آخر للهاتف أيضًا. أعد تشغيل الوحدة الرئيسية للتطبيق؛ وإلا فقد لا يتصل الهاتف بشبكة Wi-Fi في السيارة. يعيد الأساس الإصدار الحالي.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>الأساس — البروتوكول 1.2</item>
+        <item>إرشاد أغنى — البروتوكول 1.6</item>
+        <item>إرشاد أغنى وعلامات الشاشة — البروتوكول 4.3</item>
+        <item>أحدث إصدار للهاتف، قد يغيّر الصوت والفيديو — البروتوكول 6.2</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">إبلاغ الهاتف بأن السيارة تعرض بطاقة المنعطف (تجريبي)</string>
+    <string name="aa_gwm_nav_turn_card_note">يتطلب البروتوكول 4.3. يطلب من Android Auto عدم رسم بطاقة المنعطف الخاصة به على لوحة العدادات. قد يلتزم Google Maps بذلك أو لا، لذا فعّل اتجاهات Di-Connect في شاشة السمات. يُطبَّق بعد إعادة الاتصال.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">إشارة جاهزية لوحة العدادات (تجريبي)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">يرسل رسالة توفر لوحة العدادات (0x8001) عند فتح قناة الملاحة. غير مثبت. يُطبَّق بعد إعادة الاتصال.</string>
+    <string name="aa_gwm_nav_protocol_active">آخر اتصال: الطلب %1$s، ورد الهاتف %2$s</string>
+</resources>

@@ -43,6 +43,14 @@ object DiagnosticReport {
             appendLine("Saved credentials, network addresses and protocol payloads are omitted.")
             appendLine("--- Hotspot and network interfaces at report time (read-only) ---")
             HotspotNetworkProbe.report(context).forEach { appendLine(it) }
+            appendLine("--- GWM HUD guidance at report time ---")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                appendLine("HUD output=${com.andrerinas.openheadunit.gwm.GwmOutputs.hudStatus}")
+                appendLine("HUD test grid=${com.andrerinas.openheadunit.gwm.GwmOutputs.hudGridShowing}; sample=${com.andrerinas.openheadunit.gwm.GwmOutputs.hudSampleShowing}")
+            }
+            val guidance = com.andrerinas.openheadunit.hud.DashboardGuidance.current()
+            appendLine("Live guidance=${guidance != null}; icon=${guidance?.clusterIcon}; turn metres=${guidance?.distanceMeters}")
+            appendLine("Arrival duration seconds=${guidance?.remainingSeconds}; formatted arrival present=${!guidance?.arrivalText.isNullOrBlank()}")
             appendLine("--- Recent app logs (up to 6000 lines) ---")
             if (lines.isEmpty()) appendLine("No recent app logs available. Reproduce the issue and save a new report.")
             lines.forEach { appendLine(it) }

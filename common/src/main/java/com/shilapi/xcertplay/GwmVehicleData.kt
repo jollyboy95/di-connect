@@ -35,7 +35,14 @@ internal object GwmVehicleData {
     const val OUTSIDE_TEMP = "car.basic.outside_temp"
     const val TOTAL_ODOMETER = "car.basic.total_odometer"
     const val ODOMETER = "car.basic.odometer"
-    val KEYS = arrayOf(SPEED, GEAR_STATUS, CURRENT_GEAR, FUEL_PERCENT, RANGE_KM, OUTSIDE_TEMP, TOTAL_ODOMETER, ODOMETER)
+    /** Hybrid battery pack current in amps; positive = discharging, negative = charging. */
+    const val BATTERY_CURRENT = "car.ev_info.cur_charge_current"
+    /** The adapter's "unavailable" answer; never a real reading. */
+    private const val UNAVAILABLE = -1001f
+    /** Same read-only RPM keys used by SmartSplit v3.4 DataManager. */
+    const val ENGINE_RPM = "car.basic.engine_speed"
+    const val OFFROAD_ENGINE_RPM = "car.off_road_info.engine_rpm"
+    val KEYS = arrayOf(SPEED, GEAR_STATUS, CURRENT_GEAR, FUEL_PERCENT, RANGE_KM, OUTSIDE_TEMP, TOTAL_ODOMETER, ODOMETER, BATTERY_CURRENT, ENGINE_RPM, OFFROAD_ENGINE_RPM)
 
     data class Snapshot(
         val speedKph: Float?,
@@ -45,6 +52,8 @@ internal object GwmVehicleData {
         val outsideTempC: Float?,
         val atMillis: Long,
         val odometerKm: Float? = null,
+        val batteryCurrentA: Float? = null,
+        val engineRpm: Float? = null,
     ) {
         fun fresh(now: Long = SystemClock.elapsedRealtime()) = now - atMillis <= STALE_MILLIS
     }
@@ -138,6 +147,8 @@ internal object GwmVehicleData {
     internal fun number(raw: String?): Float? =
         raw?.let { NUMBER.find(it)?.value?.toFloatOrNull() }?.takeIf { it.isFinite() }
 
+    private fun rpm(raw: String?): Float? = number(raw)?.takeIf { it in 0f..12_000f }
+
     internal fun snapshotFrom(values: Map<String, String>, now: Long): Snapshot = Snapshot(
         speedKph = number(values[SPEED])?.takeIf { it in 0f..400f },
         gear = gearLabel(number(values[GEAR_STATUS])?.toInt(), number(values[CURRENT_GEAR])?.toInt()),
@@ -147,6 +158,8 @@ internal object GwmVehicleData {
         atMillis = now,
         odometerKm = (number(values[TOTAL_ODOMETER])?.takeIf { it > 0f } ?: number(values[ODOMETER]))
             ?.takeIf { it in 0f..2_000_000f },
+        batteryCurrentA = number(values[BATTERY_CURRENT])?.takeIf { it != UNAVAILABLE && it in -1000f..1000f },
+        engineRpm = rpm(values[ENGINE_RPM]) ?: rpm(values[OFFROAD_ENGINE_RPM]),
     )
 
     /** gear_status 0 N, 2 D, 3 P, 4 R, 5 M; in D or M, current_gear 1..8 adds the step (D3, M3). */
@@ -170,7 +183,9 @@ internal object GwmVehicleData {
             appendLine("GWM vehicle data ($SERVICE): reachable")
             KEYS.forEach { appendLine("  $it = ${values[it] ?: "(no value)"}") }
             append("  → speed=${snapshot.speedKph} gear=${snapshot.gear} fuel=${snapshot.fuelPercent}% ")
-            append("range=${snapshot.rangeKm} km outside=${snapshot.outsideTempC} °C odo=${snapshot.odometerKm} km")
+            append("range=${snapshot.rangeKm} km outside=${snapshot.outsideTempC} °C odo=${snapshot.odometerKm} km ")
+            append("battery=${snapshot.batteryCurrentA} A engine=${snapshot.engineRpm} rpm")
         }
     }.getOrElse { "GWM vehicle data ($SERVICE): unavailable — ${it.javaClass.simpleName}: ${it.message}" }
 }
+

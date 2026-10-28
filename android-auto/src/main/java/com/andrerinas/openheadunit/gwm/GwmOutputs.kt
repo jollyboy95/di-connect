@@ -69,6 +69,9 @@ internal object GwmOutputs {
 
     private var testManager: WindowManager? = null
     private var testView: View? = null
+    private var testLayer: com.andrerinas.openheadunit.DiConnectViews.Layer? = null
+    private val testTimeout = Runnable { hideTest() }
+    val hudSampleShowing: Boolean get() = testLayer != null && testView != null
 
     private val vehicleListener: (GwmVehicleData.Snapshot?) -> Unit = { snapshot ->
         handler.post { layer?.setSnapshot(snapshot) }
@@ -81,7 +84,8 @@ internal object GwmOutputs {
             hudView?.setGuidance(next)
             val mapped = com.andrerinas.openheadunit.DiConnectViews.from(next)
             // Google Maps draws its own card into the cluster video; Di-Connect's is opt-in in Android Auto.
-            dplayLayer?.setGuidance(if (dplayLayerNavCard) mapped else null)
+            val wanted = runCatching { com.andrerinas.openheadunit.DiConnectViews.clusterDirectionsWanted?.invoke() }.getOrNull() == true
+            dplayLayer?.setGuidance(if (dplayLayerNavCard || wanted) mapped else null)
             dplayHud?.setGuidance(mapped)
             handler.postDelayed(this, GUIDANCE_TICK_MS)
         }
@@ -136,7 +140,12 @@ internal object GwmOutputs {
         }
         val profile = GwmClusterProfile.forDisplay(app, display)
         val root = FrameLayout(displayContext).apply { setBackgroundColor(Color.BLACK) }
-        root.addView(mapView(app, displayContext, display, profile), FrameLayout.LayoutParams(-1, -1))
+        // A split theme's map fills only its window of the panel; the theme draws the rest.
+        val window = GwmClusterProfile.declaredWindow
+        val panel = sizeOf(display)
+        root.addView(mapView(app, displayContext, display, profile),
+            if (window.full || panel.x <= 0) FrameLayout.LayoutParams(-1, -1)
+            else FrameLayout.LayoutParams((panel.x * window.width).toInt(), -1).apply { leftMargin = (panel.x * window.left).toInt() })
         if (gwm.styledLayer) {
             val dplay = com.andrerinas.openheadunit.DiConnectViews.cluster?.invoke(displayContext)
             if (dplay != null) {
@@ -248,7 +257,7 @@ internal object GwmOutputs {
         val view: android.view.View = dplay?.view
             ?: GwmHeadUpView(displayContext).apply { setAnchor(anchor); setArea(gwm.hudArea) }
         try {
-            windows.addView(view, overlayParams(opaque = false))
+            windows.addView(view, overlayParams(opaque = dplay != null))
         } catch (error: RuntimeException) {
             dplay?.release()
             hudStatus = "Display $target refused the overlay window: ${error.javaClass.simpleName}: ${error.message}"
@@ -292,11 +301,44 @@ internal object GwmOutputs {
         val windows = displayContext.getSystemService(WindowManager::class.java) ?: return "No window manager for display $displayId."
         val view: View = if (hudGrid != null) GwmHudGridView(displayContext, hudGrid) else GwmDisplayTestView(displayContext)
         return try {
-            windows.addView(view, overlayParams(opaque = false))
+            if (hudGrid != null) view.setBackgroundColor(Color.BLACK)
+            windows.addView(view, overlayParams(opaque = hudGrid != null))
             testManager = windows
             testView = view
+            if (hudGrid != null) handler.postDelayed(testTimeout, 60_000L)
             null
         } catch (error: RuntimeException) {
+            "${error.javaClass.simpleName}: ${error.message}"
+        }
+    }
+
+    /** Uses the exact live AA HUD factory, target display and opaque window mode; no phone needed. */
+    fun showHudSample(context: Context): String? {
+        hideTest()
+        val app = context.applicationContext
+        val gwm = GwmSettings(app)
+        var problem: String? = null
+        val display = usableDisplay(app, gwm.hudDisplayId) { problem = it } ?: return problem
+        val displayContext = app.createDisplayContext(display)
+        val windows = displayContext.getSystemService(WindowManager::class.java)
+            ?: return "No window manager for HUD display."
+        val sample = com.andrerinas.openheadunit.DiConnectViews.hud?.invoke(displayContext, gwm.hudAnchor)
+            ?: return "The Android Auto HUD renderer is not registered."
+        // Same sample as the working CarPlay test: right arrow, 300 m, arrival ten minutes ahead.
+        sample.setGuidance(com.andrerinas.openheadunit.DiConnectViews.Guidance(
+            icon = 3, roundaboutExit = 0, distanceMeters = 300, road = "TEST",
+            remainingMeters = 10000, remainingSeconds = 600,
+        ))
+        sample.view.setBackgroundColor(Color.BLACK)
+        return try {
+            windows.addView(sample.view, overlayParams(opaque = true))
+            testManager = windows
+            testView = sample.view
+            testLayer = sample
+            handler.postDelayed(testTimeout, 10_000L)
+            null
+        } catch (error: RuntimeException) {
+            sample.release()
             "${error.javaClass.simpleName}: ${error.message}"
         }
     }
@@ -304,8 +346,11 @@ internal object GwmOutputs {
     fun hideTest() {
         val view = testView
         val windows = testManager
+        handler.removeCallbacks(testTimeout)
         testView = null
         testManager = null
+        testLayer?.release()
+        testLayer = null
         if (view != null && windows != null) runCatching { windows.removeViewImmediate(view) }
     }
 

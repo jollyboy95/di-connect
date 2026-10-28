@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aa_gwm_map_tests_title">Map layout tests (experimental)</string>
+    <string name="aa_gwm_map_tests_note">Android Auto only. Test while parked, using the same theme and route. These options ask the phone to lay out its map differently; they do not remove Google’s card or change the car’s own indicators. Baseline restores the existing map configuration.</string>
+    <string name="aa_gwm_map_tests_reconnect">Saved for the next Android Auto connection. Return home and tap Restart, or disconnect and reconnect. The current session keeps its negotiated map.</string>
+    <string name="aa_gwm_nav_images_test">Arrow image capability (experimental)</string>
+    <string name="aa_gwm_nav_images_test_note">Advertise support for 128 × 128 arrow images instead of codes only. This tests which guidance messages the phone sends; it does not promise timing data. Applies after reconnecting Android Auto. Leave off for the map tests first.</string>
+    <string name="aa_gwm_nav_evidence">Record navigation test evidence</string>
+    <string name="aa_gwm_nav_evidence_note">Includes message types, field presence and received timing values in diagnostic logs. Does not add road names, destination text, coordinates or image contents to these test logs. Save a diagnostic report after each test.</string>
+    <string name="aa_gwm_map_tests_active">Last negotiated map test: %1$s</string>
+    <string-array name="aa_gwm_map_test_modes">
+        <item>Baseline — current layout</item>
+        <item>Stock reserved areas — current stream and DPI</item>
+        <item>Stock areas — 160 DPI, current stream</item>
+        <item>Stock areas — 1280 stream and 160 DPI</item>
+        <item>Minimal reserved areas — 3% each edge</item>
+        <item>Phone default — omit content insets</item>
+    </string-array>
+    <string name="aa_gwm_nav_protocol_test">導航協定測試（實驗性）</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect 要求的 Android Auto 協定版本。從 1.6 起，手機可能傳送更豐富的導航資訊，包括抵達時間；4.3 還允許手機讀取顯示旗標。手機的其他行為也可能改變。需重新啟動車機後生效；否則手機可能無法連上車輛 Wi-Fi。基準會還原目前版本。</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>基準 — 協定 1.2</item>
+        <item>更豐富的導航 — 協定 1.6</item>
+        <item>更豐富的導航與顯示旗標 — 協定 4.3</item>
+        <item>最新手機版本，可能改變音訊和影像 — 協定 6.2</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">告訴手機由車輛顯示轉彎卡片（實驗性）</string>
+    <string name="aa_gwm_nav_turn_card_note">需要協定 4.3。要求 Android Auto 不要在儀表板上繪製自己的轉彎卡片。Google 地圖不一定會遵循，因此請在主題畫面開啟 Di-Connect 路線指引。重新連線後生效。</string>
+    <string name="aa_gwm_nav_cluster_ready_test">儀表板就緒訊號（實驗性）</string>
+    <string name="aa_gwm_nav_cluster_ready_note">導航通道開啟時傳送儀表板可用訊息 (0x8001)。尚未證實。重新連線後生效。</string>
+    <string name="aa_gwm_nav_protocol_active">上次連線：要求 %1$s，手機回覆 %2$s</string>
+</resources>

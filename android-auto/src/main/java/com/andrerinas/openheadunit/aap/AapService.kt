@@ -2321,10 +2321,12 @@ class AapService : Service(), UsbReceiver.Listener {
         // switch it to accessory mode. This handles cases where UsbAttachedActivity didn't fire.
         if (force) {
             val nonAccessoryDevices = deviceList.filter { !UsbDeviceCompat.isInAccessoryMode(it) }
-            val googleDevices = nonAccessoryDevices.filter { it.vendorId == 0x18D1 }
-            if (googleDevices.size == 1) {
-                AppLog.i("Fallback: force=true and found single Google normal-mode device ${UsbDeviceCompat(googleDevices[0]).uniqueName}. Switching to accessory mode.")
-                performSingleUsbConnect(googleDevices[0])
+            // isAndroidDevice already excludes the CarPlay iPhone, hubs and the MFi chip.
+            if (nonAccessoryDevices.size == 1) {
+                AppLog.i("Fallback: force=true and found one Android phone in normal mode ${UsbDeviceCompat(nonAccessoryDevices[0]).uniqueName}. Switching to accessory mode.")
+                performSingleUsbConnect(nonAccessoryDevices[0])
+            } else {
+                AppLog.i("USB attach: ${nonAccessoryDevices.size} Android devices in normal mode; not choosing one automatically.")
             }
         }
     }

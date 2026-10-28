@@ -224,11 +224,18 @@ class ServiceDiscoveryResponse(private val context: Context)
             // Navigation Status Service — head unit receives turn-by-turn data from any AA nav app
             val navigationStatus = Control.Service.newBuilder().also { service ->
                 service.id = Channel.ID_NAV
-                service.navigationStatusService = Control.Service.NavigationStatusService.newBuilder()
-                    .setMinimumIntervalMs(1000)
-                    .setType(Control.Service.NavigationStatusService.ClusterType.ImageCodesOnly)
-                    .build()
+                service.navigationStatusService = com.andrerinas.openheadunit.gwm.GwmMapExperiments.navigationService(
+                    com.andrerinas.openheadunit.gwm.GwmMode.active(context) &&
+                        com.andrerinas.openheadunit.gwm.GwmMapExperiments.images(context))
             }.build()
+            AppLog.i("NAV-EXPERIMENT navigationCapability=${navigationStatus.navigationStatusService.type} imageOptions=${navigationStatus.navigationStatusService.hasImageOptions()}")
+            run {
+                val x = com.andrerinas.openheadunit.gwm.GwmMapExperiments
+                val gwmMode = com.andrerinas.openheadunit.gwm.GwmMode.active(context)
+                x.sessionClusterReady = gwmMode && x.clusterReady(context)
+                AppLog.i("NAV-EXPERIMENT session requested=${x.sessionProtocol.key} clusterReady=${x.sessionClusterReady} " +
+                    "turnCardFlag=${x.sessionTurnCard} turnCardWanted=${gwmMode && x.turnCard(context)}")
+            }
             services.add(navigationStatus)
 
             return Control.ServiceDiscoveryResponse.newBuilder().apply {

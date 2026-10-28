@@ -1,0 +1,159 @@
+package com.andrerinas.openheadunit.hud
+
+import org.junit.Assert.*
+import org.junit.Test
+import com.andrerinas.openheadunit.aap.AapNavigationHelper
+import com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus as N
+
+class BydNavigationMapperTest {
+    @Test fun `distance only packets preserve arrival and count duration down`() {
+        val value = snapshot(300)
+        value.updatePosition(value.currentPosition!!.payload.toBuilder().addDestinationDistances(
+            N.NavigationDestinationDistance.newBuilder().setTimeToArrivalSeconds(600)
+                .setEstimatedTimeAtArrival("10:31 AM")).build(), 1000)
+        value.updatePosition(N.NavigationCurrentPosition.newBuilder().setStepDistance(
+            N.NavigationStepDistance.newBuilder().setDistance(N.NavigationDistance.newBuilder().setMeters(290))).build(), 11000)
+        val frame = BydNavigationMapper.from(value)!!
+        assertEquals(290, frame.distanceMeters)
+        assertEquals(590, frame.remainingSeconds)
+        assertEquals("10:31 AM", frame.arrivalText)
+        value.updatePosition(value.currentPosition!!.payload, 130001)
+        assertEquals(-1, BydNavigationMapper.from(value)!!.remainingSeconds)
+        assertNull(BydNavigationMapper.from(value)!!.arrivalText)
+        value.destinationArrival = null // same reset performed by route stop/start/reroute
+        assertNull(value.arrival())
+    }
+
+    @Test fun `modern roundabout without exit field retains explicit legacy exit`() {
+        val value = snapshot(300)
+        value.navigationState = AapNavigationHelper.TimedMessage(N.NavigationState.newBuilder().addSteps(
+            N.NavigationStep.newBuilder().setManeuver(N.NavigationManeuver.newBuilder()
+                .setType(N.NavigationManeuver.NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CW))).build(), 10)
+        value.nextTurnDetail = AapNavigationHelper.TimedMessage(N.NextTurnDetail.newBuilder().setRoad("Exit road")
+            .setNextTurn(N.NextTurnDetail.NextEvent.ROUNDABOUT_ENTER_AND_EXIT).setTurnNumber(2)
+            .setImage(com.google.protobuf.ByteString.copyFrom(byteArrayOf(1, 2, 3))).build(), 11)
+        val frame = BydNavigationMapper.from(value)!!
+        assertEquals(2, frame.roundaboutExit)
+        assertEquals(17, frame.clusterIcon)
+        assertNotNull(frame.roundaboutImage)
+        value.nextTurnDetail = value.nextTurnDetail!!.copy(updatedAtElapsedRealtimeMs = 9)
+        assertNull(BydNavigationMapper.from(value)!!.roundaboutImage)
+    }
+
+    @Test fun `formatted arrival survives when phone omits numeric journey time`() {
+        val value = snapshot(300)
+        val position = value.currentPosition!!.payload.toBuilder().addDestinationDistances(
+            N.NavigationDestinationDistance.newBuilder().setEstimatedTimeAtArrival("10:31 AM"))
+        value.currentPosition = AapNavigationHelper.TimedMessage(position.build(), 0)
+        val guidance = BydNavigationMapper.from(value)!!
+        assertEquals("10:31 AM", guidance.arrivalText)
+        assertEquals(-1, guidance.remainingSeconds)
+        assertEquals(300, guidance.distanceMeters)
+        // A new route/position with no arrival must not reuse the old ETA.
+        assertNull(BydNavigationMapper.from(snapshot(300))!!.arrivalText)
+    }
+
+    @Test fun `left and right maneuvers retain direction`() {
+        assertEquals(2, BydNavigationMapper.codes(7)!!.cluster)
+        assertEquals(3, BydNavigationMapper.codes(8)!!.cluster)
+        assertEquals(7, BydNavigationMapper.codes(11)!!.arrow)
+        assertEquals(8, BydNavigationMapper.codes(12)!!.arrow)
+        assertEquals(6, BydNavigationMapper.codes(9)!!.cluster)
+        assertEquals(7, BydNavigationMapper.codes(10)!!.cluster)
+    }
+    @Test fun `roundabouts preserve direction and reject out of range exits`() {
+        assertEquals(BydNavigationMapper.Codes(17, 37, 99, 3), BydNavigationMapper.codes(32, 3))
+        assertEquals(BydNavigationMapper.Codes(11, 27, 99, 3), BydNavigationMapper.codes(34, 3))
+        assertEquals(0, BydNavigationMapper.codes(32, 19)!!.exit)
+        assertEquals(13, BydNavigationMapper.codes(32, 19)!!.gaode)
+    }
+    @Test fun `unknown does not become straight`() {
+        assertNull(BydNavigationMapper.codes(0))
+        assertNull(BydNavigationMapper.codes(500))
+        assertNull(BydNavigationMapper.legacyType(4, 3))
+    }
+    @Test fun `legacy left right and uturn map correctly`() {
+        assertEquals(7, BydNavigationMapper.legacyType(4, 1))
+        assertEquals(8, BydNavigationMapper.legacyType(4, 2))
+        assertEquals(12, BydNavigationMapper.legacyType(6, 2))
+        assertEquals(30, BydNavigationMapper.legacyType(13, 2))
+    }
+    @Test fun `legacy roundabout keeps its exit using the traffic side setting`() {
+        // Right-hand traffic (default): counter-clockwise, exit reaches the cluster.
+        assertEquals(34, BydNavigationMapper.legacyType(13, 3, roundaboutExit = 2))
+        assertEquals(BydNavigationMapper.Codes(11, 26, 99, 2), BydNavigationMapper.codes(34, 2))
+        // Left-hand traffic setting: clockwise.
+        assertEquals(32, BydNavigationMapper.legacyType(13, 3, roundaboutExit = 2, leftHandTraffic = true))
+        // No usable exit number: the generic roundabout icon, unchanged.
+        assertEquals(30, BydNavigationMapper.legacyType(13, 3, roundaboutExit = 0))
+        assertEquals(30, BydNavigationMapper.legacyType(13, 3, roundaboutExit = 12))
+    }
+    @Test fun `a numbered roundabout reaches the HUD as the numbered icon DiPlay sends`() {
+        for (event in listOf(11, 13)) {
+            val codes = BydNavigationMapper.codes(BydNavigationMapper.legacyType(event, 3, roundaboutExit = 2)!!, 2)!!
+            // DiPlay: CarPlay "roundabout, exit 2" -> NEW_ICON 11 with exit 2 -> instrument code 26.
+            assertEquals(26, BydFactoryTurnCode.map(codes.cluster, codes.exit))
+        }
+        val clockwise = BydNavigationMapper.codes(BydNavigationMapper.legacyType(13, 3, 3, leftHandTraffic = true)!!, 3)!!
+        assertEquals(37, BydFactoryTurnCode.map(clockwise.cluster, clockwise.exit))
+    }
+    private fun snapshot(distance: Int? = 75): AapNavigationHelper.NavigationSnapshot {
+        val step = N.NavigationStep.newBuilder()
+            .setManeuver(N.NavigationManeuver.newBuilder().setType(N.NavigationManeuver.NavigationType.TURN_NORMAL_LEFT))
+            .setRoad(N.NavigationRoad.newBuilder().setName("Next road")).build()
+        val state = N.NavigationState.newBuilder().addSteps(step).build()
+        return AapNavigationHelper.NavigationSnapshot().apply {
+            navigationState = AapNavigationHelper.TimedMessage(state, 0)
+            currentStreet = AapNavigationHelper.TimedMessage("Current road", 0)
+            if (distance != null) currentPosition = AapNavigationHelper.TimedMessage(
+                N.NavigationCurrentPosition.newBuilder().setStepDistance(N.NavigationStepDistance.newBuilder()
+                    .setDistance(N.NavigationDistance.newBuilder().setMeters(distance))).build(), 0)
+        }
+    }
+    @Test fun `rich guidance without metres uses the shown distance`() {
+        val value = snapshot(null)
+        fun shown(text: String, units: N.NavigationDistance.DistanceUnits) {
+            value.currentPosition = AapNavigationHelper.TimedMessage(N.NavigationCurrentPosition.newBuilder().setStepDistance(
+                N.NavigationStepDistance.newBuilder().setDistance(N.NavigationDistance.newBuilder()
+                    .setDisplayValue(text).setDisplayUnits(units))).build(), 0)
+        }
+        shown("300", N.NavigationDistance.DistanceUnits.METERS)
+        assertEquals(300, BydNavigationMapper.from(value)!!.distanceMeters)
+        shown("1,2", N.NavigationDistance.DistanceUnits.KILOMETERS_P1)
+        assertEquals(1200, BydNavigationMapper.from(value)!!.distanceMeters)
+        shown("0.5", N.NavigationDistance.DistanceUnits.MILES_P1)
+        assertEquals(805, BydNavigationMapper.from(value)!!.distanceMeters)
+        shown("soon", N.NavigationDistance.DistanceUnits.METERS)
+        assertNull(BydNavigationMapper.from(value))
+        shown("300", N.NavigationDistance.DistanceUnits.UNKNOWN_DISTANCE_UNIT)
+        assertNull(BydNavigationMapper.from(value))
+    }
+    @Test fun `uses next road and metre distance`() {
+        val frame = BydNavigationMapper.from(snapshot())!!
+        assertEquals("Next road", frame.road)
+        assertEquals(75, frame.distanceMeters)
+        assertEquals(2, frame.clusterIcon)
+    }
+    @Test fun `missing or invalid distance hides guidance but zero remains valid`() {
+        assertNull(BydNavigationMapper.from(snapshot(null)))
+        assertNull(BydNavigationMapper.from(snapshot(-1)))
+        assertEquals(0, BydNavigationMapper.from(snapshot(0))!!.distanceMeters)
+    }
+    @Test fun `empty modern route cannot revive legacy maneuver`() {
+        val value = snapshot()
+        value.navigationState = AapNavigationHelper.TimedMessage(N.NavigationState.newBuilder().build(), 0)
+        value.nextTurnDetail = AapNavigationHelper.TimedMessage(N.NextTurnDetail.newBuilder()
+            .setRoad("Old road").setNextTurn(N.NextTurnDetail.NextEvent.TURN).setSide(N.NextTurnDetail.Side.LEFT).build(), 0)
+        assertNull(BydNavigationMapper.from(value))
+    }
+    @Test fun `inactive unavailable and rerouting clear guidance`() {
+        for (status in listOf(N.NavigationClusterStatus.NavigationStatusEnum.INACTIVE,
+            N.NavigationClusterStatus.NavigationStatusEnum.UNAVAILABLE, N.NavigationClusterStatus.NavigationStatusEnum.REROUTING)) {
+            val value = snapshot()
+            value.clusterStatus = AapNavigationHelper.TimedMessage(N.NavigationClusterStatus.newBuilder().setStatus(status).build(), 0)
+            assertNull(BydNavigationMapper.from(value))
+        }
+    }
+}
+
+

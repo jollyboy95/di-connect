@@ -16,6 +16,10 @@ object DiConnectViews {
         val road: String,
         val remainingMeters: Int,
         val remainingSeconds: Int,
+        val arrivalText: String? = null,
+        val roundaboutImage: ByteArray? = null,
+        /** Google's arrow image for the next turn, when the phone sends one (any turn type). */
+        val turnImage: ByteArray? = null,
     )
 
     data class Music(
@@ -34,16 +38,31 @@ object DiConnectViews {
         fun release()
     }
 
+    /** Where on the cluster panel the map goes, as fractions of its width (0-1 is the whole panel). */
+    data class MapWindow(val left: Float, val right: Float) {
+        val width: Float get() = right - left
+        val full: Boolean get() = left <= 0f && right >= 1f
+        companion object { val FULL = MapWindow(0f, 1f) }
+    }
+
+    /** The map window the chosen cluster theme wants; read when an Android Auto session starts. */
+    @Volatile var clusterMapWindow: ((Context) -> MapWindow)? = null
+
+    /** True while Di-Connect's own directions card is wanted on the cluster (a Themes setting). */
+    @Volatile var clusterDirectionsWanted: (() -> Boolean)? = null
+
     /** Set by Di-Connect's D-Play side at start-up; while null, DiAuto's own views are used. */
     @Volatile var cluster: ((Context) -> Layer)? = null
     /** [anchor]: 0 left, 1 centre, 2 right, as both apps store it. */
     @Volatile var hud: ((Context, Int) -> Layer)? = null
+    /** Reuse the already-translated parked HUD test label from the CarPlay host. */
+    @Volatile var hudTestLabel: ((Context) -> String)? = null
 
     fun observeMusic(observer: (Music) -> Unit): () -> Unit = GwmMusicState.observe { s ->
         observer(Music(s.title, s.artist, s.album, s.artwork, s.durationMillis, s.positionNow(), s.playing))
     }
 
     internal fun from(guidance: BydGuidance?): Guidance? = guidance?.let {
-        Guidance(it.clusterIcon, it.roundaboutExit, it.distanceMeters, it.road, it.remainingMeters, it.remainingSeconds)
+        Guidance(it.clusterIcon, it.roundaboutExit, it.distanceMeters, it.road, it.remainingMeters, it.remainingSeconds, it.arrivalText, it.roundaboutImage?.toByteArray(), it.turnImage?.toByteArray())
     }
 }

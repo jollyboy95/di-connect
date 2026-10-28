@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aa_gwm_map_tests_title">Map layout tests (experimental)</string>
+    <string name="aa_gwm_map_tests_note">Android Auto only. Test while parked, using the same theme and route. These options ask the phone to lay out its map differently; they do not remove Google’s card or change the car’s own indicators. Baseline restores the existing map configuration.</string>
+    <string name="aa_gwm_map_tests_reconnect">Saved for the next Android Auto connection. Return home and tap Restart, or disconnect and reconnect. The current session keeps its negotiated map.</string>
+    <string name="aa_gwm_nav_images_test">Arrow image capability (experimental)</string>
+    <string name="aa_gwm_nav_images_test_note">Advertise support for 128 × 128 arrow images instead of codes only. This tests which guidance messages the phone sends; it does not promise timing data. Applies after reconnecting Android Auto. Leave off for the map tests first.</string>
+    <string name="aa_gwm_nav_evidence">Record navigation test evidence</string>
+    <string name="aa_gwm_nav_evidence_note">Includes message types, field presence and received timing values in diagnostic logs. Does not add road names, destination text, coordinates or image contents to these test logs. Save a diagnostic report after each test.</string>
+    <string name="aa_gwm_map_tests_active">Last negotiated map test: %1$s</string>
+    <string-array name="aa_gwm_map_test_modes">
+        <item>Baseline — current layout</item>
+        <item>Stock reserved areas — current stream and DPI</item>
+        <item>Stock areas — 160 DPI, current stream</item>
+        <item>Stock areas — 1280 stream and 160 DPI</item>
+        <item>Minimal reserved areas — 3% each edge</item>
+        <item>Phone default — omit content insets</item>
+    </string-array>
+    <string name="aa_gwm_nav_protocol_test">Yol tarifi protokolü testi (deneysel)</string>
+    <string name="aa_gwm_nav_protocol_note">Di-Connect hangi Android Auto protokol sürümünü istiyor. 1.6 ve sonrasında telefon varış saati dahil daha ayrıntılı yol tarifi gönderebilir; 4.3 ayrıca ekran işaretlerini okumasına izin verir. Telefonun diğer davranışları da değişebilir. Uygulamak için ana üniteyi yeniden başlatın; aksi halde telefon aracın Wi-Fi ağına bağlanamayabilir. Temel, mevcut sürüme döner.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Temel — protokol 1.2</item>
+        <item>Daha ayrıntılı yol tarifi — protokol 1.6</item>
+        <item>Daha ayrıntılı yol tarifi ve ekran işaretleri — protokol 4.3</item>
+        <item>En yeni telefon sürümü, ses ve görüntüyü değiştirebilir — protokol 6.2</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Dönüş kartını aracın gösterdiğini telefona bildir (deneysel)</string>
+    <string name="aa_gwm_nav_turn_card_note">Protokol 4.3 gerekir. Android Auto\'dan gösterge panelinde kendi dönüş kartını çizmemesini ister. Google Haritalar buna uymayabilir; bu nedenle Temalar ekranında Di-Connect yol tarifini açın. Yeniden bağlandıktan sonra geçerli olur.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Gösterge paneli hazır sinyali (deneysel)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Navigasyon kanalı açıldığında gösterge paneli kullanılabilir mesajını (0x8001) gönderir. Kanıtlanmadı. Yeniden bağlandıktan sonra geçerli olur.</string>
+    <string name="aa_gwm_nav_protocol_active">Son bağlantı: istenen %1$s, telefonun yanıtı %2$s</string>
+</resources>

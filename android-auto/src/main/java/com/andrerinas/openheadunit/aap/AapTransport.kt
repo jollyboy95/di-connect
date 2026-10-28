@@ -645,7 +645,15 @@ class AapTransport(
             }
 
             AppLog.d("Handshake: Starting version request. TS: ${SystemClock.elapsedRealtime()}")
-            val version = Messages.versionRequest
+            // Map-tests: the requested protocol version selects the phone's guidance (1.2 baseline).
+            val protocol = if (com.andrerinas.openheadunit.gwm.GwmMode.active(context))
+                com.andrerinas.openheadunit.gwm.GwmMapExperiments.protocol(context)
+            else com.andrerinas.openheadunit.gwm.GwmMapExperiments.Protocol.BASELINE
+            com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionProtocol = protocol
+            com.andrerinas.openheadunit.gwm.GwmMapExperiments.phoneVersion = "—"
+            val version = if (protocol == com.andrerinas.openheadunit.gwm.GwmMapExperiments.Protocol.BASELINE) Messages.versionRequest
+                else Messages.createRawMessage(0, 3, 1, com.andrerinas.openheadunit.gwm.GwmMapExperiments.versionPayload(protocol))
+            AppLog.i("NAV-EXPERIMENT version requested=${protocol.key}")
             var ret = -1
             var attempt = 0
             var received = false
@@ -692,6 +700,11 @@ class AapTransport(
                         && buffer[4] == 0.toByte()
                         && buffer[5] == 2.toByte()) {
                         AppLog.i("Handshake: Version response received (ret=$ret, attempt=$attempt).")
+                        if (ret >= 12) {
+                            fun u16(i: Int) = ((buffer[i].toInt() and 0xFF) shl 8) or (buffer[i + 1].toInt() and 0xFF)
+                            com.andrerinas.openheadunit.gwm.GwmMapExperiments.phoneVersion = "${u16(6)}.${u16(8)}"
+                            AppLog.i("NAV-EXPERIMENT version requested=${protocol.key} phone=${u16(6)}.${u16(8)} status=${u16(10)}")
+                        }
                         received = true
                         break
                     }

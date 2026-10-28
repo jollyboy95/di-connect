@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aa_gwm_map_tests_title">Map layout tests (experimental)</string>
+    <string name="aa_gwm_map_tests_note">Android Auto only. Test while parked, using the same theme and route. These options ask the phone to lay out its map differently; they do not remove Google’s card or change the car’s own indicators. Baseline restores the existing map configuration.</string>
+    <string name="aa_gwm_map_tests_reconnect">Saved for the next Android Auto connection. Return home and tap Restart, or disconnect and reconnect. The current session keeps its negotiated map.</string>
+    <string name="aa_gwm_nav_images_test">Arrow image capability (experimental)</string>
+    <string name="aa_gwm_nav_images_test_note">Advertise support for 128 × 128 arrow images instead of codes only. This tests which guidance messages the phone sends; it does not promise timing data. Applies after reconnecting Android Auto. Leave off for the map tests first.</string>
+    <string name="aa_gwm_nav_evidence">Record navigation test evidence</string>
+    <string name="aa_gwm_nav_evidence_note">Includes message types, field presence and received timing values in diagnostic logs. Does not add road names, destination text, coordinates or image contents to these test logs. Save a diagnostic report after each test.</string>
+    <string name="aa_gwm_map_tests_active">Last negotiated map test: %1$s</string>
+    <string-array name="aa_gwm_map_test_modes">
+        <item>Baseline — current layout</item>
+        <item>Stock reserved areas — current stream and DPI</item>
+        <item>Stock areas — 160 DPI, current stream</item>
+        <item>Stock areas — 1280 stream and 160 DPI</item>
+        <item>Minimal reserved areas — 3% each edge</item>
+        <item>Phone default — omit content insets</item>
+    </string-array>
+    <string name="aa_gwm_nav_protocol_test">Navigációs protokoll teszt (kísérleti)</string>
+    <string name="aa_gwm_nav_protocol_note">Melyik Android Auto protokollverziót kéri a Di-Connect. 1.6-tól a telefon gazdagabb navigációt küldhet, érkezési idővel együtt; a 4.3 kijelzőjelzők olvasását is lehetővé teszi. A telefon más viselkedése is változhat. Az érvényesítéshez indítsa újra a fejegységet, különben a telefon nem biztos, hogy csatlakozik az autó Wi-Fi-jéhez. Az alap visszaállítja a jelenlegi verziót.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Alap — 1.2-es protokoll</item>
+        <item>Gazdagabb navigáció — 1.6-os protokoll</item>
+        <item>Gazdagabb navigáció és kijelzőjelzők — 4.3-as protokoll</item>
+        <item>Legújabb telefonverzió, módosíthatja a hangot és a videót — 6.2-es protokoll</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">A telefon tudja, hogy az autó mutatja a kanyarkártyát (kísérleti)</string>
+    <string name="aa_gwm_nav_turn_card_note">4.3-as protokoll szükséges. Arra kéri az Android Autót, hogy ne rajzolja ki saját kanyarkártyáját a műszerfalon. A Google Térkép ezt nem feltétlenül követi, ezért kapcsolja be a Di-Connect útbaigazítást a Témák képernyőn. Újracsatlakozás után érvényes.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Műszerfal-készenléti jel (kísérleti)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">A navigációs csatorna megnyitásakor elküldi a műszerfal elérhető üzenetet (0x8001). Nem igazolt. Újracsatlakozás után érvényes.</string>
+    <string name="aa_gwm_nav_protocol_active">Utolsó kapcsolat: kérve %1$s, a telefon válasza %2$s</string>
+</resources>

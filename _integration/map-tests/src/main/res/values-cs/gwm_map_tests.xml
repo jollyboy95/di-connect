@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aa_gwm_map_tests_title">Map layout tests (experimental)</string>
+    <string name="aa_gwm_map_tests_note">Android Auto only. Test while parked, using the same theme and route. These options ask the phone to lay out its map differently; they do not remove Google’s card or change the car’s own indicators. Baseline restores the existing map configuration.</string>
+    <string name="aa_gwm_map_tests_reconnect">Saved for the next Android Auto connection. Return home and tap Restart, or disconnect and reconnect. The current session keeps its negotiated map.</string>
+    <string name="aa_gwm_nav_images_test">Arrow image capability (experimental)</string>
+    <string name="aa_gwm_nav_images_test_note">Advertise support for 128 × 128 arrow images instead of codes only. This tests which guidance messages the phone sends; it does not promise timing data. Applies after reconnecting Android Auto. Leave off for the map tests first.</string>
+    <string name="aa_gwm_nav_evidence">Record navigation test evidence</string>
+    <string name="aa_gwm_nav_evidence_note">Includes message types, field presence and received timing values in diagnostic logs. Does not add road names, destination text, coordinates or image contents to these test logs. Save a diagnostic report after each test.</string>
+    <string name="aa_gwm_map_tests_active">Last negotiated map test: %1$s</string>
+    <string-array name="aa_gwm_map_test_modes">
+        <item>Baseline — current layout</item>
+        <item>Stock reserved areas — current stream and DPI</item>
+        <item>Stock areas — 160 DPI, current stream</item>
+        <item>Stock areas — 1280 stream and 160 DPI</item>
+        <item>Minimal reserved areas — 3% each edge</item>
+        <item>Phone default — omit content insets</item>
+    </string-array>
+    <string name="aa_gwm_nav_protocol_test">Test protokolu navádění (experimentální)</string>
+    <string name="aa_gwm_nav_protocol_note">Kterou verzi protokolu Android Auto Di-Connect požaduje. Od 1.6 může telefon posílat bohatší navádění včetně času příjezdu; 4.3 mu navíc umožní číst příznaky displeje. Může se změnit i jiné chování telefonu. Pro použití restartujte jednotku; jinak se telefon nemusí připojit k Wi-Fi vozu. Výchozí obnoví současnou verzi.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Výchozí — protokol 1.2</item>
+        <item>Bohatší navádění — protokol 1.6</item>
+        <item>Bohatší navádění a příznaky displeje — protokol 4.3</item>
+        <item>Nejnovější verze telefonu, může změnit zvuk a video — protokol 6.2</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Sdělit telefonu, že kartu odbočky zobrazuje auto (experimentální)</string>
+    <string name="aa_gwm_nav_turn_card_note">Vyžaduje protokol 4.3. Žádá Android Auto, aby na přístrojovém štítu nekreslil vlastní kartu odbočky. Google Maps to nemusí dodržet, proto zapněte navádění Di-Connect na obrazovce Motivy. Platí po opětovném připojení.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Signál připravenosti přístrojového štítu (experimentální)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Při otevření navigačního kanálu odešle zprávu o dostupnosti přístrojového štítu (0x8001). Neověřeno. Platí po opětovném připojení.</string>
+    <string name="aa_gwm_nav_protocol_active">Poslední připojení: požadováno %1$s, telefon odpověděl %2$s</string>
+</resources>

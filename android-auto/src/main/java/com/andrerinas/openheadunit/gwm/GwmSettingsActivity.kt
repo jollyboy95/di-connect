@@ -166,6 +166,13 @@ class GwmSettingsActivity : BaseActivity() {
             else GwmOutputs.showTest(this, gwm.hudDisplayId, gwm.hudArea)?.let { toast(it) }
             render()
         }
+        com.andrerinas.openheadunit.DiConnectViews.hudTestLabel?.invoke(this)?.let { label ->
+            button(if (GwmOutputs.hudSampleShowing) getString(R.string.aa_gwm_test_hide) else label) {
+                if (GwmOutputs.hudSampleShowing) GwmOutputs.hideTest()
+                else GwmOutputs.showHudSample(this)?.let { toast(it) }
+                render()
+            }
+        }
         note(getString(R.string.aa_gwm_hud_area_note))
         val area = gwm.hudArea
         val steps = (0..100 step 5).toList()
@@ -200,6 +207,38 @@ class GwmSettingsActivity : BaseActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun renderDiagnostics() {
         section(R.string.aa_gwm_section_diagnostics)
+        note(getString(R.string.aa_gwm_map_tests_note))
+        val modes = GwmMapExperiments.Mode.entries
+        val labels = resources.getStringArray(R.array.aa_gwm_map_test_modes)
+        choice(getString(R.string.aa_gwm_map_tests_title), labels,
+            modes.indexOf(GwmMapExperiments.mode(this)), getString(R.string.aa_gwm_map_tests_reconnect)) {
+            GwmMapExperiments.saveMode(this, modes[it])
+            toast(getString(R.string.aa_gwm_map_tests_reconnect))
+        }
+        toggle(R.string.aa_gwm_nav_images_test, getString(R.string.aa_gwm_nav_images_test_note), GwmMapExperiments.images(this)) {
+            GwmMapExperiments.saveImages(this, it)
+            toast(getString(R.string.aa_gwm_map_tests_reconnect))
+        }
+        toggle(R.string.aa_gwm_nav_evidence, getString(R.string.aa_gwm_nav_evidence_note), GwmMapExperiments.diagnostics(this)) {
+            GwmMapExperiments.saveDiagnostics(this, it)
+        }
+        note(getString(R.string.aa_gwm_map_tests_active, GwmClusterProfile.declaredExperiment.key))
+        // Guidance experiments: each is off by default and applies at the next connection.
+        val protocols = GwmMapExperiments.Protocol.entries
+        choice(getString(R.string.aa_gwm_nav_protocol_test), resources.getStringArray(R.array.aa_gwm_nav_protocol_modes),
+            protocols.indexOf(GwmMapExperiments.protocol(this)), getString(R.string.aa_gwm_nav_protocol_note)) {
+            GwmMapExperiments.saveProtocol(this, protocols[it])
+            toast(getString(R.string.aa_gwm_map_tests_reconnect))
+        }
+        toggle(R.string.aa_gwm_nav_turn_card_test, getString(R.string.aa_gwm_nav_turn_card_note), GwmMapExperiments.turnCard(this)) {
+            GwmMapExperiments.saveTurnCard(this, it)
+            toast(getString(R.string.aa_gwm_map_tests_reconnect))
+        }
+        toggle(R.string.aa_gwm_nav_cluster_ready_test, getString(R.string.aa_gwm_nav_cluster_ready_note), GwmMapExperiments.clusterReady(this)) {
+            GwmMapExperiments.saveClusterReady(this, it)
+            toast(getString(R.string.aa_gwm_map_tests_reconnect))
+        }
+        note(getString(R.string.aa_gwm_nav_protocol_active, GwmMapExperiments.sessionProtocol.key, GwmMapExperiments.phoneVersion))
         button(getString(R.string.aa_gwm_scan)) {
             scanResult = getString(R.string.aa_gwm_scanning)
             render()

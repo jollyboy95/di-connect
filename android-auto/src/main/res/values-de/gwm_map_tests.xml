@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aa_gwm_map_tests_title">Map layout tests (experimental)</string>
+    <string name="aa_gwm_map_tests_note">Android Auto only. Test while parked, using the same theme and route. These options ask the phone to lay out its map differently; they do not remove Google’s card or change the car’s own indicators. Baseline restores the existing map configuration.</string>
+    <string name="aa_gwm_map_tests_reconnect">Saved for the next Android Auto connection. Return home and tap Restart, or disconnect and reconnect. The current session keeps its negotiated map.</string>
+    <string name="aa_gwm_nav_images_test">Arrow image capability (experimental)</string>
+    <string name="aa_gwm_nav_images_test_note">Advertise support for 128 × 128 arrow images instead of codes only. This tests which guidance messages the phone sends; it does not promise timing data. Applies after reconnecting Android Auto. Leave off for the map tests first.</string>
+    <string name="aa_gwm_nav_evidence">Record navigation test evidence</string>
+    <string name="aa_gwm_nav_evidence_note">Includes message types, field presence and received timing values in diagnostic logs. Does not add road names, destination text, coordinates or image contents to these test logs. Save a diagnostic report after each test.</string>
+    <string name="aa_gwm_map_tests_active">Last negotiated map test: %1$s</string>
+    <string-array name="aa_gwm_map_test_modes">
+        <item>Baseline — current layout</item>
+        <item>Stock reserved areas — current stream and DPI</item>
+        <item>Stock areas — 160 DPI, current stream</item>
+        <item>Stock areas — 1280 stream and 160 DPI</item>
+        <item>Minimal reserved areas — 3% each edge</item>
+        <item>Phone default — omit content insets</item>
+    </string-array>
+    <string name="aa_gwm_nav_protocol_test">Test des Zielführungsprotokolls (experimentell)</string>
+    <string name="aa_gwm_nav_protocol_note">Welche Android-Auto-Protokollversion Di-Connect anfordert. Ab 1.6 kann das Telefon umfangreichere Zielführung inklusive Ankunftszeit senden; 4.3 lässt es zusätzlich Anzeige-Flags lesen. Auch anderes Telefonverhalten kann sich ändern. Zum Übernehmen das Infotainment neu starten; sonst verbindet sich das Telefon eventuell nicht mit dem WLAN des Autos. Standard stellt die aktuelle Version wieder her.</string>
+    <string-array name="aa_gwm_nav_protocol_modes">
+        <item>Standard — Protokoll 1.2</item>
+        <item>Umfangreichere Zielführung — Protokoll 1.6</item>
+        <item>Umfangreichere Zielführung und Anzeige-Flags — Protokoll 4.3</item>
+        <item>Neueste Telefonversion, kann Audio und Video ändern — Protokoll 6.2</item>
+    </string-array>
+    <string name="aa_gwm_nav_turn_card_test">Dem Telefon melden, dass das Auto die Abbiegekarte zeigt (experimentell)</string>
+    <string name="aa_gwm_nav_turn_card_note">Erfordert Protokoll 4.3. Bittet Android Auto, im Kombiinstrument keine eigene Abbiegekarte zu zeichnen. Google Maps hält sich eventuell nicht daran, deshalb die Di-Connect-Zielführung im Bildschirm Designs einschalten. Gilt nach erneutem Verbinden.</string>
+    <string name="aa_gwm_nav_cluster_ready_test">Bereitschaftssignal des Kombiinstruments (experimentell)</string>
+    <string name="aa_gwm_nav_cluster_ready_note">Sendet beim Öffnen des Navigationskanals die Meldung, dass das Kombiinstrument verfügbar ist (0x8001). Nicht belegt. Gilt nach erneutem Verbinden.</string>
+    <string name="aa_gwm_nav_protocol_active">Letzte Verbindung: angefordert %1$s, Telefon antwortete %2$s</string>
+</resources>
