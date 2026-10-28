@@ -57,7 +57,7 @@ internal data class ClusterTheme(
      */
     val mapWindow: Pair<Float, Float>? get() = when (layout) {
         Layout.SPLIT, Layout.HYBRID_SPORT, Layout.VAPORWAVE_STEREO, Layout.MUSIC_LOUNGE -> SPLIT_MAP
-        Layout.CENTRE, Layout.BAVARIAN -> CENTRE_MAP
+        Layout.CENTRE -> CENTRE_MAP
         else -> null
     }
 

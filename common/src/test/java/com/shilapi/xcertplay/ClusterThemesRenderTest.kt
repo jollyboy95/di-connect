@@ -52,7 +52,9 @@ class ClusterThemesRenderTest {
             for (y in 0 until height step 4) for (x in 0 until width / 3 step 4) if (bitmap.getPixel(x, y) != background) drawn++
             assertTrue("${theme.id} on $connection draws its instruments", drawn > 500)
             // A theme with its own map window has Google's card inside that window instead.
-            if (connection == ClusterConnection.ANDROID_AUTO && theme.dim == 0 && theme.mapWindow == null) {
+            // The full-map instrument layout draws Di-Connect's directions instead (turn card hidden).
+            if (connection == ClusterConnection.ANDROID_AUTO && theme.dim == 0 && theme.mapWindow == null &&
+                theme.layout != ClusterTheme.Layout.BAVARIAN) {
                 for (y in (height * .42f).toInt() until (height * .74f).toInt() step 3)
                     for (x in (width * .76f).toInt() until (width * .99f).toInt() step 3)
                         assertEquals("${theme.id} covers Google's card at $x,$y", background, bitmap.getPixel(x, y))
@@ -213,8 +215,8 @@ class ClusterThemesRenderTest {
         val file = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json")).first { it.isFile }
         val themes = ThemePacks.parse(file.readText()).filter { it.layout in setOf(
             ClusterTheme.Layout.HYBRID_SPORT, ClusterTheme.Layout.VAPORWAVE_STEREO,
-            ClusterTheme.Layout.MUSIC_LOUNGE, ClusterTheme.Layout.BAVARIAN) }
-        assertEquals(4, themes.size)
+            ClusterTheme.Layout.MUSIC_LOUNGE) }
+        assertEquals(3, themes.size)
         for (theme in themes) for ((w, h) in listOf(1920 to 720, 960 to 360)) {
             val window = theme.mapWindow!!
             assertTrue(theme.availableFor(ClusterConnection.ANDROID_AUTO))

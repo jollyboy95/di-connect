@@ -315,17 +315,17 @@
     },
     {
       "id": "studio-bavarian",
-      "name": "BMW Inspired",
+      "name": "Isar Drive",
       "category": "sport",
       "layout": "bavarian",
-      "panel": "pill",
+      "panel": "card",
       "speed": "condensed",
       "text": "#F4F8FF",
-      "secondary": "#B1C1D4",
-      "accent": "#FF673D",
-      "charge": "#55BBFF",
-      "surface": "#FF09101A",
-      "edge": "#446C839E"
+      "secondary": "#AFC0D3",
+      "accent": "#3FA2FF",
+      "charge": "#FF8A3D",
+      "surface": "#E8070D16",
+      "edge": "#55A9C8E6"
     }
   ]
 }
