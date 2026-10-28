@@ -23,6 +23,7 @@ internal object BydNavigationMapper {
         val position = snapshot.currentPosition?.payload
         val distance = position?.takeIf { it.hasStepDistance() && it.stepDistance.hasDistance() && it.stepDistance.distance.hasMeters() }
             ?.stepDistance?.distance?.meters
+            ?: position?.takeIf { it.hasStepDistance() && it.stepDistance.hasDistance() }?.stepDistance?.distance?.let(::shownMeters)
             ?: snapshot.nextTurnDistance?.payload?.takeIf { it.hasDistanceMeters() }?.distanceMeters
             ?: return null // Do not present unknown distance as zero/"Now".
         if (distance < 0) return null
@@ -56,6 +57,27 @@ internal object BydNavigationMapper {
     }
 
     data class Codes(val cluster: Int, val gaode: Int, val arrow: Int, val exit: Int = 0)
+
+    /**
+     * Metres from the figure the phone shows ("300" with METERS, "1.2" or "1,2" with KILOMETERS),
+     * for rich guidance that leaves out the exact metres. Null when there is no usable figure.
+     */
+    fun shownMeters(distance: NavigationStatus.NavigationDistance): Int? {
+        if (!distance.hasDisplayValue() || !distance.hasDisplayUnits()) return null
+        val value = distance.displayValue.trim().replace(',', '.').filter { it.isDigit() || it == '.' }
+            .toDoubleOrNull()?.takeIf { it >= 0 && !it.isNaN() } ?: return null
+        val metres = when (distance.displayUnits) {
+            NavigationStatus.NavigationDistance.DistanceUnits.METERS -> 1.0
+            NavigationStatus.NavigationDistance.DistanceUnits.KILOMETERS,
+            NavigationStatus.NavigationDistance.DistanceUnits.KILOMETERS_P1 -> 1000.0
+            NavigationStatus.NavigationDistance.DistanceUnits.MILES,
+            NavigationStatus.NavigationDistance.DistanceUnits.MILES_P1 -> 1609.344
+            NavigationStatus.NavigationDistance.DistanceUnits.FEET -> 0.3048
+            NavigationStatus.NavigationDistance.DistanceUnits.YARDS -> 0.9144
+            else -> return null
+        }
+        return (value * metres).takeIf { it < 10_000_000 }?.let { Math.round(it).toInt() }
+    }
 
     fun codes(type: Int, exit: Int = 0): Codes? = when (type) {
         7, 15, 23 -> Codes(2, 1, 1)

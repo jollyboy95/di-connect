@@ -2543,3 +2543,36 @@ edit(aa_java/'hud/BydNavigationMapper.kt',
     ('''        val road = step?.takeIf { it.hasRoad() && it.road.hasName() }?.road?.name?.takeIf { it.isNotBlank() }''',
      '''        val road = step?.takeIf { it.hasCue() }?.cue?.alternateTextList?.firstOrNull { it.isNotBlank() }
             ?: step?.takeIf { it.hasRoad() && it.road.hasName() }?.road?.name?.takeIf { it.isNotBlank() }'''))
+# At protocol 1.6 and above the phone sends only rich guidance (0x8006/0x8007) and stops the
+# legacy distance (0x8005). Its step distance carries the rounded figure Google shows
+# ("300" m, "1.2" km) but no metres (H7 report 11), so read the shown figure instead.
+edit(aa_java/'hud/BydNavigationMapper.kt',
+    ('''        val distance = position?.takeIf { it.hasStepDistance() && it.stepDistance.hasDistance() && it.stepDistance.distance.hasMeters() }
+            ?.stepDistance?.distance?.meters
+''','''        val distance = position?.takeIf { it.hasStepDistance() && it.stepDistance.hasDistance() && it.stepDistance.distance.hasMeters() }
+            ?.stepDistance?.distance?.meters
+            ?: position?.takeIf { it.hasStepDistance() && it.stepDistance.hasDistance() }?.stepDistance?.distance?.let(::shownMeters)
+'''),
+    ('''    fun codes(type: Int, exit: Int = 0): Codes? = when (type) {''',
+     '''    /**
+     * Metres from the figure the phone shows ("300" with METERS, "1.2" or "1,2" with KILOMETERS),
+     * for rich guidance that leaves out the exact metres. Null when there is no usable figure.
+     */
+    fun shownMeters(distance: NavigationStatus.NavigationDistance): Int? {
+        if (!distance.hasDisplayValue() || !distance.hasDisplayUnits()) return null
+        val value = distance.displayValue.trim().replace(',', '.').filter { it.isDigit() || it == '.' }
+            .toDoubleOrNull()?.takeIf { it >= 0 && !it.isNaN() } ?: return null
+        val metres = when (distance.displayUnits) {
+            NavigationStatus.NavigationDistance.DistanceUnits.METERS -> 1.0
+            NavigationStatus.NavigationDistance.DistanceUnits.KILOMETERS,
+            NavigationStatus.NavigationDistance.DistanceUnits.KILOMETERS_P1 -> 1000.0
+            NavigationStatus.NavigationDistance.DistanceUnits.MILES,
+            NavigationStatus.NavigationDistance.DistanceUnits.MILES_P1 -> 1609.344
+            NavigationStatus.NavigationDistance.DistanceUnits.FEET -> 0.3048
+            NavigationStatus.NavigationDistance.DistanceUnits.YARDS -> 0.9144
+            else -> return null
+        }
+        return (value * metres).takeIf { it < 10_000_000 }?.let { Math.round(it).toInt() }
+    }
+
+    fun codes(type: Int, exit: Int = 0): Codes? = when (type) {'''))

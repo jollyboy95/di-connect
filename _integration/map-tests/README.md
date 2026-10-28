@@ -39,3 +39,11 @@ Notes:
 - 0x8006 step field 2 is the instruction text and field 4 the road names; the mapper now prefers field 4.
 - ImageOptions field 1 is height and field 2 width (aa-proxy-rs, open-android-auto); our generated names are swapped. Both are 128, so the bytes are unchanged.
 - Licences: open-android-auto GPL-3.0, aa-proxy-rs GPL-2.0, AARE GPL-3.0, open-headunit AGPL-3.0 (read for facts); mh2p-cluster is CC BY-NC-SA 4.0, read only, nothing copied. No code was copied from any of them.
+
+### Findings, H7 report 11 (build r25941384)
+
+- Confirmed: requesting 1.2 gives legacy guidance only (0x8004/0x8005). Requesting 1.6 (phone answered 1.7) or 4.3 (phone answered 6.2) gives rich guidance only: 0x8006 steps and 0x8007 position, with no legacy messages.
+- Confirmed: 0x8007 carries the destination metres, the formatted ETA and the seconds to arrival. These match Google's card. Its step distance has only the shown figure and units, with no metres. The mapper now reads the shown figure, so Di-Connect's card and the HUD work at 1.6 and above.
+- Not seen: lane guidance, or a second step.
+- Inconclusive: phone disconnects (EOF) happened at both 1.6 and 4.3 for a few minutes and then stopped. They are not clearly tied to the version.
+- Not yet tested: the turn-card flag and the cluster-ready signal.

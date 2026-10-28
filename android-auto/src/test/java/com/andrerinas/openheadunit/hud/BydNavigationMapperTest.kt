@@ -110,6 +110,24 @@ class BydNavigationMapperTest {
                     .setDistance(N.NavigationDistance.newBuilder().setMeters(distance))).build(), 0)
         }
     }
+    @Test fun `rich guidance without metres uses the shown distance`() {
+        val value = snapshot(null)
+        fun shown(text: String, units: N.NavigationDistance.DistanceUnits) {
+            value.currentPosition = AapNavigationHelper.TimedMessage(N.NavigationCurrentPosition.newBuilder().setStepDistance(
+                N.NavigationStepDistance.newBuilder().setDistance(N.NavigationDistance.newBuilder()
+                    .setDisplayValue(text).setDisplayUnits(units))).build(), 0)
+        }
+        shown("300", N.NavigationDistance.DistanceUnits.METERS)
+        assertEquals(300, BydNavigationMapper.from(value)!!.distanceMeters)
+        shown("1,2", N.NavigationDistance.DistanceUnits.KILOMETERS_P1)
+        assertEquals(1200, BydNavigationMapper.from(value)!!.distanceMeters)
+        shown("0.5", N.NavigationDistance.DistanceUnits.MILES_P1)
+        assertEquals(805, BydNavigationMapper.from(value)!!.distanceMeters)
+        shown("soon", N.NavigationDistance.DistanceUnits.METERS)
+        assertNull(BydNavigationMapper.from(value))
+        shown("300", N.NavigationDistance.DistanceUnits.UNKNOWN_DISTANCE_UNIT)
+        assertNull(BydNavigationMapper.from(value))
+    }
     @Test fun `uses next road and metre distance`() {
         val frame = BydNavigationMapper.from(snapshot())!!
         assertEquals("Next road", frame.road)
