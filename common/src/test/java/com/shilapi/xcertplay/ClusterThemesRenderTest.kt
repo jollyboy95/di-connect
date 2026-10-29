@@ -74,7 +74,8 @@ class ClusterThemesRenderTest {
         ClusterTheme.Layout.AURORA_PLUS, ClusterTheme.Layout.ZEN, ClusterTheme.Layout.SPORT_ARC, ClusterTheme.Layout.HORIZON_BAR,
         ClusterTheme.Layout.FLOAT_CARDS, ClusterTheme.Layout.INDUSTRIAL, ClusterTheme.Layout.VERTICAL_STACK,
         ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH, ClusterTheme.Layout.ECLIPSE, ClusterTheme.Layout.FLOAT_GLASS,
-        ClusterTheme.Layout.HORIZON_PLUS, ClusterTheme.Layout.PRISM)
+        ClusterTheme.Layout.HORIZON_PLUS, ClusterTheme.Layout.PRISM, ClusterTheme.Layout.OVAL_FRAME, ClusterTheme.Layout.DUAL_DIAL,
+        ClusterTheme.Layout.WIDE_HORIZON, ClusterTheme.Layout.ELONGATED)
 
     @Test fun materialPanelsDoNotInheritThePreviousShadowOpacity() {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
@@ -102,7 +103,7 @@ class ClusterThemesRenderTest {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
             .first { it.isFile }.readText().let(ThemePacks::parse)
         val concepts = (ClusterThemes.builtIn+catalogue).distinctBy{it.id}.filter { it.layout in conceptLayouts }
-        assertEquals(26,concepts.size) // 13 earlier concepts, the nine-tile sheet and the glass set
+        assertEquals(30,concepts.size) // 13 earlier concepts, the nine-tile sheet, the glass set and the cockpit set
         val output=File("build/reports/gwm-cluster/themes").apply{mkdirs()}
         val artwork=Bitmap.createBitmap(300,300,Bitmap.Config.ARGB_8888)
         val cover=Canvas(artwork)

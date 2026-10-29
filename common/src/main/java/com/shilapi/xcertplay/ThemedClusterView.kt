@@ -147,6 +147,8 @@ internal class ThemedClusterView(
             ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH -> drawNine(canvas, w, h, showMusic)
             ClusterTheme.Layout.ECLIPSE, ClusterTheme.Layout.FLOAT_GLASS, ClusterTheme.Layout.HORIZON_PLUS,
             ClusterTheme.Layout.PRISM -> drawGlassSet(canvas, w, h, showMusic)
+            ClusterTheme.Layout.OVAL_FRAME, ClusterTheme.Layout.DUAL_DIAL, ClusterTheme.Layout.WIDE_HORIZON,
+            ClusterTheme.Layout.ELONGATED -> drawCockpitSet(canvas, w, h, showMusic)
             ClusterTheme.Layout.HORIZON_RIBBON -> drawHorizonRibbon(canvas,w,h)
             ClusterTheme.Layout.ORBIT_GLASS -> drawOrbitGlass(canvas,w,h)
             ClusterTheme.Layout.NIGHTFALL_AUDIO -> drawNightfallAudio(canvas,w,h)
@@ -2379,7 +2381,8 @@ internal class ThemedClusterView(
     private val nineLayouts = setOf(ClusterTheme.Layout.AURORA_PLUS, ClusterTheme.Layout.ZEN, ClusterTheme.Layout.SPORT_ARC,
         ClusterTheme.Layout.HORIZON_BAR, ClusterTheme.Layout.FLOAT_CARDS, ClusterTheme.Layout.INDUSTRIAL,
         ClusterTheme.Layout.VERTICAL_STACK, ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH,
-        ClusterTheme.Layout.ECLIPSE, ClusterTheme.Layout.FLOAT_GLASS, ClusterTheme.Layout.HORIZON_PLUS, ClusterTheme.Layout.PRISM)
+        ClusterTheme.Layout.ECLIPSE, ClusterTheme.Layout.FLOAT_GLASS, ClusterTheme.Layout.HORIZON_PLUS, ClusterTheme.Layout.PRISM,
+        ClusterTheme.Layout.OVAL_FRAME, ClusterTheme.Layout.DUAL_DIAL, ClusterTheme.Layout.WIDE_HORIZON, ClusterTheme.Layout.ELONGATED)
 
     private fun isNine() = theme.layout in nineLayouts
 
@@ -3077,6 +3080,133 @@ internal class ThemedClusterView(
             else -> Unit
         }
         glassFooter(canvas, w, h)
+        glassHeader(canvas, w, h)
+    }
+
+    // ---- Cockpit set: Oval, Dual Dial, Wide Horizon and Elongated (Steve's third sheet) ------
+    // The map shows through a shaped window in a dark bezel. Speed-limit signs, cruise speed and
+    // driver-assist icons on the sheet are left out: the car does not share them, and it draws
+    // its own speed-limit sign.
+
+    /** Dark bezel over everything except [window], with a lit rim. */
+    private fun cockpitBezel(canvas: Canvas, w: Float, h: Float, window: Path) {
+        val s = h / 720f
+        val frame = Path().apply { addRect(0f, 0f, w, h, Path.Direction.CW); addPath(window); fillType = Path.FillType.EVEN_ODD }
+        fill.color = Color.BLACK
+        fill.shader = LinearGradient(0f, 0f, 0f, h, Color.argb(250, 10, 16, 28), Color.argb(252, 3, 6, 12), Shader.TileMode.CLAMP)
+        canvas.drawPath(frame, fill); fill.shader = null
+        line.shader = null
+        line.color = withAlpha(theme.accent, 60); line.strokeWidth = 9f * s; canvas.drawPath(window, line)
+        line.color = withAlpha(theme.accent, 200); line.strokeWidth = 2.2f * s; canvas.drawPath(window, line)
+        // A soft inner shade so the rim reads as glass over the map.
+        canvas.save(); canvas.clipPath(window)
+        line.color = Color.argb(110, 0, 0, 0); line.strokeWidth = 30f * s; canvas.drawPath(window, line)
+        canvas.restore()
+    }
+
+    /** Speed scale on an arc: ticks every 10 km/h, figures every 20, lit up to the speed. */
+    private fun cockpitScale(canvas: Canvas, cx: Float, cy: Float, r: Float, start: Float, sweep: Float, max: Int, labelsInside: Boolean = true) {
+        val h = height.toFloat()
+        val s = h / 720f
+        val speed = snapshot?.speedKph ?: 0f
+        val oval = RectF(cx - r, cy - r, cx + r, cy + r)
+        line.shader = null; line.strokeCap = Paint.Cap.BUTT
+        line.color = Color.argb(160, 30, 46, 70); line.strokeWidth = .012f * h; canvas.drawArc(oval, start, sweep, false, line)
+        val f = (speed / max).coerceIn(0f, 1f)
+        line.color = withAlpha(theme.accent, 90); line.strokeWidth = .03f * h; if (f > 0f) canvas.drawArc(oval, start, sweep * f, false, line)
+        line.color = theme.accent; line.strokeWidth = .012f * h; if (f > 0f) canvas.drawArc(oval, start, sweep * f, false, line)
+        line.strokeCap = Paint.Cap.ROUND
+        for (v in 0..max step 10) {
+            val a = Math.toRadians((start + sweep * v / max).toDouble())
+            val major = v % 20 == 0
+            val r0 = r - .02f * h
+            val r1 = r0 - (if (major) .035f else .018f) * h
+            line.color = if (v <= speed) theme.text else withAlpha(theme.text, 120); line.strokeWidth = (if (major) 2.2f else 1.2f) * s
+            canvas.drawLine(cx + r0 * cos(a).toFloat(), cy + r0 * sin(a).toFloat(), cx + r1 * cos(a).toFloat(), cy + r1 * sin(a).toFloat(), line)
+            if (major) {
+                val rl = if (labelsInside) r1 - .045f * h else r + .045f * h
+                studioText(canvas, "$v", cx + rl * cos(a).toFloat(), cy + rl * sin(a).toFloat() + .013f * h, .034f * h, theme.secondary, 500, align = Paint.Align.CENTER)
+            }
+        }
+    }
+
+    private fun drawCockpitSet(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        val nav = nineNav()
+        val showCard = nineShowsMusic(showMusic)
+        when (theme.layout) {
+            ClusterTheme.Layout.OVAL_FRAME -> {
+                cockpitBezel(canvas, w, h, Path().apply { addOval(RectF(.025f * w, .10f * h, .975f * w, .86f * h), Path.Direction.CW) })
+                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .50f * w, .33f * h, .17f * h, weight = 600, align = Paint.Align.CENTER)
+                studioText(canvas, "km/h", .50f * w, .40f * h, .036f * h, align = Paint.Align.CENTER)
+                if (showCard) glassMusic(canvas, RectF(.075f * w, .46f * h, .36f * w, .76f * h))
+                nav?.let { glassNav(canvas, RectF(.675f * w, .42f * h, .945f * w, .70f * h), it) }
+            }
+            ClusterTheme.Layout.DUAL_DIAL -> {
+                val left = RectF(.17f * w - .40f * h, .10f * h, .17f * w + .40f * h, .90f * h)
+                val right = RectF(.83f * w - .40f * h, .10f * h, .83f * w + .40f * h, .90f * h)
+                val window = Path().apply {
+                    addRoundRect(RectF(.02f * w, .12f * h, .98f * w, .86f * h), .2f * h, .2f * h, Path.Direction.CW)
+                }
+                cockpitBezel(canvas, w, h, window)
+                for (dial in listOf(left, right)) {
+                    fill.color = Color.BLACK
+                    fill.shader = RadialGradient(dial.centerX(), dial.centerY(), dial.width() / 2f,
+                        intArrayOf(Color.argb(235, 8, 16, 30), Color.argb(250, 3, 7, 14)), null, Shader.TileMode.CLAMP)
+                    canvas.drawOval(dial, fill); fill.shader = null
+                    line.color = withAlpha(theme.accent, 70); line.strokeWidth = 10f * h / 720f; canvas.drawOval(dial, line)
+                    line.color = theme.accent; line.strokeWidth = 2.4f * h / 720f; canvas.drawOval(dial, line)
+                }
+                cockpitScale(canvas, left.centerX(), left.centerY(), left.width() / 2f - .02f * h, 135f, 270f, 240)
+                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", left.centerX(), left.centerY() + .05f * h, .19f * h, weight = 600, align = Paint.Align.CENTER)
+                studioText(canvas, "km/h", left.centerX(), left.centerY() + .13f * h, .04f * h, align = Paint.Align.CENTER)
+                if (showCard) {
+                    val box = RectF(right.left + .05f * h, right.centerY() - .17f * h, right.right - .05f * h, right.centerY() + .19f * h)
+                    glassMusic(canvas, box)
+                }
+                nav?.let { glassNav(canvas, RectF(.36f * w, .14f * h, .64f * w, .42f * h), it) }
+            }
+            ClusterTheme.Layout.WIDE_HORIZON -> {
+                cockpitBezel(canvas, w, h, Path().apply { addRoundRect(RectF(.012f * w, .17f * h, .988f * w, .86f * h), .06f * h, .06f * h, Path.Direction.CW) })
+                ninePath.rewind()
+                ninePath.moveTo(.02f * w, .30f * h); ninePath.quadTo(.02f * w, .26f * h, .05f * w, .26f * h); ninePath.lineTo(.27f * w, .26f * h)
+                ninePath.lineTo(.38f * w, .82f * h); ninePath.lineTo(.02f * w, .82f * h); ninePath.close()
+                nineGlass(canvas, ninePath, .26f * h, .82f * h, withAlpha(theme.accent, 150))
+                line.color = theme.accent; line.strokeWidth = 4f * h / 720f
+                canvas.drawLine(.02f * w, .32f * h, .02f * w, .74f * h, line)
+                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .155f * w, .53f * h, .19f * h, weight = 600, align = Paint.Align.CENTER)
+                studioText(canvas, "km/h", .155f * w, .60f * h, .038f * h, align = Paint.Align.CENTER)
+                chargePowerBar(canvas, .06f * w, .30f * w, .67f * h)
+                nav?.let { glassNav(canvas, RectF(.705f * w, .21f * h, .975f * w, .47f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.705f * w, .50f * h, .975f * w, .82f * h))
+            }
+            ClusterTheme.Layout.ELONGATED -> {
+                cockpitBezel(canvas, w, h, Path().apply { addRoundRect(RectF(.012f * w, .17f * h, .988f * w, .85f * h), .2f * h, .2f * h, Path.Direction.CW) })
+                cockpitScale(canvas, .25f * w, .53f * h, .42f * h, 100f, 160f, 120, labelsInside = false)
+                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .20f * w, .55f * h, .18f * h, weight = 600, align = Paint.Align.CENTER)
+                studioText(canvas, "km/h", .20f * w, .62f * h, .038f * h, align = Paint.Align.CENTER)
+                nav?.let { glassNav(canvas, RectF(.405f * w, .21f * h, .665f * w, .48f * h), it) }
+                // Gear selector: P R N D with the car's current gear lit.
+                studioText(canvas, "HYBRID", .86f * w, .38f * h, .032f * h, theme.secondary, 500, align = Paint.Align.CENTER)
+                val gear = nineGear()
+                listOf("P", "R", "N", "D").forEachIndexed { i, g ->
+                    val on = g == gear
+                    studioText(canvas, g, .86f * w, (.46f + i * .075f) * h, (if (on) .07f else .04f) * h, if (on) theme.text else withAlpha(theme.text, 110),
+                        if (on) 700 else 500, align = Paint.Align.CENTER)
+                }
+                // Vertical centre-zero power bar on the right edge.
+                val top = .40f * h
+                val bottom = .72f * h
+                val x = .965f * w
+                line.color = Color.argb(160, 30, 46, 70); line.strokeWidth = .012f * h; canvas.drawLine(x, top, x, bottom, line)
+                val mid = (top + bottom) / 2f
+                val f = kwNow()?.let { (it / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f) } ?: 0f
+                line.color = theme.charge; if (kotlin.math.abs(f) > .01f) canvas.drawLine(x, mid, x, mid - (mid - top) * f, line)
+                studioText(canvas, "POWER", .935f * w, top + .07f * h, .026f * h, theme.secondary, 500, align = Paint.Align.RIGHT)
+                studioText(canvas, "CHARGE", .935f * w, bottom - .05f * h, .026f * h, theme.secondary, 500, align = Paint.Align.RIGHT)
+            }
+            else -> Unit
+        }
+        nineOdo(canvas, .975f * w, .945f * h, .042f * h)
         glassHeader(canvas, w, h)
     }
 
