@@ -44,6 +44,11 @@ internal object GwmMapExperiments {
     /** With 4.3+: tell the phone Di-Connect shows the turn card on the cluster (hidden UI element 5). */
     fun turnCard(context: Context) = prefs(context).getBoolean("nav-turn-card-experiment", false)
     fun saveTurnCard(context: Context, enabled: Boolean) { prefs(context).edit().putBoolean("nav-turn-card-experiment", enabled).apply() }
+    /** Ask for the dashboard map as H.265. The H7 has a hardware HEVC decoder (OMX.qcom.video.decoder.hevc). */
+    fun clusterHevc(context: Context) = prefs(context).getBoolean("cluster-hevc-experiment", false)
+    fun saveClusterHevc(context: Context, enabled: Boolean) { prefs(context).edit().putBoolean("cluster-hevc-experiment", enabled).apply() }
+    /** Read once per connection, so the decoder and the negotiation agree for the whole session. */
+    @Volatile var sessionClusterHevc = false
 
     /** Send InstrumentClusterStart (0x8001, head unit to phone) once the navigation channel opens. */
     fun clusterReady(context: Context) = prefs(context).getBoolean("nav-cluster-ready-experiment", false)

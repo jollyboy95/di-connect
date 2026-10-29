@@ -29,4 +29,6 @@
     <string name="aa_gwm_nav_cluster_ready_test">Gereed-signaal van het instrumentenpaneel (experimenteel)</string>
     <string name="aa_gwm_nav_cluster_ready_note">Stuurt het bericht dat het instrumentenpaneel beschikbaar is (0x8001) wanneer het navigatiekanaal opent. Niet bewezen. Geldt na opnieuw verbinden.</string>
     <string name="aa_gwm_nav_protocol_active">Laatste verbinding: aangevraagd %1$s, telefoon antwoordde %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">Dashboardkaart in H.265 (experimenteel)</string>
+    <string name="aa_gwm_cluster_hevc_note">Vraagt de dashboardkaart als H.265 aan, met de hardware-HEVC-decoder van de auto. Scherper bij dezelfde data. Zet uit als de kaart zwart wordt of hapert. Herstart de headunit om toe te passen.</string>
 </resources>

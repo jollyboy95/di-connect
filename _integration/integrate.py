@@ -2744,3 +2744,10 @@ edit(D,
             addView(climate(getString(R.string.settings_gwm_climate_seat_vent)) { ClimateTest.stepDriverVentilation(it) }, LinearLayout.LayoutParams(0, dp(56), 1f))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {'''))
+
+# Dashboard codec test (Oct 2026): the H7 has OMX.qcom.video.decoder.hevc, so the dashboard map can
+# be asked for as H.265. The decoder follows the codec negotiated for that session.
+edit(aa_java/'aap/AapTransport.kt',
+    ("""            codecName = VideoDecoder.CodecType.H264.settingsValue, forceSoftware = false,""",
+     """            codecName = if (com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterHevc) VideoDecoder.CodecType.H265.settingsValue
+                else VideoDecoder.CodecType.H264.settingsValue, forceSoftware = false,"""))

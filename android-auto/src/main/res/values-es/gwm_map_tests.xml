@@ -29,4 +29,6 @@
     <string name="aa_gwm_nav_cluster_ready_test">Señal de cuadro listo (experimental)</string>
     <string name="aa_gwm_nav_cluster_ready_note">Envía el mensaje de cuadro de instrumentos disponible (0x8001) al abrirse el canal de navegación. Sin comprobar. Se aplica al volver a conectar.</string>
     <string name="aa_gwm_nav_protocol_active">Última conexión: solicitado %1$s, el teléfono respondió %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">Mapa del tablero en H.265 (experimental)</string>
+    <string name="aa_gwm_cluster_hevc_note">Pide al teléfono el mapa del tablero en H.265, con el decodificador HEVC por hardware del auto. Más nítido con los mismos datos. Desactívalo si el mapa queda en negro o se entrecorta. Reinicia la unidad principal para aplicarlo.</string>
 </resources>

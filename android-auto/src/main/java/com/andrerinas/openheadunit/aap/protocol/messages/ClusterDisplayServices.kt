@@ -56,6 +56,13 @@ internal object ClusterDisplayServices {
             com.andrerinas.openheadunit.gwm.GwmMode.active(context) && x.turnCard(context) && x.sessionProtocol.readsHiddenUiElements
         }
         com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionTurnCard = turnCard
+        // Dashboard codec test: H.265 only when asked for and the car has a hardware HEVC decoder.
+        val hevc = com.andrerinas.openheadunit.gwm.GwmMode.active(context) &&
+            com.andrerinas.openheadunit.gwm.GwmMapExperiments.clusterHevc(context) &&
+            com.andrerinas.openheadunit.decoder.VideoDecoder.isHevcSupported()
+        com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterHevc = hevc
+        val clusterCodec = if (hevc) Media.MediaCodecType.MEDIA_CODEC_VIDEO_H265 else Media.MediaCodecType.MEDIA_CODEC_VIDEO_H264_BP
+        AppLog.i("NAV-EXPERIMENT cluster codec=${if (hevc) "H.265" else "H.264"}")
         AppLog.i("NAV-EXPERIMENT cluster hidden_ui_elements=${if (turnCard) "[5]" else "[]"}")
         val gwm = com.andrerinas.openheadunit.gwm.GwmMode.clusterRoute(context)
         val experiment = if (gwm) com.andrerinas.openheadunit.gwm.GwmClusterProfile.declaredExperiment
@@ -77,12 +84,12 @@ internal object ClusterDisplayServices {
             .setDecoderAdditionalDepth(0)
             .setViewingDistance(VIEWING_DISTANCE_MM)
             .setPixelAspectRatioE4(10000)
-            .setVideoCodecType(Media.MediaCodecType.MEDIA_CODEC_VIDEO_H264_BP)
+            .setVideoCodecType(clusterCodec)
             .setUiConfig(com.andrerinas.openheadunit.gwm.GwmMapExperiments.uiConfig(p, experiment, turnCard = turnCard))
             .build()
 
         val sink = Control.Service.MediaSinkService.newBuilder()
-            .setAvailableType(Media.MediaCodecType.MEDIA_CODEC_VIDEO_H264_BP)
+            .setAvailableType(clusterCodec)
             .setAudioType(Media.AudioStreamType.NONE)
             .setAvailableWhileInCall(true)
             .addVideoConfigs(video)

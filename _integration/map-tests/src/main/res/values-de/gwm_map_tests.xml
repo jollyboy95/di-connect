@@ -29,4 +29,6 @@
     <string name="aa_gwm_nav_cluster_ready_test">Bereitschaftssignal des Kombiinstruments (experimentell)</string>
     <string name="aa_gwm_nav_cluster_ready_note">Sendet beim Öffnen des Navigationskanals die Meldung, dass das Kombiinstrument verfügbar ist (0x8001). Nicht belegt. Gilt nach erneutem Verbinden.</string>
     <string name="aa_gwm_nav_protocol_active">Letzte Verbindung: angefordert %1$s, Telefon antwortete %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">Kombiinstrument-Karte in H.265 (experimentell)</string>
+    <string name="aa_gwm_cluster_hevc_note">Fordert die Karte im Kombiinstrument als H.265 an, mit dem HEVC-Hardwaredecoder des Autos. Schärfer bei gleicher Datenmenge. Ausschalten, wenn die Karte schwarz wird oder ruckelt. Zum Übernehmen das Infotainment neu starten.</string>
 </resources>
