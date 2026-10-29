@@ -1747,10 +1747,10 @@ internal class ThemedClusterView(
     /** Thin concentric metal rings, curved turbine vanes, calibrated ticks and a live needle. */
     private fun conceptDial(canvas: Canvas, cx: Float, cy: Float, r: Float, value: Float?, maximum: Float,
                             turbine: Boolean = false, labelOffset: Float = 0f, thousands: Boolean = false) {
-        fill.shader = RadialGradient(cx,cy,r,intArrayOf(Color.rgb(4,8,13),Color.rgb(12,20,29),Color.rgb(4,8,13)),
+        fill.alpha=255;fill.shader=RadialGradient(cx,cy,r,intArrayOf(Color.rgb(4,8,13),Color.rgb(12,20,29),Color.rgb(4,8,13)),
             floatArrayOf(0f,.76f,1f),Shader.TileMode.CLAMP)
         canvas.drawCircle(cx,cy,r,fill);fill.shader=null
-        line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,intArrayOf(Color.rgb(50,63,76),Color.rgb(241,237,223),
+        line.alpha=255;line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,intArrayOf(Color.rgb(50,63,76),Color.rgb(241,237,223),
             Color.rgb(91,105,121),Color.rgb(211,215,216),Color.rgb(47,59,71)),null,Shader.TileMode.CLAMP)
         line.strokeWidth=r*.018f;canvas.drawCircle(cx,cy,r*.98f,line)
         line.strokeWidth=r*.004f;canvas.drawCircle(cx,cy,r*.953f,line);line.shader=null
@@ -1764,7 +1764,7 @@ internal class ThemedClusterView(
                 lineTo(x(a+.255,.94f),y(a+.255,.94f))
                 cubicTo(x(a+.12,.79f),y(a+.12,.79f),x(a+.02,.56f),y(a+.02,.56f),x(a+.03,.37f),y(a+.03,.37f));close()
             }
-            fill.shader=LinearGradient(x(a,.37f),y(a,.37f),x(a+.22,.94f),y(a+.22,.94f),
+            fill.alpha=255;fill.shader=LinearGradient(x(a,.37f),y(a,.37f),x(a+.22,.94f),y(a+.22,.94f),
                 Color.rgb(7,12,20),Color.rgb(46,59,73),Shader.TileMode.CLAMP)
             canvas.drawPath(vane,fill);fill.shader=null
         }
@@ -1788,18 +1788,18 @@ internal class ThemedClusterView(
             line.color=theme.accent;line.strokeWidth=r*.014f
             canvas.drawLine(cx,cy,cx+(cos(angle)*r*.82).toFloat(),cy+(sin(angle)*r*.82).toFloat(),line)
         }
-        fill.shader=RadialGradient(cx-r*.015f,cy-r*.015f,r*.055f,Color.rgb(211,218,224),Color.rgb(34,43,54),Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=RadialGradient(cx-r*.015f,cy-r*.015f,r*.055f,Color.rgb(211,218,224),Color.rgb(34,43,54),Shader.TileMode.CLAMP)
         canvas.drawCircle(cx,cy,r*.055f,fill);fill.shader=null
     }
 
     private fun drawTurbineLuxury(canvas:Canvas,w:Float,h:Float) {
-        fill.shader=LinearGradient(0f,0f,.53f*w,0f,intArrayOf(Color.argb(250,3,12,20),Color.argb(225,3,12,20),Color.TRANSPARENT),floatArrayOf(0f,.70f,1f),Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=LinearGradient(0f,0f,.53f*w,0f,intArrayOf(Color.argb(250,3,12,20),Color.argb(225,3,12,20),Color.TRANSPARENT),floatArrayOf(0f,.70f,1f),Shader.TileMode.CLAMP)
         canvas.drawRect(0f,0f,.53f*w,h,fill);fill.shader=null
         // Smaller turbine sits behind the large speedometer, opening the right-hand map.
         conceptDial(canvas,.355f*w,.47f*h,.285f*h,kwNow()?.let{it+60f},120f,true,-60f)
         studioText(canvas,kwNow()?.let{GwmAndroidAutoClusterView.formatKw(it)} ?: "—",.355f*w,.51f*h,.043f*h,align=Paint.Align.CENTER)
         conceptDial(canvas,.175f*w,.46f*h,.425f*h,snapshot?.speedKph,240f)
-        fill.shader=RadialGradient(.175f*w,.42f*h,.22f*h,Color.rgb(19,54,73),Color.rgb(2,12,20),Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=RadialGradient(.175f*w,.42f*h,.22f*h,Color.rgb(19,54,73),Color.rgb(2,12,20),Shader.TileMode.CLAMP)
         canvas.drawCircle(.175f*w,.46f*h,.22f*h,fill);fill.shader=null
         line.color=Color.rgb(105,172,195);line.strokeWidth=.004f*h
         canvas.drawCircle(.175f*w,.46f*h,.22f*h,line)
@@ -1810,7 +1810,7 @@ internal class ThemedClusterView(
 
     /** Overlapping machined instruments, with the live map continuing underneath. */
     private fun drawPerformanceCockpit(canvas:Canvas,w:Float,h:Float) {
-        fill.shader=LinearGradient(0f,0f,.55f*w,0f,intArrayOf(Color.rgb(9,10,12),Color.argb(248,9,10,12),Color.TRANSPARENT),floatArrayOf(0f,.72f,1f),Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=LinearGradient(0f,0f,.55f*w,0f,intArrayOf(Color.rgb(9,10,12),Color.argb(248,9,10,12),Color.TRANSPARENT),floatArrayOf(0f,.72f,1f),Shader.TileMode.CLAMP)
         canvas.drawRect(0f,0f,.55f*w,h,fill);fill.shader=null
         // Carbon weave is clipped to the instrument shoulder, never painted over the map.
         canvas.save();canvas.clipRect(0f,0f,.40f*w,h)
@@ -1823,7 +1823,7 @@ internal class ThemedClusterView(
         studioText(canvas,kwNow()?.let{GwmAndroidAutoClusterView.formatKw(it)} ?: "—",.365f*w,.54f*h,.047f*h,align=Paint.Align.CENTER)
         conceptDial(canvas,.185f*w,.48f*h,.455f*h,snapshot?.speedKph,240f)
         // Recessed centre obscures the needle hub, as on the reference's digital speed dial.
-        fill.shader=RadialGradient(.185f*w,.43f*h,.245f*h,Color.rgb(41,43,45),Color.rgb(8,9,10),Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=RadialGradient(.185f*w,.43f*h,.245f*h,Color.rgb(41,43,45),Color.rgb(8,9,10),Shader.TileMode.CLAMP)
         canvas.drawCircle(.185f*w,.48f*h,.245f*h,fill);fill.shader=null
         line.color=withAlpha(theme.accent,160);line.strokeWidth=.005f*h;canvas.drawCircle(.185f*w,.48f*h,.242f*h,line)
         studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.185f*w,.53f*h,.17f*h,weight=400,align=Paint.Align.CENTER)
@@ -1836,7 +1836,7 @@ internal class ThemedClusterView(
     }
 
     private fun drawMusicPanorama(canvas:Canvas,w:Float,h:Float) {
-        fill.shader=LinearGradient(0f,0f,.65f*w,h,Color.rgb(6,26,33),Color.rgb(3,12,19),Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=LinearGradient(0f,0f,.65f*w,h,Color.rgb(6,26,33),Color.rgb(3,12,19),Shader.TileMode.CLAMP)
         canvas.drawRect(0f,0f,.62f*w,h,fill);fill.shader=null
         loungeScenery?.takeUnless { it.isRecycled }?.let { scenery ->
             canvas.save()
@@ -1844,11 +1844,11 @@ internal class ThemedClusterView(
             val scale=maxOf(.62f*w/scenery.width,h/scenery.height)
             val bw=scenery.width*scale;val bh=scenery.height*scale
             canvas.drawBitmap(scenery,null,RectF(.31f*w-bw/2f,h/2f-bh/2f,.31f*w+bw/2f,h/2f+bh/2f),art)
-            fill.shader=LinearGradient(0f,0f,.62f*w,0f,Color.argb(60,2,15,22),Color.argb(185,2,15,22),Shader.TileMode.CLAMP)
+            fill.alpha=255;fill.shader=LinearGradient(0f,0f,.62f*w,0f,Color.argb(60,2,15,22),Color.argb(185,2,15,22),Shader.TileMode.CLAMP)
             canvas.drawRect(0f,0f,.62f*w,h,fill);fill.shader=null
             canvas.restore()
         }
-        fill.shader=RadialGradient(.38f*w,.42f*h,.50f*h,withAlpha(theme.accent,30),Color.TRANSPARENT,Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=RadialGradient(.38f*w,.42f*h,.50f*h,withAlpha(theme.accent,30),Color.TRANSPARENT,Shader.TileMode.CLAMP)
         canvas.drawRect(0f,0f,.62f*w,h,fill);fill.shader=null
         studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.035f*w,.49f*h,.205f*h,weight=300)
         studioText(canvas,"km/h",.043f*w,.56f*h,.03f*h,theme.secondary)
@@ -1884,16 +1884,16 @@ internal class ThemedClusterView(
         }
         canvas.save();canvas.translate(.006f*h,.012f*h)
         fill.color=Color.argb(90,22,30,32);canvas.drawPath(shell,fill);canvas.restore()
-        fill.shader=LinearGradient(0f,0f,.39f*w,h,intArrayOf(Color.rgb(248,247,241),Color.rgb(213,216,211),Color.WHITE,Color.rgb(186,191,188)),null,Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=LinearGradient(0f,0f,.39f*w,h,intArrayOf(Color.rgb(248,247,241),Color.rgb(213,216,211),Color.WHITE,Color.rgb(186,191,188)),null,Shader.TileMode.CLAMP)
         canvas.drawPath(shell,fill);fill.shader=null
         line.color=Color.WHITE;line.strokeWidth=.004f*h;canvas.drawPath(shell,line)
         val cx=.215f*w;val cy=.49f*h;val r=.40f*h
         for(i in 0..5) {
-            line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,intArrayOf(Color.WHITE,Color.rgb(135,150,149),Color.WHITE,Color.rgb(186,185,173)),null,Shader.TileMode.CLAMP)
+            line.alpha=255;line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,intArrayOf(Color.WHITE,Color.rgb(135,150,149),Color.WHITE,Color.rgb(186,185,173)),null,Shader.TileMode.CLAMP)
             line.strokeWidth=.012f*h
             canvas.drawOval(RectF(cx-r+i*.012f*h,cy-r+i*.012f*h,cx+r-i*.012f*h,cy+r-i*.012f*h),line)
         };line.shader=null
-        fill.shader=RadialGradient(cx-.08f*h,cy-.13f*h,r*.83f,intArrayOf(Color.WHITE,Color.rgb(243,244,240),Color.rgb(185,193,191)),null,Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=RadialGradient(cx-.08f*h,cy-.13f*h,r*.83f,intArrayOf(Color.WHITE,Color.rgb(243,244,240),Color.rgb(185,193,191)),null,Shader.TileMode.CLAMP)
         canvas.drawCircle(cx,cy,r*.81f,fill);fill.shader=null
         line.color=Color.rgb(100,174,167);line.strokeWidth=.014f*h
         canvas.drawArc(RectF(cx-r*.90f,cy-r*.90f,cx+r*.90f,cy+r*.90f),115f,235f,false,line)
@@ -1925,27 +1925,27 @@ internal class ThemedClusterView(
 
     private fun materialPanel(canvas: Canvas, box: RectF, radius: Float, light: Boolean = false, gold: Boolean = false) {
         val d = height * .004f
-        fill.shader = null; fill.color = Color.argb(85, 0, 0, 0)
+        fill.alpha=255;fill.shader= null; fill.color = Color.argb(85, 0, 0, 0)
         canvas.drawRoundRect(RectF(box.left-d, box.top+d, box.right+d, box.bottom+3*d), radius+d, radius+d, fill)
-        fill.shader = LinearGradient(box.left, box.top, box.right, box.bottom,
+        fill.alpha=255;fill.shader=LinearGradient(box.left, box.top, box.right, box.bottom,
             if (light) intArrayOf(Color.rgb(255,255,245),Color.rgb(228,230,209),Color.rgb(199,208,186))
             else intArrayOf(Color.argb(245,67,83,94),Color.argb(247,18,27,33),Color.argb(250,4,9,14)),
             null,Shader.TileMode.CLAMP)
         canvas.drawRoundRect(box,radius,radius,fill);fill.shader=null
-        line.shader=LinearGradient(box.left,box.top,box.right,box.bottom,
+        line.alpha=255;line.shader=LinearGradient(box.left,box.top,box.right,box.bottom,
             if(gold) intArrayOf(Color.rgb(244,225,164),Color.rgb(105,88,46),Color.rgb(222,199,143))
             else intArrayOf(Color.argb(220,231,246,246),Color.argb(60,117,150,157),Color.argb(160,166,192,194)),null,Shader.TileMode.CLAMP)
         line.strokeWidth=height*.0025f;canvas.drawRoundRect(box,radius,radius,line);line.shader=null
         // An angled reflection, clipped into the surface rather than another floating rectangle.
         canvas.save();val clip=Path().apply{addRoundRect(box,radius,radius,Path.Direction.CW)};canvas.clipPath(clip)
         val gloss=Path().apply{moveTo(box.left,box.top);lineTo(box.left+box.width()*.68f,box.top);lineTo(box.left+box.width()*.42f,box.bottom);lineTo(box.left,box.bottom);close()}
-        fill.shader=LinearGradient(0f,box.top,0f,box.bottom,Color.argb(if(light) 100 else 30,255,255,255),Color.TRANSPARENT,Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=LinearGradient(0f,box.top,0f,box.bottom,Color.argb(if(light) 100 else 30,255,255,255),Color.TRANSPARENT,Shader.TileMode.CLAMP)
         canvas.drawPath(gloss,fill);fill.shader=null;canvas.restore()
     }
 
     private fun atelierHeader(canvas: Canvas,w:Float,h:Float) {
         val p=Path().apply{moveTo(.37f*w,0f);lineTo(.63f*w,0f);lineTo(.61f*w,.10f*h);quadTo(.607f*w,.118f*h,.59f*w,.118f*h);lineTo(.41f*w,.118f*h);quadTo(.393f*w,.118f*h,.39f*w,.10f*h);close()}
-        fill.shader=LinearGradient(0f,0f,0f,.12f*h,Color.argb(235,96,111,116),Color.argb(245,16,25,31),Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=LinearGradient(0f,0f,0f,.12f*h,Color.argb(235,96,111,116),Color.argb(245,16,25,31),Shader.TileMode.CLAMP)
         canvas.drawPath(p,fill);fill.shader=null
         line.color=withAlpha(theme.accent,140);line.strokeWidth=.002f*h;canvas.drawPath(p,line)
         // The actual gear letter is the H7's own layer, in the centre of this surround.
@@ -1967,7 +1967,7 @@ internal class ThemedClusterView(
                 val x=if(right) .292f*w else .070f*w
                 val sign=if(right) -1f else 1f
                 val well=Path().apply{moveTo(x-sign*.016f*w,.20f*h);lineTo(x+sign*.008f*w,.23f*h);lineTo(x+sign*.018f*w,.54f*h);quadTo(x+sign*.005f*w,.59f*h,x-sign*.005f*w,.57f*h);close()}
-                fill.shader=LinearGradient(x,.20f*h,x+sign*.02f*w,.59f*h,Color.rgb(52,66,70),Color.rgb(1,9,14),Shader.TileMode.CLAMP)
+                fill.alpha=255;fill.shader=LinearGradient(x,.20f*h,x+sign*.02f*w,.59f*h,Color.rgb(52,66,70),Color.rgb(1,9,14),Shader.TileMode.CLAMP)
                 base.drawPath(well,fill);fill.shader=null
                 line.color=withAlpha(if(right) theme.charge else theme.accent,120);line.strokeWidth=.002f*h;base.drawPath(well,line)
             }
@@ -1981,7 +1981,7 @@ internal class ThemedClusterView(
             val lit=fraction!=null && i/14f<fraction
             val y=.54f*h-i*.021f*h
             val skew=(13-i)*.0006f*w*sign
-            fill.shader=LinearGradient(x-.012f*w,y,x+.012f*w,y,if(lit) (if(right) theme.charge else theme.accent) else Color.rgb(36,53,60),if(lit) Color.rgb(241,244,218) else Color.rgb(17,31,38),Shader.TileMode.CLAMP)
+            fill.alpha=255;fill.shader=LinearGradient(x-.012f*w,y,x+.012f*w,y,if(lit) (if(right) theme.charge else theme.accent) else Color.rgb(36,53,60),if(lit) Color.rgb(241,244,218) else Color.rgb(17,31,38),Shader.TileMode.CLAMP)
             canvas.drawRoundRect(RectF(x-.012f*w+skew,y,x+.012f*w+skew,y+.014f*h),.002f*h,.002f*h,fill);fill.shader=null
         }
         studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.185f*w,.455f*h,.19f*h,weight=300,align=Paint.Align.CENTER)
@@ -1995,13 +1995,13 @@ internal class ThemedClusterView(
         val cx=.19f*w;val cy=.455f*h;val r=.43f*h
         atelierBackdrop(canvas,w,h) { base ->
             val shoulder=Path().apply{moveTo(0f,0f);lineTo(.35f*w,0f);cubicTo(.38f*w,.25f*h,.39f*w,.70f*h,.33f*w,h);lineTo(0f,h);close()}
-            fill.shader=LinearGradient(0f,0f,.38f*w,h,Color.rgb(36,34,31),Color.rgb(3,5,8),Shader.TileMode.CLAMP)
+            fill.alpha=255;fill.shader=LinearGradient(0f,0f,.38f*w,h,Color.rgb(36,34,31),Color.rgb(3,5,8),Shader.TileMode.CLAMP)
             base.drawPath(shoulder,fill);fill.shader=null
             for(i in 0..5) {
-                line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,intArrayOf(Color.rgb(87,78,55),Color.rgb(248,231,181),Color.rgb(87,78,55),Color.rgb(209,187,128)),null,Shader.TileMode.CLAMP)
+                line.alpha=255;line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,intArrayOf(Color.rgb(87,78,55),Color.rgb(248,231,181),Color.rgb(87,78,55),Color.rgb(209,187,128)),null,Shader.TileMode.CLAMP)
                 line.strokeWidth=.007f*h;base.drawCircle(cx,cy,r-i*.008f*h,line)
             };line.shader=null
-            fill.shader=RadialGradient(cx,cy,r,Color.rgb(7,10,13),Color.rgb(38,35,29),Shader.TileMode.CLAMP)
+            fill.alpha=255;fill.shader=RadialGradient(cx,cy,r,Color.rgb(7,10,13),Color.rgb(38,35,29),Shader.TileMode.CLAMP)
             base.drawCircle(cx,cy,r*.88f,fill);fill.shader=null
             for(i in 0..100) {
                 val a=Math.toRadians(135.0+i*2.7);val major=i%5==0
@@ -2012,14 +2012,14 @@ internal class ThemedClusterView(
             for(i in 0..5) {
                 val a=Math.toRadians(i*60.0)
                 val facet=Path().apply{moveTo(cx,cy);lineTo(cx+(cos(a)*r*.86).toFloat(),cy+(sin(a)*r*.86).toFloat());lineTo(cx+(cos(a+.45)*r*.86).toFloat(),cy+(sin(a+.45)*r*.86).toFloat());close()}
-                fill.shader=LinearGradient(cx,cy,cx+(cos(a)*r).toFloat(),cy+(sin(a)*r).toFloat(),Color.argb(0,235,215,163),Color.argb(40,235,215,163),Shader.TileMode.CLAMP)
+                fill.alpha=255;fill.shader=LinearGradient(cx,cy,cx+(cos(a)*r).toFloat(),cy+(sin(a)*r).toFloat(),Color.argb(0,235,215,163),Color.argb(40,235,215,163),Shader.TileMode.CLAMP)
                 base.drawPath(facet,fill);fill.shader=null
             }
             for(i in 0..3) {
-                line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,Color.rgb(250,232,182),Color.rgb(74,66,46),Shader.TileMode.CLAMP)
+                line.alpha=255;line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,Color.rgb(250,232,182),Color.rgb(74,66,46),Shader.TileMode.CLAMP)
                 line.strokeWidth=.010f*h;base.drawCircle(cx,cy,r*(.54f-i*.028f),line)
             };line.shader=null
-            fill.shader=RadialGradient(cx,cy-r*.20f,r*.44f,Color.rgb(43,43,37),Color.rgb(5,8,11),Shader.TileMode.CLAMP)
+            fill.alpha=255;fill.shader=RadialGradient(cx,cy-r*.20f,r*.44f,Color.rgb(43,43,37),Color.rgb(5,8,11),Shader.TileMode.CLAMP)
             base.drawCircle(cx,cy,r*.43f,fill);fill.shader=null
             // The bottom contour belongs to the dashboard; the map still fills the upper right.
             val lower=Path().apply{moveTo(.34f*w,h);lineTo(.39f*w,.91f*h);lineTo(.68f*w,.91f*h);lineTo(.73f*w,h);close()}
@@ -2034,7 +2034,7 @@ internal class ThemedClusterView(
             line.strokeWidth=.058f*h;line.color=Color.argb(70,131,117,81);canvas.drawArc(oval,start,70f,false,line)
             kw?.let {
                 val f=(if(regen) -it else it).coerceAtLeast(0f)/GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW
-                line.shader=LinearGradient(cx-r,cy,cx+r,cy,Color.rgb(133,96,31),Color.rgb(255,221,133),Shader.TileMode.CLAMP)
+                line.alpha=255;line.shader=LinearGradient(cx-r,cy,cx+r,cy,Color.rgb(133,96,31),Color.rgb(255,221,133),Shader.TileMode.CLAMP)
                 canvas.drawArc(oval,start,70f*f.coerceIn(0f,1f),false,line);line.shader=null
             }
         }
@@ -2048,7 +2048,7 @@ internal class ThemedClusterView(
     private fun leaf(canvas:Canvas,x:Float,y:Float,size:Float,angle:Float) {
         canvas.save();canvas.rotate(angle,x,y)
         val p=Path().apply{moveTo(x,y);cubicTo(x-size*.8f,y-size*.45f,x-size*.2f,y-size,x,y-size);cubicTo(x+size*.55f,y-size*.5f,x+size*.2f,y-size*.15f,x,y);close()}
-        fill.shader=LinearGradient(x-size,y-size,x+size,y,Color.rgb(191,193,106),Color.rgb(40,74,42),Shader.TileMode.CLAMP)
+        fill.alpha=255;fill.shader=LinearGradient(x-size,y-size,x+size,y,Color.rgb(191,193,106),Color.rgb(40,74,42),Shader.TileMode.CLAMP)
         canvas.drawPath(p,fill);fill.shader=null
         line.color=Color.argb(130,231,220,149);line.strokeWidth=size*.025f;canvas.drawLine(x,y,x,y-size*.84f,line);canvas.restore()
     }
@@ -2062,17 +2062,17 @@ internal class ThemedClusterView(
                 val scale=maxOf(.56f*w/scenery.width,h/scenery.height);val bw=scenery.width*scale;val bh=scenery.height*scale
                 base.drawBitmap(scenery,null,RectF(.28f*w-bw/2,h/2-bh/2,.28f*w+bw/2,h/2+bh/2),art);base.restore()
             }
-            fill.shader=LinearGradient(0f,.73f*h,0f,h,Color.TRANSPARENT,Color.argb(230,5,16,10),Shader.TileMode.CLAMP)
+            fill.alpha=255;fill.shader=LinearGradient(0f,.73f*h,0f,h,Color.TRANSPARENT,Color.argb(230,5,16,10),Shader.TileMode.CLAMP)
             base.drawRect(0f,.73f*h,.56f*w,h,fill);fill.shader=null
             val shell=Path().apply{moveTo(.065f*w,.59f*h);cubicTo(.035f*w,.32f*h,.10f*w,.12f*h,.21f*w,.14f*h);cubicTo(.30f*w,.11f*h,.40f*w,.22f*h,.39f*w,.40f*h);lineTo(.37f*w,.65f*h);lineTo(.10f*w,.68f*h);close()}
             base.save();base.translate(0f,.012f*h);fill.color=Color.argb(100,0,0,0);base.drawPath(shell,fill);base.restore()
-            fill.shader=LinearGradient(0f,.15f*h,0f,.68f*h,intArrayOf(Color.WHITE,Color.rgb(245,241,213),Color.rgb(190,194,166)),null,Shader.TileMode.CLAMP)
+            fill.alpha=255;fill.shader=LinearGradient(0f,.15f*h,0f,.68f*h,intArrayOf(Color.WHITE,Color.rgb(245,241,213),Color.rgb(190,194,166)),null,Shader.TileMode.CLAMP)
             base.drawPath(shell,fill);fill.shader=null
-            line.shader=LinearGradient(0f,.14f*h,0f,.68f*h,Color.rgb(254,234,174),Color.rgb(120,113,68),Shader.TileMode.CLAMP)
+            line.alpha=255;line.shader=LinearGradient(0f,.14f*h,0f,.68f*h,Color.rgb(254,234,174),Color.rgb(120,113,68),Shader.TileMode.CLAMP)
             line.strokeWidth=.008f*h;base.drawPath(shell,line);line.shader=null
             for(right in listOf(false,true)) {
                 val x=if(right) .35f*w else .09f*w
-                fill.shader=RadialGradient(x,.43f*h,.13f*h,Color.rgb(70,88,41),Color.rgb(16,41,26),Shader.TileMode.CLAMP)
+                fill.alpha=255;fill.shader=RadialGradient(x,.43f*h,.13f*h,Color.rgb(70,88,41),Color.rgb(16,41,26),Shader.TileMode.CLAMP)
                 base.drawOval(RectF(x-.035f*w,.32f*h,x+.035f*w,.57f*h),fill);fill.shader=null
                 leaf(base,x-.01f*w,.57f*h,.043f*h,if(right) 20f else -35f)
                 leaf(base,x+.01f*w,.56f*h,.035f*h,if(right) -25f else 35f)
@@ -2081,6 +2081,9 @@ internal class ThemedClusterView(
             materialPanel(base,timber,.045f*h,true,true)
             // Long flowing grain, always static, with enough contrast for live media text.
             base.save();val clip=Path().apply{addRoundRect(timber,.045f*h,.045f*h,Path.Direction.CW)};base.clipPath(clip)
+            fill.alpha=255;fill.shader=LinearGradient(timber.left,timber.top,timber.right,timber.bottom,
+                intArrayOf(Color.rgb(225,203,160),Color.rgb(201,174,128),Color.rgb(234,216,178)),null,Shader.TileMode.CLAMP)
+            base.drawRect(RectF(timber.left+.003f*h,timber.top+.003f*h,timber.right-.003f*h,timber.bottom-.003f*h),fill);fill.shader=null
             for(i in 0..30) {
                 val yy=timber.top+i*timber.height()/30
                 val grain=Path().apply{moveTo(timber.left,yy);cubicTo(timber.left+timber.width()*.35f,yy-.01f*h,timber.left+timber.width()*.6f,yy+.012f*h,timber.right,yy)}
@@ -2108,8 +2111,8 @@ internal class ThemedClusterView(
         if(gold) {
             val p=Path().apply{moveTo(box.left+.035f*w,box.top);lineTo(box.right,box.top);lineTo(box.right,box.bottom);lineTo(box.left+.035f*w,box.bottom);lineTo(box.left,box.centerY());close()}
             canvas.save();canvas.translate(0f,.01f*h);fill.color=Color.argb(120,0,0,0);canvas.drawPath(p,fill);canvas.restore()
-            fill.shader=LinearGradient(box.left,box.top,box.right,box.bottom,Color.rgb(43,42,36),Color.rgb(4,8,12),Shader.TileMode.CLAMP);canvas.drawPath(p,fill);fill.shader=null
-            line.shader=LinearGradient(box.left,box.top,box.right,box.bottom,Color.rgb(246,225,163),Color.rgb(100,89,62),Shader.TileMode.CLAMP)
+            fill.alpha=255;fill.shader=LinearGradient(box.left,box.top,box.right,box.bottom,Color.rgb(43,42,36),Color.rgb(4,8,12),Shader.TileMode.CLAMP);canvas.drawPath(p,fill);fill.shader=null
+            line.alpha=255;line.shader=LinearGradient(box.left,box.top,box.right,box.bottom,Color.rgb(246,225,163),Color.rgb(100,89,62),Shader.TileMode.CLAMP)
             line.strokeWidth=.003f*h;canvas.drawPath(p,line);line.shader=null
         } else materialPanel(canvas,box,radius,wood,wood)
         val pad=if(gold) .045f*w else .020f*w

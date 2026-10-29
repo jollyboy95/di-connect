@@ -71,6 +71,28 @@ class ClusterThemesRenderTest {
         ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE, ClusterTheme.Layout.SMOKED_GLASS,
         ClusterTheme.Layout.AURUM_TOUR, ClusterTheme.Layout.WOODLAND_RETREAT)
 
+    @Test fun materialPanelsDoNotInheritThePreviousShadowOpacity() {
+        val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
+            .first { it.isFile }.readText().let(ThemePacks::parse)
+        for (layout in listOf(ClusterTheme.Layout.SMOKED_GLASS, ClusterTheme.Layout.DAYLIGHT_FUTURE)) {
+            val theme = catalogue.first { it.layout == layout }
+            val view = ThemedClusterView(context,theme,ClusterConnection.ANDROID_AUTO,preview=true)
+            val w=960;val h=360
+            view.measure(View.MeasureSpec.makeMeasureSpec(w,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(h,View.MeasureSpec.EXACTLY))
+            view.layout(0,0,w,h)
+            fun surface(background:Int):Int {
+                val bitmap=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888)
+                bitmap.eraseColor(background);view.draw(Canvas(bitmap))
+                val pixel=bitmap.getPixel((w*.10f).toInt(),(h*.13f).toInt());bitmap.recycle();return pixel
+            }
+            val dark=surface(Color.BLACK);val light=surface(Color.WHITE)
+            assertTrue("${theme.name} must retain its material opacity over a bright map",
+                kotlin.math.abs(Color.red(dark)-Color.red(light))<30 &&
+                kotlin.math.abs(Color.green(dark)-Color.green(light))<30 &&
+                kotlin.math.abs(Color.blue(dark)-Color.blue(light))<30)
+        }
+    }
+
     @Test fun conceptsRenderGuidanceOverMapAtFullAndCompactSizes() {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
             .first { it.isFile }.readText().let(ThemePacks::parse)
