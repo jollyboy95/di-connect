@@ -2455,9 +2455,7 @@ internal class ThemedClusterView(
         val h = height.toFloat()
         studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", cx, y, size, weight = 600, align = Paint.Align.CENTER)
         studioText(canvas, "km/h", cx, y + size * .40f, size * .24f, theme.text, 400, align = Paint.Align.CENTER)
-        if (gear) nineGear().takeIf { it.isNotEmpty() }?.let {
-            studioText(canvas, it, cx, y + size * .82f, size * .30f, theme.text, 500, align = Paint.Align.CENTER)
-        }
+        // No gear letter: the car shows its own at the top centre.
     }
 
     /** Fuel as a pill gauge, its percentage in the fuel colour, then the range. Returns the end x. */
@@ -2582,32 +2580,43 @@ internal class ThemedClusterView(
     /** How a nav card lays out the journey under the turn. */
     private enum class NineJourney { NONE, STACK, TIME_THEN_REST, TIME_AND_CLOCK }
 
-    /** Arrow and distance over the road name, then the journey under a divider. */
+    /**
+     * Arrow and distance over the road name, then the journey under a divider. Everything scales to
+     * the box, so a tall panel is filled rather than leaving the turn in its top corner.
+     */
     private fun nineTurnContent(canvas: Canvas, box: RectF, next: ClusterTurnGuidance, journey: NineJourney, pad: Float, arrowColour: Int = theme.text) {
         val h = height.toFloat()
         val s = h / 720f
-        val side = .085f * h
-        val ax = box.left + pad
-        val ay = box.top + pad * .9f
-        nineArrow(canvas, next, RectF(ax, ay, ax + side, ay + side), arrowColour)
-        val tx = ax + side + .03f * h
-        val tw = box.right - tx - pad
-        studioText(canvas, distanceLabel(next.distanceMeters), tx, ay + .045f * h, .046f * h, weight = 500, width = tw)
-        nineRoad(next).takeIf { it.isNotBlank() }?.let { studioText(canvas, it, tx, ay + .095f * h, .032f * h, width = tw) }
         val (time, km, clock) = nineJourney(next)
         val lines = when (journey) {
             NineJourney.NONE -> emptyList()
             NineJourney.STACK -> listOfNotNull(time, km, clock)
-            NineJourney.TIME_THEN_REST -> listOfNotNull(time, listOfNotNull(km, clock).joinToString("  ").ifBlank { null })
+            NineJourney.TIME_THEN_REST -> listOfNotNull(time, listOfNotNull(km, clock).joinToString("  ·  ").ifBlank { null })
             NineJourney.TIME_AND_CLOCK -> listOfNotNull(time, clock)
         }
+        val inner = box.height() - 2f * pad
+        // The turn takes the whole box, or about 45 % of it when the journey sits underneath.
+        val turnH = if (lines.isEmpty()) inner else inner * .45f
+        val side = minOf(turnH * .82f, .15f * h, box.width() * .26f)
+        val ax = box.left + pad
+        val ay = box.top + pad + (turnH - side) / 2f
+        nineArrow(canvas, next, RectF(ax, ay, ax + side, ay + side), arrowColour)
+        val tx = ax + side + side * .3f
+        val tw = box.right - tx - pad
+        val big = side * .5f
+        val road = nineRoad(next)
+        val textTop = ay + side / 2f - (if (road.isNotBlank()) big * .55f else -big * .35f)
+        studioText(canvas, distanceLabel(next.distanceMeters), tx, textTop, big, weight = 500, width = tw)
+        if (road.isNotBlank()) studioText(canvas, road, tx, textTop + big * .95f, big * .62f, width = tw)
         if (lines.isEmpty()) return
-        val dy = ay + side + .035f * h
+        val dy = box.top + pad + turnH + pad * .3f
         line.shader = null; line.color = withAlpha(theme.text, 45); line.strokeWidth = 1.2f * s
         canvas.drawLine(box.left + pad, dy, box.right - pad, dy, line)
-        val lineH = minOf(.05f * h, (box.bottom - dy - pad * .5f) / lines.size)
+        val area = box.bottom - pad - dy
+        val rowH = area / lines.size
+        val size = minOf(rowH * .55f, big * .62f, .05f * h)
         lines.forEachIndexed { i, t ->
-            studioText(canvas, t, tx - .0f, dy + lineH * (i + .8f), minOf(.034f * h, lineH * .78f), width = box.right - tx - pad)
+            studioText(canvas, t, box.left + pad, dy + rowH * i + rowH / 2f + size * .38f, size, weight = 500, width = box.width() - 2f * pad)
         }
     }
 
@@ -2711,7 +2720,6 @@ internal class ThemedClusterView(
                 ninePath.lineTo(.30f * w, .97f * h); ninePath.lineTo(.008f * w, .97f * h); ninePath.close()
                 nineGlass(canvas, ninePath, .60f * h, .97f * h, withAlpha(theme.accent, 90))
                 nineSpeed(canvas, .11f * w, .85f * h, .17f * h, gear = false)
-                nineGear().takeIf { it.isNotEmpty() }?.let { studioText(canvas, it, .245f * w, .85f * h, .05f * h, weight = 500, align = Paint.Align.CENTER) }
                 val end = nineFuel(canvas, .32f * w, .925f * h, .042f * h)
                 nineOdo(canvas, maxOf(end + .2f * w, .77f * w), .925f * h, .038f * h)
                 if (showCard) nineMusicTall(canvas, RectF(.80f * w, .48f * h, .978f * w, .95f * h))
@@ -2805,7 +2813,6 @@ internal class ThemedClusterView(
                 line.shader = null; line.color = withAlpha(theme.accent, 80); line.strokeWidth = 7f * h / 720f; canvas.drawPath(ninePath, line)
                 line.color = theme.accent; line.strokeWidth = 2f * h / 720f; canvas.drawPath(ninePath, line)
                 nineSpeed(canvas, .46f * w, .88f * h, .15f * h, gear = false)
-                nineGear().takeIf { it.isNotEmpty() }?.let { studioText(canvas, it, .575f * w, .87f * h, .05f * h, weight = 500, align = Paint.Align.CENTER) }
                 nineFuel(canvas, .025f * w, .90f * h, .042f * h)
                 nineOdo(canvas, .975f * w, .90f * h, .038f * h)
                 drawPump(canvas, .80f * w, .862f * h, .04f * h)
@@ -2821,7 +2828,6 @@ internal class ThemedClusterView(
                 nineGlass(canvas, ninePath, .72f * h, .98f * h, withAlpha(theme.text, 50))
                 nineSpeed(canvas, .08f * w, .885f * h, .15f * h, gear = false)
                 line.color = withAlpha(theme.text, 200); line.strokeWidth = 2f * h / 720f; canvas.drawLine(.02f * w, .965f * h, .14f * w, .965f * h, line)
-                nineGear().takeIf { it.isNotEmpty() }?.let { studioText(canvas, it, .19f * w, .87f * h, .05f * h, weight = 500, align = Paint.Align.CENTER) }
                 nineFuel(canvas, .26f * w, .935f * h, .042f * h)
                 if (showCard) nineMusicWide(canvas, RectF(.575f * w, .71f * h, .978f * w, .87f * h), withAlpha(theme.text, 50), inline = true)
                 nav?.let { nineTurnCard(canvas, RectF(.66f * w, .17f * h, .978f * w, .40f * h), it, edge = withAlpha(theme.text, 50)) }
@@ -2895,7 +2901,8 @@ internal class ThemedClusterView(
     }
 
     /** Arrow, distance, road (with its route number as a yellow badge), progress, then the journey. */
-    private fun glassNav(canvas: Canvas, box: RectF, next: ClusterTurnGuidance, path: Path? = null, tint: Int = Color.argb(222, 10, 40, 52)) {
+    private fun glassNav(canvas: Canvas, box: RectF, next: ClusterTurnGuidance, path: Path? = null,
+                         tint: Int = Color.argb(222, Color.red(theme.accent) / 6, Color.green(theme.accent) / 6, Color.blue(theme.accent) / 5)) {
         val h = height.toFloat()
         val s = h / 720f
         if (path != null) nineGlass(canvas, path, box.top, box.bottom, withAlpha(theme.accent, 140))
