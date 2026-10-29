@@ -42,6 +42,13 @@ internal object GwmVehicleData {
     /** Same read-only RPM keys used by SmartSplit v3.4 DataManager. */
     const val ENGINE_RPM = "car.basic.engine_speed"
     const val OFFROAD_ENGINE_RPM = "car.off_road_info.engine_rpm"
+    /**
+     * Climate and drive-mode keys, read only by the settings scan for now. Names from the same
+     * adapter namespace a GWM voice-control app uses; whether writes work is a separate question.
+     */
+    val CLIMATE_KEYS = arrayOf("car.hvac.power_mode", "car.hvac.ac_enable", "car.hvac.auto_enable", "car.hvac.driver_temperature",
+        "car.hvac.pass_temperature", "car.hvac.fan_speed", "car.hvac.sync_enable", "car.hvac.eco_enable", "car.hvac.front_defrost_enable",
+        "car.hvac.rear_defrost_enable", "car.hvac.heating_enable", "car.drive.setting.drive_mode", "car.drive_setting.drive_mode")
     val KEYS = arrayOf(SPEED, GEAR_STATUS, CURRENT_GEAR, FUEL_PERCENT, RANGE_KM, OUTSIDE_TEMP, TOTAL_ODOMETER, ODOMETER, BATTERY_CURRENT, ENGINE_RPM, OFFROAD_ENGINE_RPM)
 
     data class Snapshot(
@@ -185,6 +192,11 @@ internal object GwmVehicleData {
             append("  → speed=${snapshot.speedKph} gear=${snapshot.gear} fuel=${snapshot.fuelPercent}% ")
             append("range=${snapshot.rangeKm} km outside=${snapshot.outsideTempC} °C odo=${snapshot.odometerKm} km ")
             append("battery=${snapshot.batteryCurrentA} A engine=${snapshot.engineRpm} rpm")
+            val climate = runCatching { read(context, CLIMATE_KEYS) }.getOrNull()
+            appendLine()
+            appendLine("Climate and drive mode (read only):")
+            if (climate == null) appendLine("  (read failed)")
+            else CLIMATE_KEYS.forEach { appendLine("  $it = ${climate[it] ?: "(no value)"}") }
         }
     }.getOrElse { "GWM vehicle data ($SERVICE): unavailable — ${it.javaClass.simpleName}: ${it.message}" }
 }
