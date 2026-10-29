@@ -2652,18 +2652,20 @@ internal class ThemedClusterView(
         val h = height.toFloat()
         val daylight = theme.layout == ClusterTheme.Layout.DAYLIGHT_FUTURE && !theme.id.endsWith("daylight-dusk")
         val radius = minOf(box.height() / 2f, .025f * h)
-        fill.alpha = 255
-        fill.shader = LinearGradient(box.left, box.top, box.right, box.bottom,
-            if (daylight) Color.argb(248, 250, 251, 251) else Color.argb(240, 20, 30, 40),
-            if (daylight) Color.argb(235, 232, 239, 242) else Color.argb(245, 4, 12, 20), Shader.TileMode.CLAMP)
-        canvas.drawRoundRect(box, radius, radius, fill); fill.shader = null
-        line.shader = null; line.color = withAlpha(theme.text, 70); line.strokeWidth = 1.2f
-        canvas.drawRoundRect(box, radius, radius, line)
+        if (isConceptLayout()) {
+            fill.alpha = 255
+            fill.shader = LinearGradient(box.left, box.top, box.right, box.bottom,
+                if (daylight) Color.argb(248, 250, 251, 251) else Color.argb(240, 20, 30, 40),
+                if (daylight) Color.argb(235, 232, 239, 242) else Color.argb(245, 4, 12, 20), Shader.TileMode.CLAMP)
+            canvas.drawRoundRect(box, radius, radius, fill); fill.shader = null
+            line.shader = null; line.color = withAlpha(theme.text, 70); line.strokeWidth = 1.2f
+            canvas.drawRoundRect(box, radius, radius, line)
+        } else cardPanel(canvas, box, .03f * h) // the same material as this theme's turn card
         val tall = box.height() > box.width()
         val count = parts.size
         val size = minOf(.032f * h, if (tall) box.height() / count * .4f else box.height() * .42f)
         parts.forEachIndexed { i, part ->
-            val colour = if (i == count - 1) theme.accent else theme.text
+            val colour = theme.text
             if (tall) {
                 val rowH = box.height() / count
                 studioText(canvas, part, box.centerX(), box.top + rowH * i + rowH / 2f + size * .35f, size, colour, 500,
