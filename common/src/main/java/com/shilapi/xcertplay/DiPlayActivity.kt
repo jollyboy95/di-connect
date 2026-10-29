@@ -437,6 +437,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             openProjection(); finish(); return
         }
         scheduleBackgroundUpdateChecks()
+        HotspotBandGuard.checkOnStart(applicationContext)
         availableUpdate = UpdateAvailability.available(this, version())
         enforceInterfaceSize()
         refreshAppearance()
@@ -677,6 +678,15 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             }, "hotspot-band-probe").start()
         }, matchButton(10, 56))
         gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true) }) }
+        toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
+            HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
+        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
+            val app = applicationContext
+            Thread({
+                val result = HotspotBandGuard.ensureFiveGhz(app)
+                runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+            }, "hotspot-band-now").start()
+        }, matchButton(10, 56))
 
         if (ids.isNotEmpty()) {
             card.addView(button(getString(R.string.settings_gwm_launch_test), false) { launchGwmDisplayTest(selected) }, matchButton(10, 56))
@@ -6617,6 +6627,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             "bydHeadUnit=${runCatching { CarHotspotSetup.isBydHeadUnit(appContext) }.getOrNull()} " +
             "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")
         appendLine(HotspotBandProbe.report())
+        appendLine(HotspotBandGuard.report())
         appendLine(WheelKeyService.report(appContext))
         WheelKeyLog.report(WheelKeyService.connected()).forEach { appendLine(it) }
         appendLine()

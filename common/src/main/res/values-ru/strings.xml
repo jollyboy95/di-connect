@@ -1029,4 +1029,7 @@
     <string name="di_connect_theme_category_night">Ночь</string>
     <string name="di_connect_theme_category_pets">Питомцы</string>
     <string name="di_connect_update_wrong_signer">Эта загрузка не является сборкой Di-Connect, подписанной вашим ключом, поэтому она не установлена.</string>
+    <string name="settings_gwm_hotspot_5ghz">Держать точку доступа автомобиля на 5 ГГц (экспериментально)</string>
+    <string name="settings_gwm_hotspot_5ghz_description">Автомобиль иногда ставит точку доступа на «Оба», и тогда может выбраться 2,4 ГГц, из-за чего Android Auto заикается. При запуске Di-Connect на несколько секунд открывает экран точки доступа и ставит диапазон 5,0 ГГц, если он другой. При изменении точка доступа перезапускается. Нужен доступ ADB для Di-Connect.</string>
+    <string name="settings_gwm_hotspot_5ghz_now">Переключить точку доступа на 5 ГГц сейчас</string>
 </resources>

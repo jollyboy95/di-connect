@@ -2672,3 +2672,38 @@ edit(D,
             }
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.'''))
+
+# Hotspot band guard (Oct 2026). The H7's AP Band falls back to "Both", which can pick 2.4 GHz
+# (measured: 2.4 GHz -> apBand 0 at 2437 MHz; 5.0 GHz and Both -> apBand 1 at 5745 MHz). No API sets
+# it, so over local ADB Di-Connect opens the car's hotspot screen and picks 5.0 GHz, once per start.
+(root/'common/src/main/java/com/shilapi/xcertplay/HotspotBandGuard.kt').write_text(
+    Path('target/_integration/HotspotBandGuard.kt').read_text())
+HOTSPOT_STRINGS={
+ 'settings_gwm_hotspot_5ghz':['Keep the car’s hotspot on 5 GHz (experimental)', 'إبقاء نقطة اتصال السيارة على 5 غيغاهرتز (تجريبي)', 'Mantener el punto de acceso del coche en 5 GHz (experimental)', 'Mantieni l’hotspot dell’auto a 5 GHz (sperimentale)', '車のホットスポットを 5 GHz に保つ（実験的機能）', 'Держать точку доступа автомобиля на 5 ГГц (экспериментально)', 'Тримати точку доступу авто на 5 ГГц (експериментально)', '让车辆热点保持 5 GHz（实验性）', '讓車輛熱點保持 5 GHz（實驗性）'],
+ 'settings_gwm_hotspot_5ghz_description':['The car sometimes sets its hotspot to Both, which can pick 2.4 GHz and make Android Auto stutter. When Di-Connect starts, it opens the car’s hotspot screen for a few seconds and sets AP Band to 5.0 GHz if it is not already. The hotspot restarts if it changes. Needs Di-Connect’s ADB access.', 'تضبط السيارة أحيانًا نقطة الاتصال على كليهما، ما قد يختار 2.4 غيغاهرتز ويجعل Android Auto يتقطع. عند بدء Di-Connect يفتح شاشة نقطة الاتصال في السيارة لبضع ثوانٍ ويضبط النطاق على 5.0 غيغاهرتز إن لم يكن كذلك. تُعاد تشغيل نقطة الاتصال إذا تغيّر. يحتاج إلى وصول ADB في Di-Connect.', 'El coche a veces pone su punto de acceso en Ambas, que puede elegir 2,4 GHz y hacer que Android Auto se entrecorte. Al iniciarse, Di-Connect abre unos segundos la pantalla del punto de acceso del coche y pone la banda en 5,0 GHz si no lo está. El punto de acceso se reinicia si cambia. Necesita el acceso ADB de Di-Connect.', 'A volte l’auto imposta l’hotspot su Entrambe, che può scegliere 2,4 GHz e far scattare Android Auto. All’avvio Di-Connect apre per qualche secondo la schermata hotspot dell’auto e imposta la banda a 5,0 GHz se non lo è già. L’hotspot si riavvia se cambia. Richiede l’accesso ADB di Di-Connect.', '車がホットスポットを「両方」に戻すことがあり、2.4 GHz が選ばれると Android Auto が途切れます。Di-Connect の起動時に車のホットスポット画面を数秒開き、AP バンドが 5.0 GHz でなければ切り替えます。変更時はホットスポットが再起動します。Di-Connect の ADB アクセスが必要です。', 'Автомобиль иногда ставит точку доступа на «Оба», и тогда может выбраться 2,4 ГГц, из-за чего Android Auto заикается. При запуске Di-Connect на несколько секунд открывает экран точки доступа и ставит диапазон 5,0 ГГц, если он другой. При изменении точка доступа перезапускается. Нужен доступ ADB для Di-Connect.', 'Авто іноді ставить точку доступу на «Обидва», і тоді може обратися 2,4 ГГц, через що Android Auto заїкається. Під час запуску Di-Connect на кілька секунд відкриває екран точки доступу й ставить діапазон 5,0 ГГц, якщо він інший. Після зміни точка доступу перезапускається. Потрібен доступ ADB для Di-Connect.', '车辆有时会把热点设为“两者”，可能选用 2.4 GHz，导致 Android Auto 卡顿。Di-Connect 启动时会打开车辆热点界面几秒钟，如果频段不是 5.0 GHz 就改为 5.0 GHz。更改后热点会重启。需要 Di-Connect 的 ADB 权限。', '車輛有時會把熱點設為「兩者」，可能選用 2.4 GHz，導致 Android Auto 卡頓。Di-Connect 啟動時會開啟車輛熱點畫面幾秒，如果頻段不是 5.0 GHz 就改為 5.0 GHz。變更後熱點會重新啟動。需要 Di-Connect 的 ADB 權限。'],
+ 'settings_gwm_hotspot_5ghz_now':['Set the car’s hotspot to 5 GHz now', 'ضبط نقطة اتصال السيارة على 5 غيغاهرتز الآن', 'Poner ahora el punto de acceso en 5 GHz', 'Imposta ora l’hotspot a 5 GHz', '今すぐホットスポットを 5 GHz にする', 'Переключить точку доступа на 5 ГГц сейчас', 'Перемкнути точку доступу на 5 ГГц зараз', '立即将热点设为 5 GHz', '立即將熱點設為 5 GHz'],
+}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in HOTSPOT_STRINGS.items())+'</resources>'))
+edit(D,
+    ('''        gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true) }) }
+''', '''        gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true) }) }
+        toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
+            HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
+        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
+            val app = applicationContext
+            Thread({
+                val result = HotspotBandGuard.ensureFiveGhz(app)
+                runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+            }, "hotspot-band-now").start()
+        }, matchButton(10, 56))
+'''),
+    ('''        appendLine(HotspotBandProbe.report())
+''', '''        appendLine(HotspotBandProbe.report())
+        appendLine(HotspotBandGuard.report())
+'''),
+    ('''        scheduleBackgroundUpdateChecks()
+''', '''        scheduleBackgroundUpdateChecks()
+        HotspotBandGuard.checkOnStart(applicationContext)
+'''))

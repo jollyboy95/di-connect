@@ -1119,4 +1119,7 @@
     <string name="di_connect_theme_category_night">Notte</string>
     <string name="di_connect_theme_category_pets">Animali</string>
     <string name="di_connect_update_wrong_signer">Questo download non è una build di Di-Connect firmata con la tua chiave, quindi non è stato installato.</string>
+    <string name="settings_gwm_hotspot_5ghz">Mantieni l’hotspot dell’auto a 5 GHz (sperimentale)</string>
+    <string name="settings_gwm_hotspot_5ghz_description">A volte l’auto imposta l’hotspot su Entrambe, che può scegliere 2,4 GHz e far scattare Android Auto. All’avvio Di-Connect apre per qualche secondo la schermata hotspot dell’auto e imposta la banda a 5,0 GHz se non lo è già. L’hotspot si riavvia se cambia. Richiede l’accesso ADB di Di-Connect.</string>
+    <string name="settings_gwm_hotspot_5ghz_now">Imposta ora l’hotspot a 5 GHz</string>
 </resources>
