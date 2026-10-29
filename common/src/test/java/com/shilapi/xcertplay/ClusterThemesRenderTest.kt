@@ -341,9 +341,12 @@ class ClusterThemesRenderTest {
         }
         val mono = ClusterThemes.byId("mono-line")!!
         ClusterThemeStore.setDirectionsCard(context, false)
-        draw(mono).let { assertEquals(Color.MAGENTA, it.getPixel(width / 2, (height * .2f).toInt())); it.recycle() }
+        // Older full-map layouts put the turn card on the right, where Google's card used to be.
+        val cardX = (width * .835f).toInt()
+        val cardY = (height * .52f).toInt()
+        draw(mono).let { assertEquals(Color.MAGENTA, it.getPixel(cardX, cardY)); it.recycle() }
         ClusterThemeStore.setDirectionsCard(context, true)
-        draw(mono).let { assertNotEquals(Color.MAGENTA, it.getPixel(width / 2, (height * .2f).toInt())); it.recycle() }
+        draw(mono).let { assertNotEquals(Color.MAGENTA, it.getPixel(cardX, cardY)); it.recycle() }
         // A theme with its own map window puts the card at the top of that window.
         draw(ClusterThemes.byId("split-test")!!).let {
             assertNotEquals(Color.MAGENTA, it.getPixel((width * .75f).toInt(), (height * .2f).toInt())); it.recycle()

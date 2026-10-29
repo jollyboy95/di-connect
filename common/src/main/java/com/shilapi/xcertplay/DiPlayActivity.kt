@@ -6178,7 +6178,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         // Two across at most: three made each preview too small to tell the themes apart.
         val columns = if (compact) 1 else 2
         // One category at a time, picked from a row of buttons, so the gallery is not one long scroll.
-        val categories = ThemeCategory.entries.filter { c -> ClusterThemes.availableFor(connection).any { it.category == c } }
+        // Themes that share a design (layout, speed style, map window) and differ only in colour
+        // show as one tile with numbered colour dots; the family sits in its first theme's category.
+        val families = ClusterThemes.availableFor(connection)
+            .groupBy { listOf(it.layout, it.speed, it.mapWindow, it.native) }.values.toList()
+        val categories = ThemeCategory.entries.filter { c -> families.any { it.first().category == c } }
         val shown = themesCategory?.takeIf { it in categories } ?: selected.category.takeIf { it in categories } ?: categories.firstOrNull()
         content.addView(android.widget.HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
@@ -6192,7 +6196,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
         ThemeCategory.entries.forEach { category ->
             if (category != shown) return@forEach
-            val themes = ClusterThemes.availableFor(connection).filter { it.category == category }
+            val themes = families.filter { it.first().category == category }
             if (themes.isEmpty()) return@forEach
             content.addView(label(getString(themeCategoryName(category)), 18, TEXT, true).apply {
                 setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
@@ -6201,8 +6205,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 val line = row()
                 for (index in 0 until columns) {
                     if (index > 0) line.addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
-                    val theme = group.getOrNull(index)
-                    line.addView(if (theme == null) View(this) else themeCard(theme, connection, theme.id == selected.id),
+                    val family = group.getOrNull(index)
+                    val theme = family?.firstOrNull { it.id == selected.id } ?: family?.first()
+                    line.addView(if (family == null || theme == null) View(this) else themeCard(theme, connection, theme.id == selected.id, family),
                         LinearLayout.LayoutParams(0, -2, 1f))
                 }
                 content.addView(line, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
@@ -6222,21 +6227,24 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         ThemeCategory.PETS -> R.string.di_connect_theme_category_pets
     }
 
-    private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean): View {
+    private fun chooseTheme(theme: ClusterTheme, connection: ClusterConnection) {
+        val before = ClusterThemeStore.selected(this, ClusterConnection.ANDROID_AUTO).mapWindow
+        ClusterThemeStore.select(this, connection, theme.id)
+        // Android Auto's map is sized when it connects: a split theme needs a reconnect.
+        if (ClusterThemeStore.selected(this, ClusterConnection.ANDROID_AUTO).mapWindow != before)
+            android.widget.Toast.makeText(this, getString(R.string.di_connect_theme_split_reconnect), android.widget.Toast.LENGTH_LONG).show()
+        render()
+    }
+
+    private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean,
+                          family: List<ClusterTheme> = listOf(theme)): View {
         val card = column().apply {
             background = rounded(SURFACE, if (selected) ACCENT else BORDER)
             setPadding(dp(10), dp(10), dp(10), dp(12))
             isClickable = true
             isFocusable = true
             contentDescription = theme.name
-            setOnClickListener {
-                val before = ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow
-                ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
-                // Android Auto's map is sized when it connects: a split theme needs a reconnect.
-                if (ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow != before)
-                    android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_split_reconnect), android.widget.Toast.LENGTH_LONG).show()
-                render()
-            }
+            setOnClickListener { chooseTheme(theme, connection) }
         }
         card.addView(ImageView(this).apply {
             setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection))
@@ -6248,6 +6256,31 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             gravity = Gravity.CENTER_VERTICAL
             addView(label(theme.name, 17, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
             if (selected) addView(label(getString(R.string.di_connect_theme_in_use), 14, ACCENT, true))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        // Colour choices for a design: one numbered dot per theme, filled with its accent colour.
+        if (family.size > 1) card.addView(row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            family.forEachIndexed { i, variant ->
+                if (i > 0) addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(10), 1))
+                val current = variant.id == theme.id
+                val accent = variant.accent or 0xFF000000.toInt()
+                addView(android.widget.TextView(this@DiPlayActivity).apply {
+                    text = "${i + 1}"
+                    gravity = Gravity.CENTER
+                    textSize = 15f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    setTextColor(if (androidx.core.graphics.ColorUtils.calculateLuminance(accent) > .5) Color.BLACK else Color.WHITE)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                        setColor(accent)
+                        setStroke(dp(if (current) 3 else 1), if (current) TEXT else BORDER)
+                    }
+                    contentDescription = variant.name
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { chooseTheme(variant, connection) }
+                }, LinearLayout.LayoutParams(dp(40), dp(40)))
+            }
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.
         if (theme.speed == ClusterTheme.Speed.DOG_TAG) {

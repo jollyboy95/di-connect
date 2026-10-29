@@ -2605,3 +2605,70 @@ edit(D,
 ''', '''            "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")
         appendLine(HotspotBandProbe.report())
 '''))
+
+# Theme families (Oct 2026). Many themes share one design and differ only in colour. The gallery
+# shows each design once, with numbered colour dots under the preview to pick the colour.
+edit(D,
+    ('''        val categories = ThemeCategory.entries.filter { c -> ClusterThemes.availableFor(connection).any { it.category == c } }''',
+     '''        // Themes that share a design (layout, speed style, map window) and differ only in colour
+        // show as one tile with numbered colour dots; the family sits in its first theme's category.
+        val families = ClusterThemes.availableFor(connection)
+            .groupBy { listOf(it.layout, it.speed, it.mapWindow, it.native) }.values.toList()
+        val categories = ThemeCategory.entries.filter { c -> families.any { it.first().category == c } }'''),
+    ('''            val themes = ClusterThemes.availableFor(connection).filter { it.category == category }''',
+     '''            val themes = families.filter { it.first().category == category }'''),
+    ('''                    val theme = group.getOrNull(index)
+                    line.addView(if (theme == null) View(this) else themeCard(theme, connection, theme.id == selected.id),''',
+     '''                    val family = group.getOrNull(index)
+                    val theme = family?.firstOrNull { it.id == selected.id } ?: family?.first()
+                    line.addView(if (family == null || theme == null) View(this) else themeCard(theme, connection, theme.id == selected.id, family),'''),
+    ('''    private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean): View {''',
+     '''    private fun chooseTheme(theme: ClusterTheme, connection: ClusterConnection) {
+        val before = ClusterThemeStore.selected(this, ClusterConnection.ANDROID_AUTO).mapWindow
+        ClusterThemeStore.select(this, connection, theme.id)
+        // Android Auto's map is sized when it connects: a split theme needs a reconnect.
+        if (ClusterThemeStore.selected(this, ClusterConnection.ANDROID_AUTO).mapWindow != before)
+            android.widget.Toast.makeText(this, getString(R.string.di_connect_theme_split_reconnect), android.widget.Toast.LENGTH_LONG).show()
+        render()
+    }
+
+    private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean,
+                          family: List<ClusterTheme> = listOf(theme)): View {'''),
+    ('''            setOnClickListener {
+                val before = ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow
+                ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
+                // Android Auto's map is sized when it connects: a split theme needs a reconnect.
+                if (ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow != before)
+                    android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_split_reconnect), android.widget.Toast.LENGTH_LONG).show()
+                render()
+            }
+        }''',
+     '''            setOnClickListener { chooseTheme(theme, connection) }
+        }'''),
+    ('''        // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.''',
+     '''        // Colour choices for a design: one numbered dot per theme, filled with its accent colour.
+        if (family.size > 1) card.addView(row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            family.forEachIndexed { i, variant ->
+                if (i > 0) addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(10), 1))
+                val current = variant.id == theme.id
+                val accent = variant.accent or 0xFF000000.toInt()
+                addView(android.widget.TextView(this@DiPlayActivity).apply {
+                    text = "${i + 1}"
+                    gravity = Gravity.CENTER
+                    textSize = 15f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    setTextColor(if (androidx.core.graphics.ColorUtils.calculateLuminance(accent) > .5) Color.BLACK else Color.WHITE)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                        setColor(accent)
+                        setStroke(dp(if (current) 3 else 1), if (current) TEXT else BORDER)
+                    }
+                    contentDescription = variant.name
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { chooseTheme(variant, connection) }
+                }, LinearLayout.LayoutParams(dp(40), dp(40)))
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.'''))
