@@ -2686,9 +2686,9 @@ internal class ThemedClusterView(
                 fill.color = Color.BLACK
                 fill.shader = LinearGradient(w, 0f, .70f * w, 0f, withAlpha(red, 90), Color.argb(0, 0, 0, 0), Shader.TileMode.CLAMP)
                 canvas.drawRect(.70f * w, 0f, w, h, fill); fill.shader = null
-                nineRing(canvas, .815f * w, .44f * h, .40f * h, intArrayOf(Color.rgb(120, 10, 10), red, Color.rgb(255, 120, 90), Color.rgb(120, 10, 10)),
+                nineRing(canvas, .82f * w, .37f * h, .30f * h, intArrayOf(Color.rgb(120, 10, 10), red, Color.rgb(255, 120, 90), Color.rgb(120, 10, 10)),
                     start = 150f, sweep = 240f, maxKph = 220f, ticks = true)
-                nineSpeed(canvas, .815f * w, .40f * h, .19f * h)
+                nineSpeed(canvas, .82f * w, .36f * h, .17f * h)
                 if (showCard) nineMusicWide(canvas, RectF(.62f * w, .64f * h, .978f * w, .95f * h), withAlpha(red, 200), glow = true)
                 nav?.let {
                     ninePath.rewind()
@@ -2760,12 +2760,12 @@ internal class ThemedClusterView(
                 nineCard(canvas, pill, withAlpha(theme.accent, 160), radius = .02f)
                 studioText(canvas, kw?.let { GwmAndroidAutoClusterView.formatKw(it).removePrefix("≈ ") } ?: "— kW", pill.centerX(), pill.centerY() + .016f * h,
                     .042f * h, theme.accent, 700, width = pill.width() - .02f * h, align = Paint.Align.CENTER)
-                studioText(canvas, snapshot?.fuelPercent?.let { "${it.roundToInt()}%" } ?: "—", .23f * w, pill.centerY() + .016f * h, .038f * h, theme.charge, 500)
-                drawPump(canvas, .185f * w, pill.centerY() - .025f * h, .035f * h)
+                drawPump(canvas, .18f * w, pill.centerY() - .022f * h, .04f * h)
+                studioText(canvas, snapshot?.fuelPercent?.let { "${it.roundToInt()}%" } ?: "—", .205f * w, pill.centerY() + .016f * h, .04f * h, theme.charge, 500)
                 nineRange(canvas, .03f * w, .935f * h, .046f * h)
                 if (showCard) nineMusicWide(canvas, RectF(.62f * w, .64f * h, .978f * w, .95f * h))
                 nav?.let {
-                    val box = RectF(.64f * w, .12f * h, .978f * w, .57f * h)
+                    val box = RectF(.64f * w, .12f * h, .978f * w, .50f * h)
                     ninePath.rewind()
                     ninePath.moveTo(box.left + .03f * w, box.top); ninePath.lineTo(box.right, box.top); ninePath.lineTo(box.right, box.bottom)
                     ninePath.lineTo(box.left + .03f * w, box.bottom); ninePath.lineTo(box.left, box.centerY()); ninePath.close()
@@ -2805,7 +2805,7 @@ internal class ThemedClusterView(
                 nineGear().takeIf { it.isNotEmpty() }?.let { studioText(canvas, it, .575f * w, .87f * h, .05f * h, weight = 500, align = Paint.Align.CENTER) }
                 nineFuel(canvas, .025f * w, .90f * h, .042f * h)
                 nineOdo(canvas, .975f * w, .90f * h, .038f * h)
-                drawPump(canvas, .72f * w, .865f * h, .038f * h)
+                drawPump(canvas, .80f * w, .862f * h, .04f * h)
                 if (showCard) nineMusicTall(canvas, RectF(.018f * w, .14f * h, .26f * w, .66f * h))
                 nav?.let { nineTurnCard(canvas, RectF(.74f * w, .14f * h, .975f * w, .64f * h), it, NineJourney.STACK) }
                 nineHeader(canvas, w, h)
