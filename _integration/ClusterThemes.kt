@@ -47,7 +47,7 @@ internal data class ClusterTheme(
      * cluster on the left, one solid sidebar, or a console along the bottom edge. All keep Google's
      * card on Android Auto (the right, 42-74 % down) clear.
      */
-    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE, HYBRID_SPORT, VAPORWAVE_STEREO, MUSIC_LOUNGE, BAVARIAN, TURBINE_LUXURY, PERFORMANCE_COCKPIT, MUSIC_PANORAMA, DAYLIGHT_FUTURE, SMOKED_GLASS, AURUM_TOUR, WOODLAND_RETREAT }
+    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE, HYBRID_SPORT, VAPORWAVE_STEREO, MUSIC_LOUNGE, BAVARIAN, TURBINE_LUXURY, PERFORMANCE_COCKPIT, MUSIC_PANORAMA, DAYLIGHT_FUTURE, SMOKED_GLASS, AURUM_TOUR, WOODLAND_RETREAT, AURORA_OPEN, HORIZON_RIBBON, ORBIT_GLASS, NIGHTFALL_AUDIO }
     enum class Face { SANS, SERIF, MONO }
 
     /**
@@ -151,7 +151,7 @@ internal object ClusterThemes {
             speed = ClusterTheme.Speed.TAPE, flow = ClusterTheme.Flow.LADDER, face = ClusterTheme.Face.MONO,
             text = Color.rgb(125, 255, 176), secondary = Color.argb(190, 125, 255, 176), accent = Color.rgb(125, 255, 176),
             charge = Color.rgb(125, 255, 176), surface = Color.argb(158, 2, 14, 8), edge = Color.rgb(125, 255, 176)),
-        ClusterTheme("aurora", "Aurora", ThemeCategory.NIGHT, panel = ClusterTheme.Panel.AURORA,
+        ClusterTheme("aurora", "Aurora", ThemeCategory.NIGHT, panel = ClusterTheme.Panel.AURORA, layout = ClusterTheme.Layout.AURORA_OPEN,
             speed = ClusterTheme.Speed.GLOW, flow = ClusterTheme.Flow.ORB, text = Color.rgb(238, 243, 255),
             accent = Color.rgb(255, 95, 200), charge = Color.rgb(62, 242, 200), surface = Color.argb(189, 8, 12, 34)),
         ClusterTheme("night-ops", "Night Ops", ThemeCategory.NIGHT, panel = ClusterTheme.Panel.NONE,

@@ -454,6 +454,48 @@
       "surface": "#15231B",
       "edge": "#9BB5A88A",
       "dim": 100
+    },
+    {
+      "id": "open-horizon-ribbon",
+      "name": "Horizon Ribbon",
+      "category": "everyday",
+      "layout": "horizon_ribbon",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#F0F5FB",
+      "secondary": "#BDCBD9",
+      "accent": "#A8DDED",
+      "charge": "#66D6C0",
+      "surface": "#0A1324",
+      "edge": "#749DAEBF"
+    },
+    {
+      "id": "open-orbit-glass",
+      "name": "Orbit Glass",
+      "category": "luxury",
+      "layout": "orbit_glass",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#F0F5FB",
+      "secondary": "#BDCBD9",
+      "accent": "#D7B77D",
+      "charge": "#65D5BB",
+      "surface": "#0A1324",
+      "edge": "#749DAEBF"
+    },
+    {
+      "id": "open-nightfall-audio",
+      "name": "Nightfall Audio",
+      "category": "night",
+      "layout": "nightfall_audio",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#F0F5FB",
+      "secondary": "#BDCBD9",
+      "accent": "#E8B17A",
+      "charge": "#7EC4D7",
+      "surface": "#0A1324",
+      "edge": "#749DAEBF"
     }
   ]
 }

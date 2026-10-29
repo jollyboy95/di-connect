@@ -38,3 +38,11 @@ Phone map imagery stays live. Theme scenery is static ornament, never a substitu
 The bundled scenic PNGs are approximately 1.8 MB (fjord) and 2.8 MB (forest), before APK compression. They are intentional local assets. Static Atelier material layers are cached per view size so navigation updates repaint only live content over the cached ornament.
 
 Review full and compact renders on `di-connect-releases` / `theme-renders`, then test on the H7 with guidance active and inactive. Work on `codex/four-cluster-concepts`; fetch and rebase before pushing, never force-push and never replace a running build.
+
+## Open-map collection and H7 feedback
+
+The next collection adds Horizon Ribbon, Orbit Glass and Nightfall Audio, and updates the existing Aurora entry in place. These four use the full phone map, with no photographic replacement and no solid sidebar. Aurora keeps its teal/violet/pink outlines and familiar speed/flow instruments, gains a horizontal music card with larger text, and moves navigation to the lower right. Horizon uses a tapered titanium blade and lower-left guidance. Orbit uses transparent partial edge arcs and a vertical guidance lozenge. Nightfall floats media and speed over the map with upper-right guidance.
+
+Performance's RPM/speed instrument is now on the left, not over the map car. Its music moves to the upper-right and battery flow is integrated below the instrument. Music Lounge's odometer uses a larger opaque capsule.
+
+The render fixture now includes a car marker. A dedicated central corridor (43–65% across, 40–82% down) must remain untouched in the four new full-map layouts and Performance, with and without guidance, on both projection types. This represents the observed car-marker area and road ahead; it is a regression test, not a claim that every navigation app fixes its marker at one pixel.

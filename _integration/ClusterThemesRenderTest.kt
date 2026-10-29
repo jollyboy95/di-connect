@@ -54,7 +54,7 @@ class ClusterThemesRenderTest {
             // A theme with its own map window has Google's card inside that window instead.
             // The full-map instrument layout draws Di-Connect's directions instead (turn card hidden).
             if (connection == ClusterConnection.ANDROID_AUTO && theme.dim == 0 && theme.mapWindow == null &&
-                theme.layout !in setOf(ClusterTheme.Layout.BAVARIAN, ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT, ClusterTheme.Layout.DAYLIGHT_FUTURE, ClusterTheme.Layout.SMOKED_GLASS, ClusterTheme.Layout.AURUM_TOUR)) {
+                theme.layout != ClusterTheme.Layout.BAVARIAN && theme.layout !in conceptLayouts) {
                 for (y in (height * .42f).toInt() until (height * .74f).toInt() step 3)
                     for (x in (width * .76f).toInt() until (width * .99f).toInt() step 3)
                         assertEquals("${theme.id} covers Google's card at $x,$y", background, bitmap.getPixel(x, y))
@@ -69,7 +69,8 @@ class ClusterThemesRenderTest {
 
     private val conceptLayouts = setOf(ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT,
         ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE, ClusterTheme.Layout.SMOKED_GLASS,
-        ClusterTheme.Layout.AURUM_TOUR, ClusterTheme.Layout.WOODLAND_RETREAT)
+        ClusterTheme.Layout.AURUM_TOUR, ClusterTheme.Layout.WOODLAND_RETREAT, ClusterTheme.Layout.AURORA_OPEN,
+        ClusterTheme.Layout.HORIZON_RIBBON,ClusterTheme.Layout.ORBIT_GLASS,ClusterTheme.Layout.NIGHTFALL_AUDIO)
 
     @Test fun materialPanelsDoNotInheritThePreviousShadowOpacity() {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
@@ -96,8 +97,8 @@ class ClusterThemesRenderTest {
     @Test fun conceptsRenderGuidanceOverMapAtFullAndCompactSizes() {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
             .first { it.isFile }.readText().let(ThemePacks::parse)
-        val concepts = catalogue.filter { it.layout in conceptLayouts }
-        assertEquals(9,concepts.size)
+        val concepts = (ClusterThemes.builtIn+catalogue).distinctBy{it.id}.filter { it.layout in conceptLayouts }
+        assertEquals(13,concepts.size)
         val output=File("build/reports/gwm-cluster/themes").apply{mkdirs()}
         val artwork=Bitmap.createBitmap(300,300,Bitmap.Config.ARGB_8888)
         val cover=Canvas(artwork)
@@ -127,7 +128,19 @@ class ClusterThemesRenderTest {
                 for(i in -5..20) canvas.drawLine(i*w/14f,0f,(i+3)*w/14f,h.toFloat(),paint)
                 val route=android.graphics.Path().apply{moveTo(.5f*w,h.toFloat());cubicTo(.44f*w,.7f*h,.6f*w,.6f*h,.52f*w,.4f*h);lineTo(.56f*w,0f)}
                 paint.style=android.graphics.Paint.Style.STROKE;paint.strokeWidth=h*.014f;paint.color=Color.rgb(71,215,218);canvas.drawPath(route,paint);paint.style=android.graphics.Paint.Style.FILL
+                // Distinct map car marker, deliberately behind the theme like the real phone video.
+                paint.color=Color.WHITE
+                canvas.drawRoundRect(android.graphics.RectF(.51f*w,.70f*h,.535f*w,.765f*h),h*.008f,h*.008f,paint)
+                val before=bitmap.copy(Bitmap.Config.ARGB_8888,false)
                 view.draw(canvas)
+                if(theme.layout in setOf(ClusterTheme.Layout.AURORA_OPEN,ClusterTheme.Layout.HORIZON_RIBBON,
+                    ClusterTheme.Layout.ORBIT_GLASS,ClusterTheme.Layout.NIGHTFALL_AUDIO,ClusterTheme.Layout.PERFORMANCE_COCKPIT)) {
+                    // A generous central corridor protects both the vehicle and the next stretch of road.
+                    for(y in (h*.40f).toInt() until (h*.82f).toInt() step 7)
+                        for(x in (w*.43f).toInt() until (w*.65f).toInt() step 7)
+                            assertEquals("${theme.name} obscures the map vehicle/route at $x,$y",before.getPixel(x,y),bitmap.getPixel(x,y))
+                }
+                before.recycle()
                 return bitmap
             }
             val empty=render(null)
