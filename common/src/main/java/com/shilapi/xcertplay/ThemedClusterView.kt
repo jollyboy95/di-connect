@@ -145,6 +145,8 @@ internal class ThemedClusterView(
             ClusterTheme.Layout.AURORA_PLUS, ClusterTheme.Layout.ZEN, ClusterTheme.Layout.SPORT_ARC, ClusterTheme.Layout.HORIZON_BAR,
             ClusterTheme.Layout.FLOAT_CARDS, ClusterTheme.Layout.INDUSTRIAL, ClusterTheme.Layout.VERTICAL_STACK,
             ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH -> drawNine(canvas, w, h, showMusic)
+            ClusterTheme.Layout.ECLIPSE, ClusterTheme.Layout.FLOAT_GLASS, ClusterTheme.Layout.HORIZON_PLUS,
+            ClusterTheme.Layout.PRISM -> drawGlassSet(canvas, w, h, showMusic)
             ClusterTheme.Layout.HORIZON_RIBBON -> drawHorizonRibbon(canvas,w,h)
             ClusterTheme.Layout.ORBIT_GLASS -> drawOrbitGlass(canvas,w,h)
             ClusterTheme.Layout.NIGHTFALL_AUDIO -> drawNightfallAudio(canvas,w,h)
@@ -2376,7 +2378,8 @@ internal class ThemedClusterView(
 
     private val nineLayouts = setOf(ClusterTheme.Layout.AURORA_PLUS, ClusterTheme.Layout.ZEN, ClusterTheme.Layout.SPORT_ARC,
         ClusterTheme.Layout.HORIZON_BAR, ClusterTheme.Layout.FLOAT_CARDS, ClusterTheme.Layout.INDUSTRIAL,
-        ClusterTheme.Layout.VERTICAL_STACK, ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH)
+        ClusterTheme.Layout.VERTICAL_STACK, ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH,
+        ClusterTheme.Layout.ECLIPSE, ClusterTheme.Layout.FLOAT_GLASS, ClusterTheme.Layout.HORIZON_PLUS, ClusterTheme.Layout.PRISM)
 
     private fun isNine() = theme.layout in nineLayouts
 
@@ -2824,6 +2827,257 @@ internal class ThemedClusterView(
             }
             else -> Unit
         }
+    }
+
+    // ---- Glass set: Eclipse, Float II, Horizon+ and Prism (Steve's second sheet, Oct 2026) ----
+    // A header pill around the car's gear letter, fuel and odometer pills along the bottom, a
+    // centre-zero charge/power bar, and floating music and directions cards on the right.
+
+    /** The current turn's largest distance, so its card can show progress towards the turn. */
+    private var stepKey: String? = null
+    private var stepStart = 0
+
+    private fun stepProgress(next: ClusterTurnGuidance): Float? {
+        val key = "${next.icon}|${next.road}|${next.roundaboutExit}"
+        if (key != stepKey || next.distanceMeters > stepStart) { if (key != stepKey) stepStart = 0; stepKey = key; stepStart = maxOf(stepStart, next.distanceMeters) }
+        return if (stepStart > 0) (1f - next.distanceMeters.toFloat() / stepStart).coerceIn(0f, 1f) else null
+    }
+
+    private fun glassHeader(canvas: Canvas, w: Float, h: Float) {
+        val g = GEAR_X * w
+        val box = RectF(g - .14f * w, .008f * h, g + .14f * w, .10f * h)
+        nineCard(canvas, box, withAlpha(theme.text, 60), radius = .05f)
+        val y = box.centerY() + .016f * h
+        snapshot?.outsideTempC?.let { studioText(canvas, "${it.roundToInt()}°C", g - .085f * w, y, .042f * h, weight = 500, align = Paint.Align.CENTER) }
+        studioText(canvas, SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()), g + .085f * w, y, .042f * h, weight = 500, align = Paint.Align.CENTER)
+    }
+
+    private fun glassFooter(canvas: Canvas, w: Float, h: Float) {
+        val left = RectF(.008f * w, .885f * h, .30f * w, .985f * h)
+        nineCard(canvas, left, withAlpha(theme.text, 45), radius = .05f)
+        // Fuel: pump, a long bar, the percentage and the range.
+        drawPump(canvas, left.left + .02f * w, left.centerY() - .022f * h, .045f * h)
+        val bar = RectF(left.left + .06f * w, left.centerY() - .012f * h, left.left + .14f * w, left.centerY() + .012f * h)
+        fill.shader = null; fill.color = Color.argb(70, 160, 180, 200); canvas.drawRoundRect(bar, bar.height() / 2, bar.height() / 2, fill)
+        snapshot?.fuelPercent?.let { f ->
+            fill.color = theme.charge
+            canvas.drawRoundRect(RectF(bar.left, bar.top, bar.left + bar.width() * (f / 100f).coerceIn(0f, 1f), bar.bottom), bar.height() / 2, bar.height() / 2, fill)
+        }
+        val y = left.centerY() + .016f * h
+        studioText(canvas, snapshot?.fuelPercent?.let { "${it.roundToInt()}%" } ?: "—", left.left + .19f * w, y, .042f * h, weight = 500, align = Paint.Align.CENTER)
+        studioText(canvas, snapshot?.rangeKm?.let { "${it.roundToInt()} km" } ?: "— km", left.right - .015f * w, y, .042f * h, weight = 500, align = Paint.Align.RIGHT)
+        val right = RectF(.80f * w, .885f * h, .992f * w, .985f * h)
+        nineCard(canvas, right, withAlpha(theme.text, 45), radius = .05f)
+        nineOdo(canvas, right.right - .015f * w, y, .042f * h)
+    }
+
+    /** Centre-zero bar: charging lights the left half, drawing power the right half. */
+    private fun chargePowerBar(canvas: Canvas, left: Float, right: Float, y: Float, labels: Boolean = true) {
+        val h = height.toFloat()
+        val s = h / 720f
+        val box = RectF(left, y - .016f * h, right, y + .016f * h)
+        fill.shader = null; fill.color = Color.argb(200, 10, 18, 30); canvas.drawRoundRect(box, box.height() / 2, box.height() / 2, fill)
+        line.shader = null; line.color = withAlpha(theme.text, 60); line.strokeWidth = 1.2f * s; canvas.drawRoundRect(box, box.height() / 2, box.height() / 2, line)
+        val mid = box.centerX()
+        val f = kwNow()?.let { (it / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f) } ?: 0f
+        val inner = RectF(box.left + 3f * s, box.top + 3f * s, box.right - 3f * s, box.bottom - 3f * s)
+        val end = mid + (inner.width() / 2f) * f
+        fill.shader = LinearGradient(minOf(mid, end), 0f, maxOf(mid, end), 0f, withAlpha(theme.charge, 150), theme.charge, Shader.TileMode.CLAMP)
+        if (kotlin.math.abs(end - mid) > 1f) canvas.drawRoundRect(RectF(minOf(mid, end), inner.top, maxOf(mid, end), inner.bottom), inner.height() / 2, inner.height() / 2, fill)
+        fill.shader = null; fill.color = theme.text; canvas.drawRect(mid - 1.5f * s, box.top - 2f * s, mid + 1.5f * s, box.bottom + 2f * s, fill)
+        if (labels) {
+            studioText(canvas, "CHARGE", box.left + .01f * h, box.bottom + .05f * h, .028f * h, theme.secondary, 500)
+            studioText(canvas, "POWER", box.right - .01f * h, box.bottom + .05f * h, .028f * h, theme.secondary, 500, align = Paint.Align.RIGHT)
+        }
+    }
+
+    /** Arrow, distance, road (with its route number as a yellow badge), progress, then the journey. */
+    private fun glassNav(canvas: Canvas, box: RectF, next: ClusterTurnGuidance, path: Path? = null, tint: Int = Color.argb(222, 10, 40, 52)) {
+        val h = height.toFloat()
+        val s = h / 720f
+        if (path != null) nineGlass(canvas, path, box.top, box.bottom, withAlpha(theme.accent, 140))
+        else {
+            val r = .03f * h
+            fill.color = Color.BLACK
+            fill.shader = LinearGradient(0f, box.top, 0f, box.bottom, tint, Color.argb(232, 6, 16, 26), Shader.TileMode.CLAMP)
+            canvas.drawRoundRect(box, r, r, fill); fill.shader = null
+            line.shader = null; line.color = withAlpha(theme.accent, 150); line.strokeWidth = 1.6f * s; canvas.drawRoundRect(box, r, r, line)
+        }
+        val pad = .035f * h
+        val side = .10f * h
+        nineArrow(canvas, next, RectF(box.left + pad, box.top + pad * .8f, box.left + pad + side, box.top + pad * .8f + side))
+        val tx = box.left + pad + side + .03f * h
+        val tw = box.right - tx - pad
+        studioText(canvas, distanceLabel(next.distanceMeters), tx, box.top + .075f * h, .046f * h, weight = 600, width = tw)
+        val road = nineRoad(next)
+        val number = Regex("""^([A-Z]{1,2}\d{1,3})\s+(.+)$""").find(road)
+        var rx = tx
+        val ry = box.top + .135f * h
+        if (number != null) {
+            val badge = number.groupValues[1]
+            type(.03f * h, Color.BLACK, 700); val bw = text.measureText(badge) + .02f * h
+            fill.shader = null; fill.color = Color.rgb(255, 213, 0)
+            canvas.drawRoundRect(RectF(tx, ry - .036f * h, tx + bw, ry + .008f * h), .006f * h, .006f * h, fill)
+            studioText(canvas, badge, tx + bw / 2f, ry - .002f * h, .03f * h, Color.BLACK, 700, align = Paint.Align.CENTER)
+            rx = tx + bw + .015f * h
+        }
+        val name = number?.groupValues?.get(2) ?: road
+        if (name.isNotBlank()) studioText(canvas, name, rx, ry, .036f * h, weight = 600, width = box.right - rx - pad)
+        val py = box.top + .175f * h
+        if (py < box.bottom - .02f * h) {
+            line.color = Color.argb(70, 160, 190, 210); line.strokeWidth = 3f * s; line.strokeCap = Paint.Cap.ROUND
+            canvas.drawLine(box.left + pad, py, box.right - pad, py, line)
+            stepProgress(next)?.let { p -> line.color = theme.charge; canvas.drawLine(box.left + pad, py, box.left + pad + (box.width() - 2 * pad) * p, py, line) }
+        }
+        journeyParts(next).takeIf { it.isNotEmpty() }?.let { parts ->
+            val (time, km, clock) = nineJourney(next)
+            val joined = listOfNotNull(time, km, clock).joinToString(" · ")
+            studioText(canvas, joined.ifBlank { parts.joinToString(" · ") }, box.left + pad, box.bottom - .03f * h, .036f * h, weight = 500, width = box.width() - 2 * pad)
+        }
+    }
+
+    /** Equaliser-style waveform with the played part lit, as on Float II. */
+    private fun glassWaveform(canvas: Canvas, left: Float, right: Float, cy: Float, done: Float) {
+        val h = height.toFloat()
+        val s = h / 720f
+        val bars = 48
+        val step = (right - left) / bars
+        var seed = (music.info.title ?: "").hashCode()
+        line.shader = null; line.strokeCap = Paint.Cap.ROUND; line.strokeWidth = maxOf(1.5f * s, step * .45f)
+        for (i in 0 until bars) {
+            seed = seed * 1103515245 + 12345
+            val k = .25f + .75f * ((seed ushr 16) and 255) / 255f
+            val half = k * .022f * h
+            val x = left + step * (i + .5f)
+            line.color = if ((i + .5f) / bars <= done) theme.charge else withAlpha(theme.text, 90)
+            canvas.drawLine(x, cy - half, x, cy + half, line)
+        }
+        val px = left + (right - left) * done
+        line.color = theme.text; line.strokeWidth = 2.4f * s; canvas.drawLine(px, cy - .03f * h, px, cy + .03f * h, line)
+    }
+
+    /** Art and text on top, a progress line (wavy, or a waveform), controls underneath. */
+    private fun glassMusic(canvas: Canvas, box: RectF, waveform: Boolean = false, path: Path? = null) {
+        val h = height.toFloat()
+        if (path != null) nineGlass(canvas, path, box.top, box.bottom, withAlpha(theme.text, 60)) else nineCard(canvas, box, withAlpha(theme.text, 60))
+        val pad = .03f * h
+        val side = box.height() * .40f
+        studioAlbum(canvas, RectF(box.left + pad, box.top + pad, box.left + pad + side, box.top + pad + side), .01f * h)
+        val tx = box.left + pad * 2f + side
+        val tw = box.right - tx - pad
+        studioText(canvas, music.info.title?.takeIf { it.isNotBlank() } ?: "—", tx, box.top + pad + side * .42f, .04f * h, weight = 500, width = tw)
+        music.info.artist?.takeIf { it.isNotBlank() }?.let { studioText(canvas, it, tx, box.top + pad + side * .80f, .03f * h, theme.secondary, width = tw) }
+        val py = box.top + pad + side + box.height() * .11f
+        val done = progress() ?: 0f
+        if (waveform) glassWaveform(canvas, box.left + pad, box.right - pad, py, done)
+        else wavyProgress(canvas, box.left + pad, box.right - pad, py, done, played = theme.charge)
+        nineControls(canvas, box.centerX(), box.bottom - box.height() * .14f, .036f * h, box.width() * .3f)
+    }
+
+    private fun drawGlassSet(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        val nav = nineNav()
+        val showCard = nineShowsMusic(showMusic)
+        when (theme.layout) {
+            ClusterTheme.Layout.ECLIPSE -> {
+                nineFrame(canvas, w, h, top = .14f, bottom = .82f)
+                nineRing(canvas, .19f * w, .40f * h, .34f * h, intArrayOf(Color.rgb(20, 110, 240), Color.rgb(60, 190, 255), Color.rgb(170, 240, 255), Color.rgb(20, 110, 240)),
+                    start = 120f, sweep = 300f)
+                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .19f * w, .47f * h, .21f * h, weight = 500, align = Paint.Align.CENTER)
+                studioText(canvas, "km/h", .19f * w, .56f * h, .042f * h, align = Paint.Align.CENTER)
+                chargePowerBar(canvas, .055f * w, .33f * w, .645f * h)
+                if (showCard) glassMusic(canvas, RectF(.695f * w, .10f * h, .99f * w, .41f * h))
+                nav?.let { glassNav(canvas, RectF(.695f * w, .44f * h, .99f * w, .72f * h), it) }
+            }
+            ClusterTheme.Layout.FLOAT_GLASS -> {
+                nineFrame(canvas, w, h, top = .14f, bottom = .82f)
+                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .20f * w, .51f * h, .27f * h, weight = 500, align = Paint.Align.CENTER)
+                studioText(canvas, "km/h", .20f * w, .58f * h, .045f * h, align = Paint.Align.CENTER)
+                chargePowerBar(canvas, .055f * w, .32f * w, .645f * h)
+                nav?.let { glassNav(canvas, RectF(.69f * w, .11f * h, .99f * w, .38f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.69f * w, .47f * h, .99f * w, .84f * h), waveform = true)
+            }
+            ClusterTheme.Layout.HORIZON_PLUS -> {
+                nineFrame(canvas, w, h, top = .14f, bottom = .66f)
+                // Instrument bar along the bottom with a raised centre for the speed.
+                ninePath.rewind()
+                ninePath.moveTo(0f, .73f * h); ninePath.lineTo(.30f * w, .73f * h)
+                ninePath.cubicTo(.34f * w, .73f * h, .35f * w, .66f * h, .39f * w, .66f * h); ninePath.lineTo(.61f * w, .66f * h)
+                ninePath.cubicTo(.65f * w, .66f * h, .66f * w, .73f * h, .70f * w, .73f * h); ninePath.lineTo(w, .73f * h)
+                val bar = Path(ninePath).apply { lineTo(w, h); lineTo(0f, h); close() }
+                fill.color = Color.BLACK
+                fill.shader = LinearGradient(0f, .66f * h, 0f, h, Color.argb(232, 8, 16, 30), Color.argb(250, 3, 7, 14), Shader.TileMode.CLAMP)
+                canvas.drawPath(bar, fill); fill.shader = null
+                line.shader = null; line.color = withAlpha(theme.accent, 80); line.strokeWidth = 7f * h / 720f; canvas.drawPath(ninePath, line)
+                line.color = theme.accent; line.strokeWidth = 2f * h / 720f; canvas.drawPath(ninePath, line)
+                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .49f * w, .835f * h, .16f * h, weight = 500, align = Paint.Align.CENTER)
+                studioText(canvas, "km/h", .49f * w, .875f * h, .03f * h, align = Paint.Align.CENTER)
+                // Charge on the left of the speed, power on the right.
+                val kw = kwNow() ?: 0f
+                val full = GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW
+                fun half(l: Float, r: Float, fraction: Float, fromRight: Boolean, label: String) {
+                    val y = .855f * h
+                    fill.shader = null; fill.color = Color.argb(160, 30, 44, 64)
+                    canvas.drawRoundRect(RectF(l, y - .009f * h, r, y + .009f * h), .009f * h, .009f * h, fill)
+                    val f = fraction.coerceIn(0f, 1f)
+                    fill.color = theme.charge
+                    if (f > 0f) canvas.drawRoundRect(if (fromRight) RectF(r - (r - l) * f, y - .009f * h, r, y + .009f * h)
+                        else RectF(l, y - .009f * h, l + (r - l) * f, y + .009f * h), .009f * h, .009f * h, fill)
+                    studioText(canvas, label, if (fromRight) l else r, y - .028f * h, .026f * h, theme.secondary, 500,
+                        align = if (fromRight) Paint.Align.LEFT else Paint.Align.RIGHT)
+                }
+                half(.28f * w, .43f * w, -kw / full, true, "CHARGE")
+                half(.56f * w, .71f * w, kw / full, false, "POWER")
+                if (showCard) {
+                    val box = RectF(.006f * w, .10f * h, .645f * w, .305f * h)
+                    nineCard(canvas, box, withAlpha(theme.text, 60))
+                    val pad = .028f * h
+                    val side = box.height() - 2 * pad
+                    studioAlbum(canvas, RectF(box.left + pad, box.top + pad, box.left + pad + side, box.top + pad + side), .01f * h)
+                    val tx = box.left + pad * 2 + side
+                    val tw = .23f * w
+                    studioText(canvas, music.info.title?.takeIf { it.isNotBlank() } ?: "—", tx, box.top + box.height() * .34f, .04f * h, weight = 500, width = tw)
+                    music.info.artist?.takeIf { it.isNotBlank() }?.let { studioText(canvas, it, tx, box.top + box.height() * .58f, .03f * h, theme.secondary, width = tw) }
+                    wavyProgress(canvas, tx, tx + tw * .85f, box.top + box.height() * .80f, progress() ?: 0f, played = theme.charge)
+                    nineControls(canvas, box.right - .14f * w, box.centerY(), .04f * h, .065f * w)
+                }
+                nav?.let { glassNav(canvas, RectF(.675f * w, .065f * h, .985f * w, .355f * h), it) }
+            }
+            ClusterTheme.Layout.PRISM -> {
+                nineFrame(canvas, w, h, top = .14f, bottom = .82f)
+                // Angular glass panel for the speed, lit along its left edge.
+                ninePath.rewind()
+                ninePath.moveTo(.035f * w, .30f * h); ninePath.lineTo(.10f * w, .14f * h); ninePath.lineTo(.31f * w, .14f * h)
+                ninePath.lineTo(.375f * w, .58f * h); ninePath.lineTo(.345f * w, .71f * h); ninePath.lineTo(.08f * w, .71f * h)
+                ninePath.lineTo(.035f * w, .60f * h); ninePath.close()
+                nineGlass(canvas, ninePath, .14f * h, .71f * h, withAlpha(theme.text, 70))
+                line.shader = LinearGradient(0f, .14f * h, 0f, .71f * h, intArrayOf(theme.accent, theme.secondary, theme.accent), null, Shader.TileMode.CLAMP)
+                line.color = Color.BLACK; line.strokeWidth = 5f * h / 720f
+                canvas.drawLine(.035f * w, .30f * h, .10f * w, .14f * h, line); canvas.drawLine(.035f * w, .30f * h, .035f * w, .60f * h, line)
+                canvas.drawLine(.035f * w, .60f * h, .08f * w, .71f * h, line); line.shader = null
+                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .205f * w, .45f * h, .22f * h, weight = 500, align = Paint.Align.CENTER)
+                studioText(canvas, "km/h", .205f * w, .53f * h, .042f * h, align = Paint.Align.CENTER)
+                chargePowerBar(canvas, .085f * w, .345f * w, .595f * h)
+                nav?.let {
+                    val box = RectF(.665f * w, .10f * h, .99f * w, .40f * h)
+                    val p = Path().apply {
+                        moveTo(box.left, box.top); lineTo(box.right, box.top); lineTo(box.right - .025f * w, box.bottom)
+                        lineTo(box.left, box.bottom); close()
+                    }
+                    glassNav(canvas, box, it, path = p)
+                }
+                if (showCard) {
+                    val box = RectF(.645f * w, .45f * h, .985f * w, .84f * h)
+                    val p = Path().apply {
+                        moveTo(box.left + .015f * w, box.top); lineTo(box.right, box.top); lineTo(box.right, box.bottom)
+                        lineTo(box.left + .015f * w, box.bottom); lineTo(box.left, box.bottom - .06f * h); lineTo(box.left, box.top + .06f * h); close()
+                    }
+                    glassMusic(canvas, box, path = p)
+                }
+            }
+            else -> Unit
+        }
+        glassFooter(canvas, w, h)
+        glassHeader(canvas, w, h)
     }
 
     // ---- Isar Drive: chevron instruments over a full-width map ------------------------------
