@@ -2751,3 +2751,13 @@ edit(aa_java/'aap/AapTransport.kt',
     ("""            codecName = VideoDecoder.CodecType.H264.settingsValue, forceSoftware = false,""",
      """            codecName = if (com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterHevc) VideoDecoder.CodecType.H265.settingsValue
                 else VideoDecoder.CodecType.H264.settingsValue, forceSoftware = false,"""))
+
+# GWM: the car's hotspot is its permanent one. Saving Android Auto settings restarts the service,
+# and its shutdown switched the hotspot off ("auto-enable hotspot"), which did not reliably come
+# back on the H7. On GWM, leave the car's hotspot alone when the service stops.
+edit(aa_java/'aap/AapService.kt',
+    ('''        if (!com.andrerinas.openheadunit.DiConnectEngine.handoverInProgress &&
+            App.provide(this).settings.autoEnableHotspot &&''',
+     '''        if (!com.andrerinas.openheadunit.DiConnectEngine.handoverInProgress &&
+            !com.andrerinas.openheadunit.gwm.GwmMode.active(this) &&
+            App.provide(this).settings.autoEnableHotspot &&'''))
