@@ -2669,7 +2669,7 @@ internal class ThemedClusterView(
                 nineGlass(canvas, ninePath, .80f * h, .95f * h, withAlpha(theme.accent, 90))
                 nineFuel(canvas, .03f * w, .905f * h, .042f * h)
                 if (showCard) nineMusicTall(canvas, RectF(.78f * w, .17f * h, .978f * w, .82f * h))
-                nav?.let { nineTurnCard(canvas, RectF(.37f * w, .70f * h, .63f * w, .93f * h), it) }
+                nav?.let { nineTurnCard(canvas, RectF(.255f * w, .70f * h, .475f * w, .93f * h), it) }
                 nineOdo(canvas, .975f * w, .925f * h, .036f * h)
                 nineHeader(canvas, w, h, timeCentre = true)
             }
@@ -2678,7 +2678,7 @@ internal class ThemedClusterView(
                 nineCard(canvas, RectF(.015f * w, .13f * h, .19f * w, .70f * h), withAlpha(theme.text, 50))
                 nineSpeed(canvas, .1025f * w, .42f * h, .18f * h)
                 if (showCard) nineMusicTall(canvas, RectF(.785f * w, .13f * h, .975f * w, .72f * h), withAlpha(theme.text, 50))
-                nav?.let { nineTurnCard(canvas, RectF(.235f * w, .70f * h, .53f * w, .90f * h), it, edge = withAlpha(theme.text, 50)) }
+                nav?.let { nineTurnCard(canvas, RectF(.215f * w, .70f * h, .475f * w, .90f * h), it, edge = withAlpha(theme.text, 50)) }
                 nineRange(canvas, .975f * w, .935f * h, .042f * h, Paint.Align.RIGHT, pump = true)
                 nineHeader(canvas, w, h, timeCentre = true)
             }
@@ -2742,7 +2742,7 @@ internal class ThemedClusterView(
                 nineSpeed(canvas, .14f * w, .45f * h, .18f * h)
                 nineFuel(canvas, .025f * w, .925f * h, .042f * h)
                 if (showCard) nineMusicTall(canvas, RectF(.80f * w, .15f * h, .975f * w, .72f * h))
-                nav?.let { nineTurnCard(canvas, RectF(.355f * w, .70f * h, .67f * w, .92f * h), it, edge = withAlpha(theme.accent, 200), glow = true) }
+                nav?.let { nineTurnCard(canvas, RectF(.24f * w, .70f * h, .475f * w, .92f * h), it, edge = withAlpha(theme.accent, 200), glow = true) }
                 nineOdo(canvas, .975f * w, .925f * h, .038f * h)
                 nineHeader(canvas, w, h)
             }
@@ -2983,11 +2983,11 @@ internal class ThemedClusterView(
         when (theme.layout) {
             ClusterTheme.Layout.ECLIPSE -> {
                 nineFrame(canvas, w, h, top = .14f, bottom = .82f)
-                nineRing(canvas, .19f * w, .40f * h, .34f * h, intArrayOf(Color.rgb(20, 110, 240), Color.rgb(60, 190, 255), Color.rgb(170, 240, 255), Color.rgb(20, 110, 240)),
+                nineRing(canvas, .19f * w, .40f * h, .27f * h, intArrayOf(Color.rgb(20, 110, 240), Color.rgb(60, 190, 255), Color.rgb(170, 240, 255), Color.rgb(20, 110, 240)),
                     start = 120f, sweep = 300f)
-                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .19f * w, .47f * h, .21f * h, weight = 500, align = Paint.Align.CENTER)
-                studioText(canvas, "km/h", .19f * w, .56f * h, .042f * h, align = Paint.Align.CENTER)
-                chargePowerBar(canvas, .055f * w, .33f * w, .645f * h)
+                studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .19f * w, .45f * h, .18f * h, weight = 500, align = Paint.Align.CENTER)
+                studioText(canvas, "km/h", .19f * w, .53f * h, .038f * h, align = Paint.Align.CENTER)
+                chargePowerBar(canvas, .055f * w, .33f * w, .76f * h)
                 if (showCard) glassMusic(canvas, RectF(.695f * w, .10f * h, .99f * w, .41f * h))
                 nav?.let { glassNav(canvas, RectF(.695f * w, .44f * h, .99f * w, .72f * h), it) }
             }
