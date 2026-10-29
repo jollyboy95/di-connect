@@ -1027,6 +1027,7 @@
     <string name="di_connect_theme_category_luxury">Inspirado en coches de lujo</string>
     <string name="di_connect_theme_category_sport">Deportivo</string>
     <string name="di_connect_theme_category_night">Noche</string>
+    <string name="di_connect_theme_category_concept">Conceptos</string>
     <string name="di_connect_theme_category_pets">Mascotas</string>
     <string name="di_connect_update_wrong_signer">Esta descarga no es una versión de Di-Connect firmada con tu clave, así que no se instaló.</string>
     <string name="settings_gwm_hotspot_5ghz">Mantener el punto de acceso del coche en 5 GHz (experimental)</string>

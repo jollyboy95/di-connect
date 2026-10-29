@@ -6235,6 +6235,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         ThemeCategory.SPORT -> R.string.di_connect_theme_category_sport
         ThemeCategory.NIGHT -> R.string.di_connect_theme_category_night
         ThemeCategory.PETS -> R.string.di_connect_theme_category_pets
+        ThemeCategory.CONCEPT -> R.string.di_connect_theme_category_concept
     }
 
     private fun chooseTheme(theme: ClusterTheme, connection: ClusterConnection) {

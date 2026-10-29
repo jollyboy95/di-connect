@@ -1910,6 +1910,7 @@ edit(D,
         ThemeCategory.SPORT -> R.string.di_connect_theme_category_sport
         ThemeCategory.NIGHT -> R.string.di_connect_theme_category_night
         ThemeCategory.PETS -> R.string.di_connect_theme_category_pets
+        ThemeCategory.CONCEPT -> R.string.di_connect_theme_category_concept
     }
 
     private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean): View {
@@ -1996,6 +1997,7 @@ CONTROL_STRINGS={
  'di_connect_theme_category_luxury':['Luxury car-inspired', 'مستوحى من السيارات الفاخرة', 'Inspirado en coches de lujo', 'Ispirato alle auto di lusso', '高級車風', 'В стиле премиум-авто', 'У стилі преміум-авто', '豪华车风', '豪華車風'],
  'di_connect_theme_category_sport':['Sport and motorsport', 'رياضي', 'Deportivo', 'Sportivo', 'スポーツ', 'Спорт', 'Спорт', '运动', '運動'],
  'di_connect_theme_category_night':['Night', 'ليلي', 'Noche', 'Notte', 'ナイト', 'Ночь', 'Ніч', '夜间', '夜間'],
+ 'di_connect_theme_category_concept':['Concepts', 'مفاهيم', 'Conceptos', 'Concept', 'コンセプト', 'Концепты', 'Концепти', '概念', '概念'],
  'di_connect_theme_category_pets':['Pets', 'الحيوانات الأليفة', 'Mascotas', 'Animali', 'ペット', 'Питомцы', 'Улюбленці', '宠物', '寵物'],
 }
 for p in STRINGS:

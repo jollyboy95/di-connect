@@ -12,7 +12,7 @@ import java.io.File
 internal enum class ClusterConnection { ANDROID_AUTO, CARPLAY }
 
 /** The Themes screen groups themes by these; names avoid real brands on purpose. */
-internal enum class ThemeCategory { EVERYDAY, TECH, LUXURY, SPORT, NIGHT, PETS }
+internal enum class ThemeCategory { CONCEPT, EVERYDAY, TECH, LUXURY, SPORT, NIGHT, PETS }
 
 /**
  * A cluster theme is data, not code: a panel style, a speed style, a battery-flow style, a palette
@@ -47,7 +47,8 @@ internal data class ClusterTheme(
      * cluster on the left, one solid sidebar, or a console along the bottom edge. All keep Google's
      * card on Android Auto (the right, 42-74 % down) clear.
      */
-    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE, HYBRID_SPORT, VAPORWAVE_STEREO, MUSIC_LOUNGE, BAVARIAN, TURBINE_LUXURY, PERFORMANCE_COCKPIT, MUSIC_PANORAMA, DAYLIGHT_FUTURE, SMOKED_GLASS, AURUM_TOUR, WOODLAND_RETREAT, AURORA_OPEN, HORIZON_RIBBON, ORBIT_GLASS, NIGHTFALL_AUDIO }
+    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE, HYBRID_SPORT, VAPORWAVE_STEREO, MUSIC_LOUNGE, BAVARIAN, TURBINE_LUXURY, PERFORMANCE_COCKPIT, MUSIC_PANORAMA, DAYLIGHT_FUTURE, SMOKED_GLASS, AURUM_TOUR, WOODLAND_RETREAT, AURORA_OPEN, HORIZON_RIBBON, ORBIT_GLASS, NIGHTFALL_AUDIO,
+        AURORA_PLUS, ZEN, SPORT_ARC, HORIZON_BAR, FLOAT_CARDS, INDUSTRIAL, VERTICAL_STACK, SPLIT_BAR, STEALTH }
     enum class Face { SANS, SERIF, MONO }
 
     /**

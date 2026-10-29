@@ -1087,6 +1087,7 @@
     <string name="di_connect_theme_category_luxury">豪華車風</string>
     <string name="di_connect_theme_category_sport">運動</string>
     <string name="di_connect_theme_category_night">夜間</string>
+    <string name="di_connect_theme_category_concept">概念</string>
     <string name="di_connect_theme_category_pets">寵物</string>
     <string name="di_connect_update_wrong_signer">此下載不是用你的金鑰簽署的 Di-Connect 版本，因此未安裝。</string>
     <string name="settings_gwm_hotspot_5ghz">讓車輛熱點保持 5 GHz（實驗性）</string>

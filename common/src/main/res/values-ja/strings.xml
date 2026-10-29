@@ -1129,6 +1129,7 @@
     <string name="di_connect_theme_category_luxury">高級車風</string>
     <string name="di_connect_theme_category_sport">スポーツ</string>
     <string name="di_connect_theme_category_night">ナイト</string>
+    <string name="di_connect_theme_category_concept">コンセプト</string>
     <string name="di_connect_theme_category_pets">ペット</string>
     <string name="di_connect_update_wrong_signer">このダウンロードはあなたの鍵で署名された Di-Connect ではないため、インストールしませんでした。</string>
     <string name="settings_gwm_hotspot_5ghz">車のホットスポットを 5 GHz に保つ（実験的機能）</string>

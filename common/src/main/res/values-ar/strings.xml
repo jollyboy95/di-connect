@@ -1076,6 +1076,7 @@
     <string name="di_connect_theme_category_luxury">مستوحى من السيارات الفاخرة</string>
     <string name="di_connect_theme_category_sport">رياضي</string>
     <string name="di_connect_theme_category_night">ليلي</string>
+    <string name="di_connect_theme_category_concept">مفاهيم</string>
     <string name="di_connect_theme_category_pets">الحيوانات الأليفة</string>
     <string name="di_connect_update_wrong_signer">هذا التنزيل ليس إصدارًا من Di-Connect موقّعًا بمفتاحك، لذلك لم يُثبَّت.</string>
     <string name="settings_gwm_hotspot_5ghz">إبقاء نقطة اتصال السيارة على 5 غيغاهرتز (تجريبي)</string>

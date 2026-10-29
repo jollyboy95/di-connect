@@ -1130,6 +1130,7 @@
     <string name="di_connect_theme_category_luxury">Luxury car-inspired</string>
     <string name="di_connect_theme_category_sport">Sport and motorsport</string>
     <string name="di_connect_theme_category_night">Night</string>
+    <string name="di_connect_theme_category_concept">Concepts</string>
     <string name="di_connect_theme_category_pets">Pets</string>
     <string name="di_connect_update_wrong_signer">This download isn\'t a Di-Connect build signed with your key, so it wasn\'t installed.</string>
     <string name="settings_gwm_hotspot_5ghz">Keep the car’s hotspot on 5 GHz (experimental)</string>

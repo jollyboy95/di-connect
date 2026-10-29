@@ -70,7 +70,10 @@ class ClusterThemesRenderTest {
     private val conceptLayouts = setOf(ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT,
         ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE, ClusterTheme.Layout.SMOKED_GLASS,
         ClusterTheme.Layout.AURUM_TOUR, ClusterTheme.Layout.WOODLAND_RETREAT, ClusterTheme.Layout.AURORA_OPEN,
-        ClusterTheme.Layout.HORIZON_RIBBON,ClusterTheme.Layout.ORBIT_GLASS,ClusterTheme.Layout.NIGHTFALL_AUDIO)
+        ClusterTheme.Layout.HORIZON_RIBBON,ClusterTheme.Layout.ORBIT_GLASS,ClusterTheme.Layout.NIGHTFALL_AUDIO,
+        ClusterTheme.Layout.AURORA_PLUS, ClusterTheme.Layout.ZEN, ClusterTheme.Layout.SPORT_ARC, ClusterTheme.Layout.HORIZON_BAR,
+        ClusterTheme.Layout.FLOAT_CARDS, ClusterTheme.Layout.INDUSTRIAL, ClusterTheme.Layout.VERTICAL_STACK,
+        ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH)
 
     @Test fun materialPanelsDoNotInheritThePreviousShadowOpacity() {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))

@@ -1027,6 +1027,7 @@
     <string name="di_connect_theme_category_luxury">В стиле премиум-авто</string>
     <string name="di_connect_theme_category_sport">Спорт</string>
     <string name="di_connect_theme_category_night">Ночь</string>
+    <string name="di_connect_theme_category_concept">Концепты</string>
     <string name="di_connect_theme_category_pets">Питомцы</string>
     <string name="di_connect_update_wrong_signer">Эта загрузка не является сборкой Di-Connect, подписанной вашим ключом, поэтому она не установлена.</string>
     <string name="settings_gwm_hotspot_5ghz">Держать точку доступа автомобиля на 5 ГГц (экспериментально)</string>
