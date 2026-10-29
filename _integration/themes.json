@@ -424,6 +424,36 @@
       "charge": "#9FAF5E",
       "surface": "#F2EFDA",
       "edge": "#9BB5A88A"
+    },
+    {
+      "id": "studio-daylight-dusk",
+      "name": "Pearl Dusk",
+      "category": "night",
+      "layout": "daylight_future",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#DCE6ED",
+      "secondary": "#AABAC5",
+      "accent": "#7EBABE",
+      "charge": "#80B6AB",
+      "surface": "#172532",
+      "edge": "#667E9FAA",
+      "dim": 80
+    },
+    {
+      "id": "atelier-woodland-afterglow",
+      "name": "Woodland Afterglow",
+      "category": "night",
+      "layout": "woodland_retreat",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#EEEAD4",
+      "secondary": "#C6CBB5",
+      "accent": "#CBBF8B",
+      "charge": "#97B58D",
+      "surface": "#15231B",
+      "edge": "#9BB5A88A",
+      "dim": 100
     }
   ]
 }

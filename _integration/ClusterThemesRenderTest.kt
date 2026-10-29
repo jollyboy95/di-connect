@@ -97,7 +97,7 @@ class ClusterThemesRenderTest {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
             .first { it.isFile }.readText().let(ThemePacks::parse)
         val concepts = catalogue.filter { it.layout in conceptLayouts }
-        assertEquals(7,concepts.size)
+        assertEquals(9,concepts.size)
         val output=File("build/reports/gwm-cluster/themes").apply{mkdirs()}
         val artwork=Bitmap.createBitmap(300,300,Bitmap.Config.ARGB_8888)
         val cover=Canvas(artwork)
