@@ -33,15 +33,20 @@ internal object ClimateTest {
             .let { "A/C ${if (on == 1) "on → off" else "off → on"}: $it" }
     }.getOrElse { "Climate test failed: ${it.javaClass.simpleName}: ${it.message}" }.also { Log.i(TAG, it) }
 
-    private const val DRIVER_VENT = "car.comfort_setting.driver_seat_ventilation_level"
+    /** Names a GWM voice-control app uses for the driver's seat ventilation; the H7 answers to one of them. */
+    private val DRIVER_VENT_KEYS = arrayOf("car.comfort_setting.driver_seat_ventilation_level",
+        "car.comfort_setting.driver_seat_ventilation_level_nine", "car.hvac.seat_ventilation_fr_mode",
+        "car.hvac.seat_ventilation_fl_mode", "car.comfort.setting.driver_seat_ventilation_level")
 
     /** Steps the driver's seat ventilation through off, 1, 2, 3 and back to off. */
     fun stepDriverVentilation(context: Context): String = runCatching {
-        val before = GwmVehicleData.read(context, arrayOf(DRIVER_VENT))[DRIVER_VENT]
-        val level = before?.toFloatOrNull()?.toInt() ?: return@runCatching "Could not read the driver seat ventilation (got '${before}')"
+        val values = GwmVehicleData.read(context, DRIVER_VENT_KEYS)
+        val key = DRIVER_VENT_KEYS.firstOrNull { values[it]?.toFloatOrNull() != null }
+            ?: return@runCatching "No seat ventilation value from the car (tried ${DRIVER_VENT_KEYS.joinToString { it.substringAfterLast('.') }}; got $values)"
+        val level = values[key]!!.toFloat().toInt()
         val target = if (level >= 3 || level < 0) 0 else level + 1
-        attempt(context, DRIVER_VENT, target.toString()) { it?.toFloatOrNull()?.toInt() == target }
-            .let { "Driver seat ventilation $level → $target: $it" }
+        attempt(context, key, target.toString()) { it?.toFloatOrNull()?.toInt() == target }
+            .let { "Seat ventilation ($key) $level → $target: $it" }
     }.getOrElse { "Climate test failed: ${it.javaClass.simpleName}: ${it.message}" }.also { Log.i(TAG, it) }
 
     /** Writes as Di-Connect, then as the voice assistant if the value did not change. */

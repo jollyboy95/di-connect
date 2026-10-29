@@ -72,9 +72,14 @@ internal object HotspotBandGuard {
                 sh("am start -n $HOTSPOT_APP/.MainActivity >/dev/null 2>&1")
                 pause(1800)
                 var nodes = screen()
+                // The app opens on "Hotspot & tethering": tap the "Wi-Fi hotspot" row, not the title.
                 if (nodes.none { it.text.equals("AP Band", true) }) {
-                    // The app may open on Wi-Fi; the hotspot page is one tap away.
-                    nodes.firstOrNull { it.text.contains("hotspot", true) }?.let { tap(it); pause(1500); nodes = screen() }
+                    nodes.firstOrNull { it.text.trim().equals("Wi-Fi hotspot", true) || it.text.trim().equals("WiFi hotspot", true) }
+                        ?.let { tap(it); pause(1500); nodes = screen() }
+                }
+                // AP Band sits under a collapsed "Advanced" row.
+                if (nodes.none { it.text.equals("AP Band", true) }) {
+                    nodes.firstOrNull { it.text.trim().equals("Advanced", true) }?.let { tap(it); pause(1000); nodes = screen() }
                 }
                 val band = nodes.indexOfFirst { it.text.equals("AP Band", true) }
                 if (band < 0) { leave(); return@use "AP Band not found on the car's hotspot screen (was ${before ?: "?"} MHz)" }
