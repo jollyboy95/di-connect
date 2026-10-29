@@ -680,6 +680,22 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true) }) }
         toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
             HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
+        card.addView(label(getString(R.string.settings_gwm_climate_test), 16, TEXT, true))
+        card.addView(label(getString(R.string.settings_gwm_climate_test_description), 14, MUTED))
+        card.addView(row().apply {
+            fun climate(text: String, action: (android.content.Context) -> String) = button(text, false) {
+                val app = applicationContext
+                Thread({
+                    val result = action(app)
+                    runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+                }, "climate-test").start()
+            }
+            addView(climate("−1 °C") { ClimateTest.temperatureStep(it, -1) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+            addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(climate("+1 °C") { ClimateTest.temperatureStep(it, 1) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+            addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(climate(getString(R.string.settings_gwm_climate_ac)) { ClimateTest.toggleAc(it) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
             val app = applicationContext
             Thread({

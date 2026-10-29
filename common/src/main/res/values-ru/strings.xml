@@ -1033,4 +1033,7 @@
     <string name="settings_gwm_hotspot_5ghz">Держать точку доступа автомобиля на 5 ГГц (экспериментально)</string>
     <string name="settings_gwm_hotspot_5ghz_description">Автомобиль иногда ставит точку доступа на «Оба», и тогда может выбраться 2,4 ГГц, из-за чего Android Auto заикается. При запуске Di-Connect на несколько секунд открывает экран точки доступа и ставит диапазон 5,0 ГГц, если он другой. При изменении точка доступа перезапускается. Нужен доступ ADB для Di-Connect.</string>
     <string name="settings_gwm_hotspot_5ghz_now">Переключить точку доступа на 5 ГГц сейчас</string>
+    <string name="settings_gwm_climate_test">Проверка климата (экспериментально)</string>
+    <string name="settings_gwm_climate_test_description">Проверяет, может ли Di-Connect менять климат: один градус со стороны водителя или включение и выключение A/C, затем считывает значение. Используйте на стоянке.</string>
+    <string name="settings_gwm_climate_ac">A/C вкл/выкл</string>
 </resources>

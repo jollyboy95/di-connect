@@ -1093,4 +1093,7 @@
     <string name="settings_gwm_hotspot_5ghz">讓車輛熱點保持 5 GHz（實驗性）</string>
     <string name="settings_gwm_hotspot_5ghz_description">車輛有時會把熱點設為「兩者」，可能選用 2.4 GHz，導致 Android Auto 卡頓。Di-Connect 啟動時會開啟車輛熱點畫面幾秒，如果頻段不是 5.0 GHz 就改為 5.0 GHz。變更後熱點會重新啟動。需要 Di-Connect 的 ADB 權限。</string>
     <string name="settings_gwm_hotspot_5ghz_now">立即將熱點設為 5 GHz</string>
+    <string name="settings_gwm_climate_test">空調測試（實驗性）</string>
+    <string name="settings_gwm_climate_test_description">檢查 Di-Connect 能否調整空調：駕駛側溫度調 1 度，或開關 A/C，然後讀回數值。請在停車時使用。</string>
+    <string name="settings_gwm_climate_ac">A/C 開/關</string>
 </resources>

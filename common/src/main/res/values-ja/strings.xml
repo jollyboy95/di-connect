@@ -1135,4 +1135,7 @@
     <string name="settings_gwm_hotspot_5ghz">車のホットスポットを 5 GHz に保つ（実験的機能）</string>
     <string name="settings_gwm_hotspot_5ghz_description">車がホットスポットを「両方」に戻すことがあり、2.4 GHz が選ばれると Android Auto が途切れます。Di-Connect の起動時に車のホットスポット画面を数秒開き、AP バンドが 5.0 GHz でなければ切り替えます。変更時はホットスポットが再起動します。Di-Connect の ADB アクセスが必要です。</string>
     <string name="settings_gwm_hotspot_5ghz_now">今すぐホットスポットを 5 GHz にする</string>
+    <string name="settings_gwm_climate_test">エアコンテスト（実験的機能）</string>
+    <string name="settings_gwm_climate_test_description">Di-Connect がエアコンを変更できるか確認します。運転席側の温度を 1 度、または A/C のオン/オフを変え、値を読み直します。停車中に使ってください。</string>
+    <string name="settings_gwm_climate_ac">A/C オン/オフ</string>
 </resources>

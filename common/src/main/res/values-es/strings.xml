@@ -1033,4 +1033,7 @@
     <string name="settings_gwm_hotspot_5ghz">Mantener el punto de acceso del coche en 5 GHz (experimental)</string>
     <string name="settings_gwm_hotspot_5ghz_description">El coche a veces pone su punto de acceso en Ambas, que puede elegir 2,4 GHz y hacer que Android Auto se entrecorte. Al iniciarse, Di-Connect abre unos segundos la pantalla del punto de acceso del coche y pone la banda en 5,0 GHz si no lo está. El punto de acceso se reinicia si cambia. Necesita el acceso ADB de Di-Connect.</string>
     <string name="settings_gwm_hotspot_5ghz_now">Poner ahora el punto de acceso en 5 GHz</string>
+    <string name="settings_gwm_climate_test">Prueba de climatización (experimental)</string>
+    <string name="settings_gwm_climate_test_description">Comprueba si Di-Connect puede cambiar la climatización: un grado en el lado del conductor, o encender y apagar el A/C, y vuelve a leerlo. Úsalo con el coche aparcado.</string>
+    <string name="settings_gwm_climate_ac">A/C sí/no</string>
 </resources>

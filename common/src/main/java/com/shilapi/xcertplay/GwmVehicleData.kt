@@ -23,6 +23,8 @@ internal object GwmVehicleData {
     private const val SERVICE = "gwm_adapter"
     private const val DESCRIPTOR = "com.gwm.android.adapter.IGwmAdapterService"
     private const val TRANSACTION_GET_DATA = 1
+    /** Writes values; same layout as GET_DATA with the values in place of the second array. */
+    private const val TRANSACTION_SET_DATA = 2
     private const val POLL_MILLIS = 250L
     /** A value older than this is treated as unavailable so the cluster never shows a stale speed. */
     const val STALE_MILLIS = 2_000L
@@ -124,6 +126,31 @@ internal object GwmVehicleData {
             reply.readException()
             val values: Array<String> = reply.createStringArray()?.map { it ?: "" }?.toTypedArray() ?: emptyArray()
             return pair(keys, values).filterValues { it.isNotEmpty() }
+        } finally {
+            reply.recycle()
+            data.recycle()
+        }
+    }
+
+    /**
+     * Writes [values] to [keys] in one call and returns the adapter's status code. [caller] is the
+     * package name the adapter is told; the car may only take changes from apps it knows. The
+     * adapter accepting a change does not prove the car made it, so callers read the value back.
+     */
+    fun write(context: Context, keys: Array<String>, values: Array<String>, caller: String = context.packageName): Int {
+        val service = binder ?: lookup().also { binder = it }
+        val data = Parcel.obtain()
+        val reply = Parcel.obtain()
+        try {
+            data.writeInterfaceToken(DESCRIPTOR)
+            data.writeInt(1)
+            data.writeString(caller)
+            data.writeStringArray(keys)
+            data.writeStringArray(values)
+            data.writeInt(1)
+            check(service.transact(TRANSACTION_SET_DATA, data, reply, 0)) { "transact returned false" }
+            reply.readException()
+            return if (reply.dataAvail() >= 4) reply.readInt() else 0
         } finally {
             reply.recycle()
             data.recycle()
