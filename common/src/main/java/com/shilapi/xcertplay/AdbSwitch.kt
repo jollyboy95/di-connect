@@ -8,10 +8,10 @@ import com.shilapi.xcertplay.adb.AdbKeys
 import com.shilapi.xcertplay.adb.LocalAdb
 
 /**
- * Lets Di-Connect switch the car's ADB on for a moment and back off, so the driver does not have
- * to turn it on in the car's settings every time. The first time ADB is on and approved,
+ * Lets Di-Connect switch the car's ADB on and keep it on, so the driver does not have to turn
+ * it on in the car's settings every time. The first time ADB is on and approved,
  * Di-Connect grants itself WRITE_SECURE_SETTINGS over that connection; Android keeps the grant
- * across restarts. From then on [withAdb] turns ADB on, runs the work, and restores it.
+ * across restarts. From then on ADB is switched on when needed and at start-up, and left on.
  */
 internal object AdbSwitch {
     private const val TAG = "DiConnect-Adb"
@@ -30,7 +30,7 @@ internal object AdbSwitch {
 
     /**
      * Runs [work] with local ADB available. Switches ADB on first when it is off and Di-Connect
-     * may do so, waits for it, and switches it back off afterwards. Without the grant it runs
+     * may do so, and waits for it. Without the grant it runs
      * [work] as is, so the caller reports ADB as unavailable in the usual way.
      */
     fun <T> withAdb(context: Context, work: () -> T): T {
@@ -38,7 +38,7 @@ internal object AdbSwitch {
         val turnedOn = !enabled(app) && canSwitch(app) &&
             runCatching { Settings.Global.putInt(app.contentResolver, Settings.Global.ADB_ENABLED, 1) }.getOrDefault(false)
         if (turnedOn) {
-            Log.i(TAG, "ADB switched on for a moment")
+            Log.i(TAG, "ADB switched on")
             // adbd takes a moment to come up after being enabled.
             val until = System.currentTimeMillis() + 6_000
             while (System.currentTimeMillis() < until) {
@@ -47,13 +47,15 @@ internal object AdbSwitch {
                 Thread.sleep(400)
             }
         }
-        try {
-            return work()
-        } finally {
-            if (turnedOn) {
-                runCatching { Settings.Global.putInt(app.contentResolver, Settings.Global.ADB_ENABLED, 0) }
-                Log.i(TAG, "ADB switched back off")
-            }
-        }
+        // Left on: the driver wants ADB available without visiting the car's settings.
+        return work()
+    }
+
+    /** At start-up: switches ADB on if the car turned it off and Di-Connect may do so. */
+    fun keepOn(context: Context) {
+        val app = context.applicationContext
+        if (enabled(app) || !canSwitch(app)) return
+        runCatching { Settings.Global.putInt(app.contentResolver, Settings.Global.ADB_ENABLED, 1) }
+            .onSuccess { Log.i(TAG, "ADB switched on at start-up") }
     }
 }

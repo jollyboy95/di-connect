@@ -2766,6 +2766,10 @@ edit(aa_java/'aap/AapService.kt',
 # hotspot fix. Di-Connect grants itself WRITE_SECURE_SETTINGS once over an approved connection and
 # then switches ADB on for a moment and back off itself.
 (root/'common/src/main/java/com/shilapi/xcertplay/AdbSwitch.kt').write_text(Path('target/_integration/AdbSwitch.kt').read_text())
+edit(D,('''        HotspotBandGuard.checkOnStart(applicationContext)
+''','''        HotspotBandGuard.checkOnStart(applicationContext)
+        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()
+'''))
 edit(root/'common/src/main/AndroidManifest.xml',
     ('    <uses-permission android:name="android.permission.WRITE_SETTINGS" />',
      '    <uses-permission android:name="android.permission.WRITE_SETTINGS" />\n'

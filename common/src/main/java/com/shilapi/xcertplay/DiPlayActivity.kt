@@ -438,6 +438,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         scheduleBackgroundUpdateChecks()
         HotspotBandGuard.checkOnStart(applicationContext)
+        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()
         availableUpdate = UpdateAvailability.available(this, version())
         enforceInterfaceSize()
         refreshAppearance()
