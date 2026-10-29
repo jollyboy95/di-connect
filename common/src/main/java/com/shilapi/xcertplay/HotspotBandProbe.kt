@@ -38,10 +38,11 @@ internal object HotspotBandProbe {
 
     /** Runs the probe over local ADB (only if already approved) and returns readable text. Blocking. */
     fun run(context: Context): String {
-        val text = runCatching {
+        val text = runCatching { AdbSwitch.withAdb(context) {
             LocalAdb(AdbKeys.load(context.applicationContext)).use { adb ->
                 when (val access = adb.connect(mayAsk = false)) {
                     LocalAdb.Access.READY -> buildString {
+                        AdbSwitch.grantSelf(context, adb)
                         for ((title, command) in COMMANDS) {
                             appendLine("[$title]")
                             val out = adb.shell(command, 8_000).orEmpty().lines()
@@ -55,7 +56,7 @@ internal object HotspotBandProbe {
                     else -> "Local ADB not available ($access). Approve Di-Connect's ADB access, then scan again."
                 }
             }
-        }.getOrElse { "Hotspot band probe failed: ${it.javaClass.simpleName}" }
+        } }.getOrElse { "Hotspot band probe failed: ${it.javaClass.simpleName}" }
         val stamped = "--- Hotspot band probe ${SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())} ---\n$text".trimEnd()
         last = stamped
         return stamped

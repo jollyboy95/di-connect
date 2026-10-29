@@ -2761,3 +2761,13 @@ edit(aa_java/'aap/AapService.kt',
      '''        if (!com.andrerinas.openheadunit.DiConnectEngine.handoverInProgress &&
             !com.andrerinas.openheadunit.gwm.GwmMode.active(this) &&
             App.provide(this).settings.autoEnableHotspot &&'''))
+
+# ADB on demand (Oct 2026): the driver had to switch ADB on in the car's settings before every
+# hotspot fix. Di-Connect grants itself WRITE_SECURE_SETTINGS once over an approved connection and
+# then switches ADB on for a moment and back off itself.
+(root/'common/src/main/java/com/shilapi/xcertplay/AdbSwitch.kt').write_text(Path('target/_integration/AdbSwitch.kt').read_text())
+edit(root/'common/src/main/AndroidManifest.xml',
+    ('    <uses-permission android:name="android.permission.WRITE_SETTINGS" />',
+     '    <uses-permission android:name="android.permission.WRITE_SETTINGS" />\n'
+     '    <!-- Granted once over local ADB, so Di-Connect can switch ADB on for a moment itself. -->\n'
+     '    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />'))

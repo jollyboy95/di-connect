@@ -47,10 +47,12 @@ internal object HotspotBandGuard {
 
     /** Blocking. Returns what happened, in one line. */
     fun ensureFiveGhz(context: Context): String {
-        val result = runCatching {
+        val result = runCatching { AdbSwitch.withAdb(context) {
             LocalAdb(AdbKeys.load(context)).use { adb ->
                 val access = adb.connect(mayAsk = false)
-                if (access != LocalAdb.Access.READY) return@use "Local ADB not available ($access)"
+                if (access != LocalAdb.Access.READY) return@use if (AdbSwitch.canSwitch(context)) "Local ADB not available ($access)"
+                    else "Local ADB not available ($access). Turn ADB on once; Di-Connect then switches it itself."
+                AdbSwitch.grantSelf(context, adb)
                 fun sh(command: String) = adb.shell(command, 10_000).orEmpty()
                 fun frequency() = Regex("""mReportedFrequency:\s*(\d+)""").find(sh("dumpsys wifi | grep -m1 mReportedFrequency"))
                     ?.groupValues?.get(1)?.toIntOrNull()
@@ -95,7 +97,7 @@ internal object HotspotBandGuard {
                 pause(4000) // the hotspot restarts on a band change
                 "switched from '$setting' to 5 GHz (was ${before ?: "?"} MHz, now ${frequency() ?: "?"} MHz)"
             }
-        }.getOrElse { "failed: ${it.javaClass.simpleName}" }
+        } }.getOrElse { "failed: ${it.javaClass.simpleName}" }
         val line = "${SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())} $result"
         Log.i(TAG, line)
         last = line
