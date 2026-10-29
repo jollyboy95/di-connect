@@ -650,7 +650,7 @@ internal class ThemedClusterView(
 
     // ---- bottom row -----------------------------------------------------------------------
 
-    private fun drawBottomRow(canvas: Canvas, w: Float, h: Float, data: GwmVehicleData.Snapshot, showFuel: Boolean = true) {
+    private fun drawBottomRow(canvas: Canvas, w: Float, h: Float, data: GwmVehicleData.Snapshot, showFuel: Boolean = true, showOdometer: Boolean = true) {
         val s = h / 720f
         val top = BOTTOM_TOP * h
         val bottom = BOTTOM_BOTTOM * h
@@ -680,7 +680,7 @@ internal class ThemedClusterView(
                 canvas.drawText("${it.roundToInt()} km", fuelRight - (if (theme.panel == ClusterTheme.Panel.BONE) .045f else .024f) * h, baseline, text)
             }
         }
-        data.odometerKm?.let { odo ->
+        if(showOdometer) data.odometerKm?.let { odo ->
             val value = NumberFormat.getIntegerInstance().format(odo.roundToInt()) + " km"
             type(.034f * h, theme.text, 500)
             val valueWidth = text.measureText(value)
@@ -1743,8 +1743,8 @@ internal class ThemedClusterView(
         ClusterTheme.Layout.PERFORMANCE_COCKPIT, ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE,
         ClusterTheme.Layout.SMOKED_GLASS, ClusterTheme.Layout.AURUM_TOUR, ClusterTheme.Layout.WOODLAND_RETREAT)
 
-    private fun conceptHeader(canvas: Canvas, w: Float, h: Float) {
-        snapshot?.outsideTempC?.let { studioText(canvas, "${it.roundToInt()}°C", .025f*w,.075f*h,.033f*h,weight=400) }
+    private fun conceptHeader(canvas: Canvas, w: Float, h: Float, tempX: Float = .025f) {
+        snapshot?.outsideTempC?.let { studioText(canvas, "${it.roundToInt()}°C", tempX*w,.075f*h,.033f*h,weight=400) }
         studioText(canvas,SimpleDateFormat("h:mm a",Locale.getDefault()).format(Date()),.975f*w,.075f*h,.033f*h,
             weight=400,align=Paint.Align.RIGHT)
     }
@@ -1955,7 +1955,9 @@ internal class ThemedClusterView(
     private fun drawOpenFooter(canvas:Canvas,w:Float,h:Float) {
         val data=snapshot
         val fuel=listOfNotNull(data?.fuelPercent?.let{"${it.roundToInt()}%"},data?.rangeKm?.let{"${it.roundToInt()} km"})
-        if(fuel.isNotEmpty()) {
+        if(theme.layout==ClusterTheme.Layout.AURORA_OPEN && data!=null)
+            drawBottomRow(canvas,w,h,data,showOdometer=false)
+        else if(fuel.isNotEmpty()) {
             val box=RectF(.028f*w,.923f*h,.265f*w,.985f*h)
             openPlate(canvas,box,.031f*h)
             drawPump(canvas,.040f*w,.941f*h,.027f*h)
@@ -2005,11 +2007,11 @@ internal class ThemedClusterView(
             intArrayOf(Color.rgb(122,138,149),Color.rgb(27,42,55),Color.rgb(7,18,30),Color.rgb(100,125,140)),null,Shader.TileMode.CLAMP)
         canvas.drawPath(blade,fill);fill.shader=null
         line.color=withAlpha(theme.accent,210);line.strokeWidth=.003f*h;canvas.drawPath(blade,line)
-        snapshot?.speedKph?.let{studioText(canvas,it.roundToInt().toString(),.15f*w,.305f*h,.135f*h,weight=300,align=Paint.Align.CENTER)
-            studioText(canvas,"km/h",.22f*w,.296f*h,.029f*h,theme.secondary)}
+        snapshot?.speedKph?.let{studioText(canvas,it.roundToInt().toString(),.18f*w,.305f*h,.135f*h,weight=300,align=Paint.Align.CENTER)
+            studioText(canvas,"km/h",.25f*w,.296f*h,.029f*h,theme.secondary)}
         studioFlow(canvas,RectF(.065f*w,.38f*h,.28f*w,.391f*h),false)
         kwNow()?.let{studioText(canvas,GwmAndroidAutoClusterView.formatKw(it),.28f*w,.435f*h,.030f*h,theme.secondary,align=Paint.Align.RIGHT)}
-        openMusic(canvas,RectF(.69f*w,.24f*h,.975f*w,.415f*h),plate=false)
+        openMusic(canvas,RectF(.69f*w,.28f*h,.975f*w,.455f*h),plate=false)
         conceptHeader(canvas,w,h);drawOpenFooter(canvas,w,h)
     }
 
@@ -2035,7 +2037,7 @@ internal class ThemedClusterView(
         studioFlow(canvas,RectF(.07f*w,.61f*h,.20f*w,.621f*h),false)
         kwNow()?.let{studioText(canvas,GwmAndroidAutoClusterView.formatKw(it),sx,.67f*h,.031f*h,theme.accent,align=Paint.Align.CENTER)}
         openMusic(canvas,RectF(.205f*w,.16f*h,.455f*w,.295f*h))
-        conceptHeader(canvas,w,h);drawOpenFooter(canvas,w,h)
+        conceptHeader(canvas,w,h,tempX=.34f);drawOpenFooter(canvas,w,h)
     }
 
     private fun drawNightfallAudio(canvas:Canvas,w:Float,h:Float) {

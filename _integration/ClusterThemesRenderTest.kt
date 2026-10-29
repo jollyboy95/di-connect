@@ -109,7 +109,7 @@ class ClusterThemesRenderTest {
         for(i in 0..8) cover.drawRect(i*42f,140f-i*8f,i*42f+25f,300f,paint)
         for(connection in ClusterConnection.entries) for(theme in concepts.filter{it.availableFor(connection)}) for((w,h) in listOf(1920 to 720,960 to 360)) {
             val view=ThemedClusterView(context,theme,connection,preview=true)
-            view.setSnapshot(GwmVehicleData.Snapshot(72f,"D",82f,380f,22f,SystemClock.elapsedRealtime(),35350f,-15f,2400f))
+            view.setSnapshot(GwmVehicleData.Snapshot(112f,"D",82f,380f,22f,SystemClock.elapsedRealtime(),35350f,-15f,2400f))
             view.setPreviewMusic(ClusterMusicState.Snapshot(CarPlayNowPlaying(title="Midnight Sun",artist="Ásgeir",
                 durationMillis=277000L,elapsedMillis=134000L),artwork))
             view.measure(View.MeasureSpec.makeMeasureSpec(w,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(h,View.MeasureSpec.EXACTLY));view.layout(0,0,w,h)
