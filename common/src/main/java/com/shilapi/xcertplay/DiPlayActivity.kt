@@ -695,6 +695,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             addView(climate("+1 °C") { ClimateTest.temperatureStep(it, 1) }, LinearLayout.LayoutParams(0, dp(56), 1f))
             addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
             addView(climate(getString(R.string.settings_gwm_climate_ac)) { ClimateTest.toggleAc(it) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+            addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(climate(getString(R.string.settings_gwm_climate_seat_vent)) { ClimateTest.stepDriverVentilation(it) }, LinearLayout.LayoutParams(0, dp(56), 1f))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
             val app = applicationContext

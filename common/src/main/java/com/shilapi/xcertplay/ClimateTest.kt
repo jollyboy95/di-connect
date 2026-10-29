@@ -33,6 +33,17 @@ internal object ClimateTest {
             .let { "A/C ${if (on == 1) "on → off" else "off → on"}: $it" }
     }.getOrElse { "Climate test failed: ${it.javaClass.simpleName}: ${it.message}" }.also { Log.i(TAG, it) }
 
+    private const val DRIVER_VENT = "car.comfort_setting.driver_seat_ventilation_level"
+
+    /** Steps the driver's seat ventilation through off, 1, 2, 3 and back to off. */
+    fun stepDriverVentilation(context: Context): String = runCatching {
+        val before = GwmVehicleData.read(context, arrayOf(DRIVER_VENT))[DRIVER_VENT]
+        val level = before?.toFloatOrNull()?.toInt() ?: return@runCatching "Could not read the driver seat ventilation (got '${before}')"
+        val target = if (level >= 3 || level < 0) 0 else level + 1
+        attempt(context, DRIVER_VENT, target.toString()) { it?.toFloatOrNull()?.toInt() == target }
+            .let { "Driver seat ventilation $level → $target: $it" }
+    }.getOrElse { "Climate test failed: ${it.javaClass.simpleName}: ${it.message}" }.also { Log.i(TAG, it) }
+
     /** Writes as Di-Connect, then as the voice assistant if the value did not change. */
     private fun attempt(context: Context, key: String, value: String, done: (String?) -> Boolean): String {
         val notes = mutableListOf<String>()

@@ -1095,5 +1095,6 @@
     <string name="settings_gwm_hotspot_5ghz_now">立即将热点设为 5 GHz</string>
     <string name="settings_gwm_climate_test">空调测试（实验性）</string>
     <string name="settings_gwm_climate_test_description">检查 Di-Connect 能否调节空调：驾驶侧温度调 1 度，或开关 A/C，然后读回数值。请在停车时使用。</string>
+    <string name="settings_gwm_climate_seat_vent">座椅通风</string>
     <string name="settings_gwm_climate_ac">A/C 开/关</string>
 </resources>

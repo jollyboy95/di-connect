@@ -1035,5 +1035,6 @@
     <string name="settings_gwm_hotspot_5ghz_now">Переключить точку доступа на 5 ГГц сейчас</string>
     <string name="settings_gwm_climate_test">Проверка климата (экспериментально)</string>
     <string name="settings_gwm_climate_test_description">Проверяет, может ли Di-Connect менять климат: один градус со стороны водителя или включение и выключение A/C, затем считывает значение. Используйте на стоянке.</string>
+    <string name="settings_gwm_climate_seat_vent">Вентиляция сиденья</string>
     <string name="settings_gwm_climate_ac">A/C вкл/выкл</string>
 </resources>

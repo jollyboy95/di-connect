@@ -1125,5 +1125,6 @@
     <string name="settings_gwm_hotspot_5ghz_now">Imposta ora l’hotspot a 5 GHz</string>
     <string name="settings_gwm_climate_test">Test climatizzazione (sperimentale)</string>
     <string name="settings_gwm_climate_test_description">Verifica se Di-Connect può cambiare il clima: un grado lato guida, oppure A/C acceso e spento, poi rilegge il valore. Usalo a veicolo fermo.</string>
+    <string name="settings_gwm_climate_seat_vent">Ventilazione sedile</string>
     <string name="settings_gwm_climate_ac">A/C on/off</string>
 </resources>

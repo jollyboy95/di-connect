@@ -50,7 +50,11 @@ internal object GwmVehicleData {
      */
     val CLIMATE_KEYS = arrayOf("car.hvac.power_mode", "car.hvac.ac_enable", "car.hvac.auto_enable", "car.hvac.driver_temperature",
         "car.hvac.pass_temperature", "car.hvac.fan_speed", "car.hvac.sync_enable", "car.hvac.eco_enable", "car.hvac.front_defrost_enable",
-        "car.hvac.rear_defrost_enable", "car.hvac.heating_enable", "car.drive.setting.drive_mode", "car.drive_setting.drive_mode")
+        "car.hvac.rear_defrost_enable", "car.hvac.heating_enable", "car.drive.setting.drive_mode", "car.drive_setting.drive_mode",
+        "car.comfort_setting.driver_seat_ventilation_level", "car.comfort_setting.passenger_seat_ventilation_level",
+        "car.comfort_setting.driver_seat_ventilation_level_nine", "car.comfort_setting.passenger_seat_ventilation_level_nine",
+        "car.hvac.seat_ventilation_fl_mode", "car.hvac.seat_ventilation_fr_mode",
+        "car.comfort_setting.driver_seat_heating_level", "car.comfort_setting.passenger_seat_heating_level")
     val KEYS = arrayOf(SPEED, GEAR_STATUS, CURRENT_GEAR, FUEL_PERCENT, RANGE_KM, OUTSIDE_TEMP, TOTAL_ODOMETER, ODOMETER, BATTERY_CURRENT, ENGINE_RPM, OFFROAD_ENGINE_RPM)
 
     data class Snapshot(

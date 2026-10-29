@@ -1137,5 +1137,6 @@
     <string name="settings_gwm_hotspot_5ghz_now">今すぐホットスポットを 5 GHz にする</string>
     <string name="settings_gwm_climate_test">エアコンテスト（実験的機能）</string>
     <string name="settings_gwm_climate_test_description">Di-Connect がエアコンを変更できるか確認します。運転席側の温度を 1 度、または A/C のオン/オフを変え、値を読み直します。停車中に使ってください。</string>
+    <string name="settings_gwm_climate_seat_vent">シート送風</string>
     <string name="settings_gwm_climate_ac">A/C オン/オフ</string>
 </resources>

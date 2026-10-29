@@ -1084,5 +1084,6 @@
     <string name="settings_gwm_hotspot_5ghz_now">ضبط نقطة اتصال السيارة على 5 غيغاهرتز الآن</string>
     <string name="settings_gwm_climate_test">اختبار التكييف (تجريبي)</string>
     <string name="settings_gwm_climate_test_description">يتحقق مما إذا كان Di-Connect يستطيع تغيير التكييف: درجة واحدة لجهة السائق أو تشغيل المكيّف وإيقافه، ثم يقرأ القيمة مجددًا. استخدمه والسيارة متوقفة.</string>
+    <string name="settings_gwm_climate_seat_vent">تهوية المقعد</string>
     <string name="settings_gwm_climate_ac">تشغيل/إيقاف المكيّف</string>
 </resources>

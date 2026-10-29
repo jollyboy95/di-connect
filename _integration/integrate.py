@@ -2717,6 +2717,7 @@ edit(D,
 CLIMATE_STRINGS={
  'settings_gwm_climate_test':['Climate test (experimental)', 'اختبار التكييف (تجريبي)', 'Prueba de climatización (experimental)', 'Test climatizzazione (sperimentale)', 'エアコンテスト（実験的機能）', 'Проверка климата (экспериментально)', 'Перевірка клімату (експериментально)', '空调测试（实验性）', '空調測試（實驗性）'],
  'settings_gwm_climate_test_description':['Checks whether Di-Connect can change the car’s climate: one degree on the driver’s side, or A/C on and off, then reads it back. Use while parked.', 'يتحقق مما إذا كان Di-Connect يستطيع تغيير التكييف: درجة واحدة لجهة السائق أو تشغيل المكيّف وإيقافه، ثم يقرأ القيمة مجددًا. استخدمه والسيارة متوقفة.', 'Comprueba si Di-Connect puede cambiar la climatización: un grado en el lado del conductor, o encender y apagar el A/C, y vuelve a leerlo. Úsalo con el coche aparcado.', 'Verifica se Di-Connect può cambiare il clima: un grado lato guida, oppure A/C acceso e spento, poi rilegge il valore. Usalo a veicolo fermo.', 'Di-Connect がエアコンを変更できるか確認します。運転席側の温度を 1 度、または A/C のオン/オフを変え、値を読み直します。停車中に使ってください。', 'Проверяет, может ли Di-Connect менять климат: один градус со стороны водителя или включение и выключение A/C, затем считывает значение. Используйте на стоянке.', 'Перевіряє, чи може Di-Connect змінювати клімат: один градус з боку водія або вмикання й вимикання A/C, потім зчитує значення. Використовуйте на стоянці.', '检查 Di-Connect 能否调节空调：驾驶侧温度调 1 度，或开关 A/C，然后读回数值。请在停车时使用。', '檢查 Di-Connect 能否調整空調：駕駛側溫度調 1 度，或開關 A/C，然後讀回數值。請在停車時使用。'],
+ 'settings_gwm_climate_seat_vent':['Seat vent', 'تهوية المقعد', 'Ventilación asiento', 'Ventilazione sedile', 'シート送風', 'Вентиляция сиденья', 'Вентиляція сидіння', '座椅通风', '座椅通風'],
  'settings_gwm_climate_ac':['A/C on/off', 'تشغيل/إيقاف المكيّف', 'A/C sí/no', 'A/C on/off', 'A/C オン/オフ', 'A/C вкл/выкл', 'A/C увімк./вимк.', 'A/C 开/关', 'A/C 開/關'],
 }
 for p in STRINGS:
@@ -2739,5 +2740,7 @@ edit(D,
             addView(climate("+1 °C") { ClimateTest.temperatureStep(it, 1) }, LinearLayout.LayoutParams(0, dp(56), 1f))
             addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
             addView(climate(getString(R.string.settings_gwm_climate_ac)) { ClimateTest.toggleAc(it) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+            addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(climate(getString(R.string.settings_gwm_climate_seat_vent)) { ClimateTest.stepDriverVentilation(it) }, LinearLayout.LayoutParams(0, dp(56), 1f))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {'''))
