@@ -2665,11 +2665,11 @@ internal class ThemedClusterView(
                 nineFrame(canvas, w, h); nineNotch(canvas, w, h)
                 nineRing(canvas, .17f * w, .44f * h, .30f * h, intArrayOf(Color.rgb(20, 90, 230), Color.rgb(40, 170, 255), Color.rgb(120, 230, 255), Color.rgb(20, 90, 230)))
                 nineSpeed(canvas, .17f * w, .48f * h, .17f * h)
-                ninePath.rewind(); ninePath.addRoundRect(RectF(.012f * w, .80f * h, .33f * w, .95f * h), .02f * h, .02f * h, Path.Direction.CW)
+                ninePath.rewind(); ninePath.addRoundRect(RectF(.012f * w, .80f * h, .245f * w, .95f * h), .02f * h, .02f * h, Path.Direction.CW)
                 nineGlass(canvas, ninePath, .80f * h, .95f * h, withAlpha(theme.accent, 90))
-                nineFuel(canvas, .03f * w, .905f * h, .042f * h)
+                nineFuel(canvas, .025f * w, .905f * h, .042f * h)
                 if (showCard) nineMusicTall(canvas, RectF(.78f * w, .17f * h, .978f * w, .82f * h))
-                nav?.let { nineTurnCard(canvas, RectF(.255f * w, .70f * h, .475f * w, .93f * h), it) }
+                nav?.let { nineTurnCard(canvas, RectF(.26f * w, .70f * h, .48f * w, .93f * h), it) }
                 nineOdo(canvas, .975f * w, .925f * h, .036f * h)
                 nineHeader(canvas, w, h, timeCentre = true)
             }
@@ -3181,7 +3181,7 @@ internal class ThemedClusterView(
             }
             ClusterTheme.Layout.ELONGATED -> {
                 cockpitBezel(canvas, w, h, Path().apply { addRoundRect(RectF(.012f * w, .17f * h, .988f * w, .85f * h), .2f * h, .2f * h, Path.Direction.CW) })
-                cockpitScale(canvas, .25f * w, .53f * h, .42f * h, 100f, 160f, 120, labelsInside = false)
+                cockpitScale(canvas, .25f * w, .51f * h, .29f * h, 112f, 136f, 120, labelsInside = false)
                 studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", .20f * w, .55f * h, .18f * h, weight = 600, align = Paint.Align.CENTER)
                 studioText(canvas, "km/h", .20f * w, .62f * h, .038f * h, align = Paint.Align.CENTER)
                 nav?.let { glassNav(canvas, RectF(.405f * w, .21f * h, .665f * w, .48f * h), it) }
