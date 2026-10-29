@@ -147,9 +147,12 @@ internal class ThemedClusterView(
             if (showMusic) drawMusic(canvas, w, h)
             }
         }
-        if (connection == ClusterConnection.CARPLAY) guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it) }
+        if (connection == ClusterConnection.CARPLAY) guidance?.takeIf { it.icon != 0 }?.let {
+            if (isConceptLayout()) drawCard(canvas,w,h,it,directionsBox(w,h,journeyLine(it)!=null))
+            else drawCard(canvas,w,h,it)
+        }
         // Android Auto: Di-Connect's own directions card, when switched on or while the preview runs.
-        else if (!preview && (NavDemo.active || ClusterThemeStore.directionsCard(context)))
+        else if ((preview && isConceptLayout()) || (!preview && (NavDemo.active || ClusterThemeStore.directionsCard(context))))
             guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it, directionsBox(w, h, journeyLine(it) != null)) }
     }
 
@@ -1726,87 +1729,150 @@ internal class ThemedClusterView(
         studioFooter(canvas, w, h)
     }
 
-    /** Metallic radial instrument shared by the turbine and performance concepts. */
-    private fun conceptDial(canvas: Canvas, cx: Float, cy: Float, r: Float, value: Float?, maximum: Float,
-                            turbine: Boolean = false) {
-        fill.shader = RadialGradient(cx, cy, r, intArrayOf(Color.rgb(7,12,19), Color.rgb(24,34,45), Color.rgb(5,10,17)),
-            floatArrayOf(0f,.86f,1f), Shader.TileMode.CLAMP)
-        canvas.drawCircle(cx,cy,r,fill); fill.shader=null
-        line.shader=null; line.strokeWidth=r*.012f; line.color=Color.rgb(205,214,225)
-        canvas.drawCircle(cx,cy,r,line)
-        if (turbine) for (i in 0 until 36) {
-            val a=i*Math.PI/18
-            val b=a+.23
-            line.color=Color.argb(90,113,140,162);line.strokeWidth=r*.018f
-            canvas.drawLine(cx+(cos(a)*r*.46).toFloat(),cy+(sin(a)*r*.46).toFloat(),
-                cx+(cos(b)*r*.94).toFloat(),cy+(sin(b)*r*.94).toFloat(),line)
-        }
-        for(i in 0..40) {
-            val a=Math.toRadians(140.0+i*6.5)
-            val major=i%5==0
-            line.color=if(major) theme.text else withAlpha(theme.text,105)
-            line.strokeWidth=r*(if(major) .014f else .006f)
-            val inner=if(major) .83f else .89f
-            canvas.drawLine(cx+(cos(a)*r*inner).toFloat(),cy+(sin(a)*r*inner).toFloat(),
-                cx+(cos(a)*r*.95).toFloat(),cy+(sin(a)*r*.95).toFloat(),line)
-            if(major) studioText(canvas, (maximum*i/40).roundToInt().toString(),
-                cx+(cos(a)*r*.72).toFloat(),cy+(sin(a)*r*.72).toFloat()+r*.035f,r*.10f,
-                align=Paint.Align.CENTER)
-        }
-        value?.let {
-            val a=Math.toRadians(140.0+(it/maximum).coerceIn(0f,1f)*260)
-            line.color=theme.accent;line.strokeWidth=r*.018f
-            canvas.drawLine(cx,cy,cx+(cos(a)*r*.81).toFloat(),cy+(sin(a)*r*.81).toFloat(),line)
-        }
-        fill.color=theme.text;canvas.drawCircle(cx,cy,r*.035f,fill)
+    private fun isConceptLayout() = theme.layout in setOf(ClusterTheme.Layout.TURBINE_LUXURY,
+        ClusterTheme.Layout.PERFORMANCE_COCKPIT, ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE)
+
+    private fun conceptHeader(canvas: Canvas, w: Float, h: Float) {
+        snapshot?.outsideTempC?.let { studioText(canvas, "${it.roundToInt()}°C", .025f*w,.075f*h,.033f*h,weight=400) }
+        studioText(canvas,SimpleDateFormat("h:mm a",Locale.getDefault()).format(Date()),.975f*w,.075f*h,.033f*h,
+            weight=400,align=Paint.Align.RIGHT)
     }
 
-    private fun drawTurbineLuxury(canvas: Canvas,w:Float,h:Float) {
-        val r=.38f*h
+    /** Thin concentric metal rings, curved turbine vanes, calibrated ticks and a live needle. */
+    private fun conceptDial(canvas: Canvas, cx: Float, cy: Float, r: Float, value: Float?, maximum: Float,
+                            turbine: Boolean = false, labelOffset: Float = 0f, thousands: Boolean = false) {
+        fill.shader = RadialGradient(cx,cy,r,intArrayOf(Color.rgb(4,8,13),Color.rgb(12,20,29),Color.rgb(4,8,13)),
+            floatArrayOf(0f,.76f,1f),Shader.TileMode.CLAMP)
+        canvas.drawCircle(cx,cy,r,fill);fill.shader=null
+        line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,intArrayOf(Color.rgb(50,63,76),Color.rgb(241,237,223),
+            Color.rgb(91,105,121),Color.rgb(211,215,216),Color.rgb(47,59,71)),null,Shader.TileMode.CLAMP)
+        line.strokeWidth=r*.018f;canvas.drawCircle(cx,cy,r*.98f,line)
+        line.strokeWidth=r*.004f;canvas.drawCircle(cx,cy,r*.953f,line);line.shader=null
+        if(turbine) for(i in 0 until 40) {
+            val a=i*Math.PI/20
+            fun x(t:Double,f:Float)=cx+(cos(t)*r*f).toFloat()
+            fun y(t:Double,f:Float)=cy+(sin(t)*r*f).toFloat()
+            val vane=Path().apply {
+                moveTo(x(a,.37f),y(a,.37f))
+                cubicTo(x(a-.08,.60f),y(a-.08,.60f),x(a+.13,.85f),y(a+.13,.85f),x(a+.22,.94f),y(a+.22,.94f))
+                lineTo(x(a+.255,.94f),y(a+.255,.94f))
+                cubicTo(x(a+.12,.79f),y(a+.12,.79f),x(a+.02,.56f),y(a+.02,.56f),x(a+.03,.37f),y(a+.03,.37f));close()
+            }
+            fill.shader=LinearGradient(x(a,.37f),y(a,.37f),x(a+.22,.94f),y(a+.22,.94f),
+                Color.rgb(7,12,20),Color.rgb(46,59,73),Shader.TileMode.CLAMP)
+            canvas.drawPath(vane,fill);fill.shader=null
+        }
+        for(i in 0..40) {
+            val angle=Math.toRadians(140.0+i*6.5);val major=i%5==0
+            line.color=if(thousands && i>=35) Color.rgb(244,70,65) else if(major) theme.text else withAlpha(theme.text,100)
+            line.strokeWidth=r*(if(major) .012f else .004f)
+            val inside=if(major) .84f else .89f
+            canvas.drawLine(cx+(cos(angle)*r*inside).toFloat(),cy+(sin(angle)*r*inside).toFloat(),
+                cx+(cos(angle)*r*.935).toFloat(),cy+(sin(angle)*r*.935).toFloat(),line)
+            if(major) {
+                val n=(maximum*i/40+labelOffset)/(if(thousands) 1000f else 1f)
+                studioText(canvas,n.roundToInt().toString(),cx+(cos(angle)*r*.73).toFloat(),
+                    cy+(sin(angle)*r*.73).toFloat()+r*.035f,r*.105f,weight=400,align=Paint.Align.CENTER)
+            }
+        }
+        value?.let {
+            val angle=Math.toRadians(140.0+(it/maximum).coerceIn(0f,1f)*260)
+            line.color=withAlpha(theme.accent,35);line.strokeWidth=r*.055f
+            canvas.drawLine(cx,cy,cx+(cos(angle)*r*.82).toFloat(),cy+(sin(angle)*r*.82).toFloat(),line)
+            line.color=theme.accent;line.strokeWidth=r*.014f
+            canvas.drawLine(cx,cy,cx+(cos(angle)*r*.82).toFloat(),cy+(sin(angle)*r*.82).toFloat(),line)
+        }
+        fill.shader=RadialGradient(cx-r*.015f,cy-r*.015f,r*.055f,Color.rgb(211,218,224),Color.rgb(34,43,54),Shader.TileMode.CLAMP)
+        canvas.drawCircle(cx,cy,r*.055f,fill);fill.shader=null
+    }
+
+    private fun drawTurbineLuxury(canvas:Canvas,w:Float,h:Float) {
+        // The projected map continues through the centre. A vignette integrates the instruments.
+        fill.shader=LinearGradient(0f,0f,w,0f,intArrayOf(Color.argb(220,3,8,15),Color.TRANSPARENT,
+            Color.TRANSPARENT,Color.argb(220,3,8,15)),floatArrayOf(0f,.34f,.66f,1f),Shader.TileMode.CLAMP)
+        canvas.drawRect(0f,0f,w,h,fill);fill.shader=null
+        val r=.40f*h
         conceptDial(canvas,.17f*w,.46f*h,r,snapshot?.speedKph,240f,true)
-        conceptDial(canvas,.83f*w,.46f*h,r,kwNow()?.let { (it+60f).coerceIn(0f,120f) },120f,true)
+        conceptDial(canvas,.83f*w,.46f*h,r,kwNow()?.let { it+60f },120f,true,-60f)
         for(right in listOf(false,true)) {
             val x=if(right) .83f*w else .17f*w
-            fill.color=Color.rgb(7,12,19);canvas.drawCircle(x,.46f*h,r*.40f,fill)
+            fill.shader=RadialGradient(x,.46f*h,r*.39f,Color.rgb(5,10,17),Color.rgb(1,4,8),Shader.TileMode.CLAMP)
+            canvas.drawCircle(x,.46f*h,r*.39f,fill);fill.shader=null
             studioText(canvas,if(right) kwNow()?.roundToInt()?.toString() ?: "—" else snapshot?.speedKph?.roundToInt()?.toString() ?: "—",
-                x,.49f*h,.12f*h,weight=400,align=Paint.Align.CENTER)
-            studioText(canvas,if(right) "kW" else "km/h",x,.55f*h,.026f*h,theme.secondary,align=Paint.Align.CENTER)
+                x,.49f*h,.12f*h,weight=300,align=Paint.Align.CENTER)
+            studioText(canvas,if(right) "kW" else "km/h",x,.55f*h,.025f*h,theme.secondary,align=Paint.Align.CENTER)
         }
-        drawHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+        conceptHeader(canvas,w,h);studioFooter(canvas,w,h,true)
     }
 
     private fun drawPerformanceCockpit(canvas:Canvas,w:Float,h:Float) {
-        fill.color=Color.rgb(10,12,15);canvas.drawRect(0f,0f,.65f*w,h,fill)
-        conceptDial(canvas,.465f*w,.46f*h,.39f*h,snapshot?.engineRpm,8000f)
-        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.13f*w,.43f*h,.20f*h,weight=500,align=Paint.Align.CENTER)
-        studioText(canvas,"km/h",.13f*w,.49f*h,.033f*h,theme.secondary,align=Paint.Align.CENTER)
-        studioFlow(canvas,RectF(.035f*w,.62f*h,.25f*w,.68f*h),false)
-        studioText(canvas,snapshot?.engineRpm?.roundToInt()?.toString() ?: "—",.465f*w,.70f*h,.055f*h,align=Paint.Align.CENTER)
-        drawHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+        fill.shader=LinearGradient(0f,0f,0f,h,Color.rgb(7,9,12),Color.rgb(18,23,28),Shader.TileMode.CLAMP)
+        canvas.drawRect(0f,0f,.65f*w,h,fill);fill.shader=null
+        // Fine horizontal machining, deliberately quiet behind the readings.
+        line.color=Color.argb(16,160,174,190);line.strokeWidth=1f
+        for(i in 0..90) { val y=.17f*h+i*h*.007f;canvas.drawLine(.025f*w,y,.64f*w,y,line) }
+        conceptDial(canvas,.475f*w,.47f*h,.40f*h,snapshot?.engineRpm,8000f,thousands=true)
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.12f*w,.44f*h,.20f*h,weight=500,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",.12f*w,.51f*h,.032f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioText(canvas,"RPM × 1000",.475f*w,.29f*h,.022f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioText(canvas,snapshot?.engineRpm?.roundToInt()?.toString() ?: "—",.475f*w,.72f*h,.052f*h,align=Paint.Align.CENTER)
+        studioFlow(canvas,RectF(.035f*w,.65f*h,.25f*w,.70f*h),false)
+        // Accent shoulder joins the dial to the right-hand map without a floating widget border.
+        line.shader=LinearGradient(.65f*w,0f,.65f*w,h,Color.TRANSPARENT,withAlpha(theme.accent,130),Shader.TileMode.CLAMP)
+        line.strokeWidth=2f;canvas.drawLine(.65f*w,.15f*h,.65f*w,.86f*h,line);line.shader=null
+        conceptHeader(canvas,w,h);studioFooter(canvas,w,h,true)
     }
 
     private fun drawMusicPanorama(canvas:Canvas,w:Float,h:Float) {
-        fill.color=Color.rgb(7,25,31);canvas.drawRect(0f,0f,.62f*w,h,fill)
-        fill.shader=LinearGradient(.54f*w,0f,.62f*w,0f,Color.TRANSPARENT,Color.argb(80,0,0,0),Shader.TileMode.CLAMP)
-        canvas.drawRect(.54f*w,0f,.62f*w,h,fill);fill.shader=null
-        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.035f*w,.47f*h,.20f*h,weight=300)
-        studioText(canvas,"km/h",.045f*w,.53f*h,.03f*h,theme.secondary)
-        studioMusic(canvas,RectF(.20f*w,.26f*h,.59f*w,.68f*h),true)
-        drawHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+        fill.shader=LinearGradient(0f,0f,.65f*w,h,Color.rgb(6,26,33),Color.rgb(3,12,19),Shader.TileMode.CLAMP)
+        canvas.drawRect(0f,0f,.62f*w,h,fill);fill.shader=null
+        fill.shader=RadialGradient(.38f*w,.42f*h,.50f*h,withAlpha(theme.accent,30),Color.TRANSPARENT,Shader.TileMode.CLAMP)
+        canvas.drawRect(0f,0f,.62f*w,h,fill);fill.shader=null
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.035f*w,.49f*h,.205f*h,weight=300)
+        studioText(canvas,"km/h",.043f*w,.56f*h,.03f*h,theme.secondary)
+        val album=RectF(.195f*w,.235f*h,.355f*w,.66f*h)
+        studioAlbum(canvas,album,.022f*h)
+        val x=.38f*w;val right=.60f*w
+        studioText(canvas,music.info.title?.takeIf{it.isNotBlank()} ?: "—",x,.34f*h,.058f*h,weight=400,width=right-x)
+        music.info.artist?.takeIf{it.isNotBlank()}?.let {studioText(canvas,it,x,.43f*h,.032f*h,theme.secondary,width=right-x)}
+        progress()?.let { fraction ->
+            // A segmented elapsed-progress track, not a fabricated audio waveform.
+            val step=(right-x)/48f
+            for(i in 0 until 48) {
+                fill.color=if((i+.5f)/48f<=fraction) theme.accent else withAlpha(theme.text,35)
+                canvas.drawRoundRect(RectF(x+i*step,.55f*h,x+(i+.45f)*step,.57f*h),.002f*h,.002f*h,fill)
+            }
+            fun stamp(ms:Long):String {val secs=ms.coerceAtLeast(0)/1000;return "%d:%02d".format(Locale.getDefault(),secs/60,secs%60)}
+            music.info.durationMillis?.takeIf{it>0}?.let {duration ->
+                studioText(canvas,stamp((fraction*duration).toLong()),x,.63f*h,.025f*h,theme.secondary)
+                studioText(canvas,stamp(duration),right,.63f*h,.025f*h,theme.secondary,align=Paint.Align.RIGHT)
+            }
+        }
+        conceptHeader(canvas,w,h);studioFooter(canvas,w,h,true)
     }
 
     private fun drawDaylightFuture(canvas:Canvas,w:Float,h:Float) {
-        // Pale instruments fade into the real projected map; no fabricated road imagery.
-        fill.shader=LinearGradient(0f,0f,w,0f,intArrayOf(Color.rgb(243,246,247),Color.rgb(243,246,247),
-            Color.TRANSPARENT,Color.TRANSPARENT,Color.rgb(243,246,247),Color.rgb(243,246,247)),
-            floatArrayOf(0f,.20f,.34f,.66f,.80f,1f),Shader.TileMode.CLAMP)
+        fill.shader=LinearGradient(0f,0f,w,0f,intArrayOf(Color.rgb(243,246,247),Color.rgb(243,246,247),Color.TRANSPARENT,
+            Color.TRANSPARENT,Color.rgb(243,246,247),Color.rgb(243,246,247)),floatArrayOf(0f,.19f,.35f,.65f,.81f,1f),Shader.TileMode.CLAMP)
         canvas.drawRect(0f,0f,w,h,fill);fill.shader=null
-        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.15f*w,.48f*h,.23f*h,weight=500,align=Paint.Align.CENTER)
-        studioText(canvas,"km/h",.15f*w,.55f*h,.035f*h,theme.secondary,align=Paint.Align.CENTER)
-        studioText(canvas,snapshot?.rangeKm?.roundToInt()?.toString() ?: "—",.85f*w,.48f*h,.15f*h,weight=500,align=Paint.Align.CENTER)
-        studioText(canvas,"km",.85f*w,.55f*h,.035f*h,theme.secondary,align=Paint.Align.CENTER)
-        studioFlow(canvas,RectF(.78f*w,.65f*h,.96f*w,.70f*h),true)
-        drawHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+        // Sculpted translucent arcs, distinct from the circular night instruments.
+        for(right in listOf(false,true)) {
+            val path=Path().apply {
+                val sign=if(right) -1f else 1f;val edge=if(right) w else 0f
+                moveTo(edge+sign*.15f*w,.11f*h)
+                cubicTo(edge+sign*.09f*w,.11f*h,edge+sign*.035f*w,.31f*h,edge+sign*.035f*w,.48f*h)
+                cubicTo(edge+sign*.035f*w,.68f*h,edge+sign*.09f*w,.75f*h,edge+sign*.15f*w,.75f*h)
+            }
+            line.color=Color.argb(110,255,255,255);line.strokeWidth=.054f*h;canvas.drawPath(path,line)
+            line.color=withAlpha(if(right) theme.accent else theme.charge,100);line.strokeWidth=.036f*h;canvas.drawPath(path,line)
+            line.color=Color.WHITE;line.strokeWidth=1.5f;canvas.drawPath(path,line)
+        }
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.15f*w,.47f*h,.23f*h,weight=400,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",.15f*w,.54f*h,.033f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioText(canvas,snapshot?.rangeKm?.roundToInt()?.toString() ?: "—",.85f*w,.47f*h,.15f*h,weight=400,align=Paint.Align.CENTER)
+        studioText(canvas,"km",.85f*w,.54f*h,.033f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioFlow(canvas,RectF(.79f*w,.65f*h,.95f*w,.69f*h),true)
+        conceptHeader(canvas,w,h);studioFooter(canvas,w,h,true)
     }
 
     // ---- Isar Drive: chevron instruments over a full-width map ------------------------------
@@ -2034,10 +2100,10 @@ internal class ThemedClusterView(
      */
     private fun directionsBox(w: Float, h: Float, withJourney: Boolean): RectF {
         when (theme.layout) {
-            ClusterTheme.Layout.TURBINE_LUXURY -> return RectF(.32f*w, .14f*h, .68f*w, (if(withJourney) .43f else .35f)*h)
-            ClusterTheme.Layout.PERFORMANCE_COCKPIT -> return RectF(.67f*w, .60f*h, .98f*w, (if(withJourney) .89f else .81f)*h)
-            ClusterTheme.Layout.MUSIC_PANORAMA -> return RectF(.65f*w, .18f*h, .97f*w, (if(withJourney) .47f else .39f)*h)
-            ClusterTheme.Layout.DAYLIGHT_FUTURE -> return RectF(.29f*w, .58f*h, .72f*w, (if(withJourney) .87f else .79f)*h)
+            ClusterTheme.Layout.TURBINE_LUXURY -> return RectF(.32f*w, .13f*h, .68f*w, (if(withJourney) .34f else .29f)*h)
+            ClusterTheme.Layout.PERFORMANCE_COCKPIT -> return RectF(.84f*w, .18f*h, .985f*w, .86f*h)
+            ClusterTheme.Layout.MUSIC_PANORAMA -> return RectF(.65f*w, .20f*h, .97f*w, (if(withJourney) .43f else .36f)*h)
+            ClusterTheme.Layout.DAYLIGHT_FUTURE -> return RectF(.25f*w, .65f*h, .75f*w, (if(withJourney) .88f else .83f)*h)
             else -> Unit
         }
 
@@ -2073,6 +2139,10 @@ internal class ThemedClusterView(
     private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance,
                          box: RectF = RectF(CARD_LEFT * w, CARD_TOP * h, CARD_RIGHT * w, CARD_BOTTOM * h)) {
         val s = h / 720f
+        if (isConceptLayout()) {
+            drawConceptDirections(canvas, w, h, next, box)
+            return
+        }
         cardPanel(canvas, box, .03f * h)
         val side = .1f * h
         val gx = box.left + .03f * h
@@ -2107,6 +2177,46 @@ internal class ThemedClusterView(
         journeyLine(next)?.let { info ->
             type(.028f * h, theme.secondary, 500)
             canvas.drawText(fit(info, box.width() - .06f * h), box.left + .03f * h, box.top + .25f * h, text)
+        }
+    }
+
+    private fun drawConceptDirections(canvas:Canvas,w:Float,h:Float,next:ClusterTurnGuidance,box:RectF) {
+        val daylight=theme.layout==ClusterTheme.Layout.DAYLIGHT_FUTURE
+        val vertical=theme.layout==ClusterTheme.Layout.PERFORMANCE_COCKPIT
+        val radius=if(vertical) .015f*h else .025f*h
+        fill.shader=LinearGradient(box.left,box.top,box.right,box.bottom,
+            if(daylight) Color.argb(248,250,251,251) else Color.argb(242,22,32,42),
+            if(daylight) Color.argb(235,232,239,242) else Color.argb(245,4,13,22),Shader.TileMode.CLAMP)
+        canvas.drawRoundRect(box,radius,radius,fill);fill.shader=null
+        line.color=if(daylight) Color.WHITE else withAlpha(theme.text,90);line.strokeWidth=1.2f
+        canvas.drawRoundRect(box,radius,radius,line)
+        val side=if(vertical) .10f*h else .09f*h
+        val gx=box.left+.025f*h;val gy=box.top+.03f*h
+        val res=clusterTurnGlyphRes(next.icon)
+        val direction=if(next.icon in HudRoundaboutGlyph.ICONS) {
+            roundabout.exitNumber=next.roundaboutExit;roundabout.setTint(theme.accent);roundabout
+        } else ContextCompat.getDrawable(context,res)?.mutate()?.apply{setTint(theme.accent)}
+        val ax=if(vertical) box.centerX()-side/2 else gx
+        direction?.setBounds(ax.toInt(),gy.toInt(),(ax+side).toInt(),(gy+side).toInt());direction?.draw(canvas)
+        val tx=if(vertical) box.centerX() else gx+side+.025f*h
+        val alignment=if(vertical) Paint.Align.CENTER else Paint.Align.LEFT
+        val available=if(vertical) box.width()-.04f*h else box.right-tx-.025f*h
+        val y=if(vertical) gy+side+.065f*h else gy+.047f*h
+        studioText(canvas,distanceLabel(next.distanceMeters),tx,y,.049f*h,weight=500,width=available,align=alignment)
+        val road=if(next.roundaboutExit in 1..9) context.getString(R.string.turn_card_exit,next.roundaboutExit) else next.road
+        if(road.isNotBlank()) studioText(canvas,road,tx,y+.046f*h,.028f*h,theme.secondary,width=available,align=alignment)
+        journeyLine(next)?.let { journey ->
+            if(vertical) {
+                // Stack actual journey fields in the side rail rather than squash one long line.
+                val parts=journey.split("  ·  ")
+                parts.forEachIndexed {i,part -> studioText(canvas,part,box.centerX(),box.bottom-.15f*h+(i*.045f*h),
+                    .025f*h,theme.secondary,width=box.width()-.035f*h,align=Paint.Align.CENTER)}
+            } else {
+                line.color=withAlpha(theme.secondary,55);line.strokeWidth=1f
+                val separator=box.bottom-.065f*h
+                canvas.drawLine(box.left+.025f*h,separator,box.right-.025f*h,separator,line)
+                studioText(canvas,journey,box.left+.025f*h,box.bottom-.024f*h,.025f*h,theme.secondary,width=box.width()-.05f*h)
+            }
         }
     }
 

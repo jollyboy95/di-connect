@@ -67,6 +67,57 @@ class ClusterThemesRenderTest {
         }
     }
 
+    @Test fun conceptsRenderGuidanceOverMapAtFullAndCompactSizes() {
+        val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
+            .first { it.isFile }.readText().let(ThemePacks::parse)
+        val layouts = setOf(ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT,
+            ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE)
+        val concepts = catalogue.filter { it.layout in layouts }
+        assertEquals(4,concepts.size)
+        val output=File("build/reports/gwm-cluster/themes").apply{mkdirs()}
+        val artwork=Bitmap.createBitmap(300,300,Bitmap.Config.ARGB_8888)
+        val cover=Canvas(artwork)
+        val paint=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        paint.shader=android.graphics.LinearGradient(0f,0f,300f,300f,Color.rgb(21,61,75),Color.rgb(215,163,105),android.graphics.Shader.TileMode.CLAMP)
+        cover.drawRect(0f,0f,300f,300f,paint);paint.shader=null
+        paint.color=Color.argb(140,10,30,40)
+        for(i in 0..8) cover.drawRect(i*42f,140f-i*8f,i*42f+25f,300f,paint)
+        for(theme in concepts) for((w,h) in listOf(1920 to 720,960 to 360)) {
+            val view=ThemedClusterView(context,theme,ClusterConnection.ANDROID_AUTO,preview=true)
+            view.setSnapshot(GwmVehicleData.Snapshot(72f,"D",82f,380f,22f,SystemClock.elapsedRealtime(),35350f,-15f,2400f))
+            view.setPreviewMusic(ClusterMusicState.Snapshot(CarPlayNowPlaying(title="Midnight Sun",artist="Ásgeir",
+                durationMillis=277000L,elapsedMillis=134000L),artwork))
+            view.measure(View.MeasureSpec.makeMeasureSpec(w,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(h,View.MeasureSpec.EXACTLY));view.layout(0,0,w,h)
+            fun render(guidance:ClusterTurnGuidance?):Bitmap {
+                view.setGuidance(guidance)
+                val bitmap=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888)
+                val canvas=Canvas(bitmap)
+                canvas.drawColor(Color.rgb(22,48,65))
+                // Schematic test map only. Production always uses the phone's video.
+                paint.color=Color.rgb(31,64,74)
+                for(i in 0..22) for(j in 0..10) {
+                    val x=i*w/22f;val y=j*h/10f
+                    canvas.drawRect(x+3f,y+3f,x+w/29f,y+h/15f,paint)
+                }
+                paint.color=Color.rgb(82,112,129);paint.strokeWidth=h*.005f
+                for(i in -5..20) canvas.drawLine(i*w/14f,0f,(i+3)*w/14f,h.toFloat(),paint)
+                val route=android.graphics.Path().apply{moveTo(.5f*w,h.toFloat());cubicTo(.44f*w,.7f*h,.6f*w,.6f*h,.52f*w,.4f*h);lineTo(.56f*w,0f)}
+                paint.style=android.graphics.Paint.Style.STROKE;paint.strokeWidth=h*.014f;paint.color=Color.rgb(71,215,218);canvas.drawPath(route,paint);paint.style=android.graphics.Paint.Style.FILL
+                view.draw(canvas)
+                return bitmap
+            }
+            val empty=render(null)
+            val active=render(ClusterTurnGuidance(3,0,1200,"Pacific Hwy",arrivalEpochSeconds=1793239080L,
+                remainingSeconds=1680L,remainingMeters=24000L))
+            var changed=0
+            for(y in 0 until h step 4) for(x in 0 until w step 4) if(empty.getPixel(x,y)!=active.getPixel(x,y)) changed++
+            assertTrue("${theme.name} preview hides its guidance",changed>100)
+            File(output,"${theme.id}-concept-${w}.png").outputStream().use{active.compress(Bitmap.CompressFormat.PNG,100,it)}
+            empty.recycle();active.recycle()
+        }
+        artwork.recycle()
+    }
+
     @Test fun choicesArePerConnectionUnlessOneThemeIsUsedForBoth() {
         ClusterThemeStore.setSameForBoth(context, false)
         ClusterThemeStore.select(context, ClusterConnection.ANDROID_AUTO, "rally")
