@@ -2229,6 +2229,10 @@ class DiConnectUpdateTest {
 # Theme engine (Oct 2026): every cluster theme is data drawn by one renderer, picked per connection
 # on the Themes screen and swapped live. Modern (Android Auto) and Glass (CarPlay) are the original
 # renderers. Android Auto's and CarPlay's cluster layers become a ClusterThemeFrame.
+# Theme scenery is a cached local asset; production map video remains untouched.
+scenery = Path('target/_integration/theme-assets')
+if scenery.is_dir():
+    shutil.copytree(scenery, root/'common/src/main/assets/cluster-themes', dirs_exist_ok=True)
 for name in ['ClusterThemes.kt', 'ThemedClusterView.kt', 'ClusterThemeFrame.kt', 'HudThemeStyle.kt', 'ThemePacks.kt', 'NavDemo.kt']:
     source = Path('target/_integration')/name
     require(source.is_file(), f'Missing theme engine source {name}')

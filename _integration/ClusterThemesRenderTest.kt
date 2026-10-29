@@ -54,7 +54,7 @@ class ClusterThemesRenderTest {
             // A theme with its own map window has Google's card inside that window instead.
             // The full-map instrument layout draws Di-Connect's directions instead (turn card hidden).
             if (connection == ClusterConnection.ANDROID_AUTO && theme.dim == 0 && theme.mapWindow == null &&
-                theme.layout !in setOf(ClusterTheme.Layout.BAVARIAN, ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.DAYLIGHT_FUTURE)) {
+                theme.layout !in setOf(ClusterTheme.Layout.BAVARIAN, ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT, ClusterTheme.Layout.DAYLIGHT_FUTURE)) {
                 for (y in (height * .42f).toInt() until (height * .74f).toInt() step 3)
                     for (x in (width * .76f).toInt() until (width * .99f).toInt() step 3)
                         assertEquals("${theme.id} covers Google's card at $x,$y", background, bitmap.getPixel(x, y))

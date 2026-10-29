@@ -2,6 +2,7 @@ package com.shilapi.xcertplay
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -1787,45 +1788,61 @@ internal class ThemedClusterView(
     }
 
     private fun drawTurbineLuxury(canvas:Canvas,w:Float,h:Float) {
-        // The projected map continues through the centre. A vignette integrates the instruments.
-        fill.shader=LinearGradient(0f,0f,w,0f,intArrayOf(Color.argb(220,3,8,15),Color.TRANSPARENT,
-            Color.TRANSPARENT,Color.argb(220,3,8,15)),floatArrayOf(0f,.34f,.66f,1f),Shader.TileMode.CLAMP)
-        canvas.drawRect(0f,0f,w,h,fill);fill.shader=null
-        val r=.40f*h
-        conceptDial(canvas,.17f*w,.46f*h,r,snapshot?.speedKph,240f,true)
-        conceptDial(canvas,.83f*w,.46f*h,r,kwNow()?.let { it+60f },120f,true,-60f)
-        for(right in listOf(false,true)) {
-            val x=if(right) .83f*w else .17f*w
-            fill.shader=RadialGradient(x,.46f*h,r*.39f,Color.rgb(5,10,17),Color.rgb(1,4,8),Shader.TileMode.CLAMP)
-            canvas.drawCircle(x,.46f*h,r*.39f,fill);fill.shader=null
-            studioText(canvas,if(right) kwNow()?.roundToInt()?.toString() ?: "—" else snapshot?.speedKph?.roundToInt()?.toString() ?: "—",
-                x,.49f*h,.12f*h,weight=300,align=Paint.Align.CENTER)
-            studioText(canvas,if(right) "kW" else "km/h",x,.55f*h,.025f*h,theme.secondary,align=Paint.Align.CENTER)
-        }
+        fill.shader=LinearGradient(0f,0f,.53f*w,0f,intArrayOf(Color.argb(250,3,12,20),Color.argb(225,3,12,20),Color.TRANSPARENT),floatArrayOf(0f,.70f,1f),Shader.TileMode.CLAMP)
+        canvas.drawRect(0f,0f,.53f*w,h,fill);fill.shader=null
+        // Smaller turbine sits behind the large speedometer, opening the right-hand map.
+        conceptDial(canvas,.355f*w,.47f*h,.285f*h,kwNow()?.let{it+60f},120f,true,-60f)
+        studioText(canvas,kwNow()?.let{GwmAndroidAutoClusterView.formatKw(it)} ?: "—",.355f*w,.51f*h,.043f*h,align=Paint.Align.CENTER)
+        conceptDial(canvas,.175f*w,.46f*h,.425f*h,snapshot?.speedKph,240f)
+        fill.shader=RadialGradient(.175f*w,.42f*h,.22f*h,Color.rgb(19,54,73),Color.rgb(2,12,20),Shader.TileMode.CLAMP)
+        canvas.drawCircle(.175f*w,.46f*h,.22f*h,fill);fill.shader=null
+        line.color=Color.rgb(105,172,195);line.strokeWidth=.004f*h
+        canvas.drawCircle(.175f*w,.46f*h,.22f*h,line)
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.175f*w,.51f*h,.16f*h,weight=400,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",.175f*w,.58f*h,.03f*h,theme.secondary,align=Paint.Align.CENTER)
         conceptHeader(canvas,w,h);studioFooter(canvas,w,h,true)
     }
 
+    /** Overlapping machined instruments, with the live map continuing underneath. */
     private fun drawPerformanceCockpit(canvas:Canvas,w:Float,h:Float) {
-        fill.shader=LinearGradient(0f,0f,0f,h,Color.rgb(7,9,12),Color.rgb(18,23,28),Shader.TileMode.CLAMP)
-        canvas.drawRect(0f,0f,.65f*w,h,fill);fill.shader=null
-        // Fine horizontal machining, deliberately quiet behind the readings.
-        line.color=Color.argb(16,160,174,190);line.strokeWidth=1f
-        for(i in 0..90) { val y=.17f*h+i*h*.007f;canvas.drawLine(.025f*w,y,.64f*w,y,line) }
-        conceptDial(canvas,.475f*w,.47f*h,.40f*h,snapshot?.engineRpm,8000f,thousands=true)
-        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.12f*w,.44f*h,.20f*h,weight=500,align=Paint.Align.CENTER)
-        studioText(canvas,"km/h",.12f*w,.51f*h,.032f*h,theme.secondary,align=Paint.Align.CENTER)
-        studioText(canvas,"RPM × 1000",.475f*w,.29f*h,.022f*h,theme.secondary,align=Paint.Align.CENTER)
-        studioText(canvas,snapshot?.engineRpm?.roundToInt()?.toString() ?: "—",.475f*w,.72f*h,.052f*h,align=Paint.Align.CENTER)
-        studioFlow(canvas,RectF(.035f*w,.65f*h,.25f*w,.70f*h),false)
-        // Accent shoulder joins the dial to the right-hand map without a floating widget border.
-        line.shader=LinearGradient(.65f*w,0f,.65f*w,h,Color.TRANSPARENT,withAlpha(theme.accent,130),Shader.TileMode.CLAMP)
-        line.strokeWidth=2f;canvas.drawLine(.65f*w,.15f*h,.65f*w,.86f*h,line);line.shader=null
+        fill.shader=LinearGradient(0f,0f,.55f*w,0f,intArrayOf(Color.rgb(9,10,12),Color.argb(248,9,10,12),Color.TRANSPARENT),floatArrayOf(0f,.72f,1f),Shader.TileMode.CLAMP)
+        canvas.drawRect(0f,0f,.55f*w,h,fill);fill.shader=null
+        // Carbon weave is clipped to the instrument shoulder, never painted over the map.
+        canvas.save();canvas.clipRect(0f,0f,.40f*w,h)
+        val cell=.018f*h
+        for(row in 0..56) for(col in 0..(w*.40f/cell).toInt()) {
+            fill.color=if((row+col)%2==0) Color.argb(22,130,135,141) else Color.argb(12,0,0,0)
+            canvas.drawRect(col*cell,row*cell,(col+1)*cell,(row+1)*cell,fill)
+        };canvas.restore()
+        conceptDial(canvas,.365f*w,.49f*h,.30f*h,kwNow()?.let{it+60f},120f,labelOffset=-60f)
+        studioText(canvas,kwNow()?.let{GwmAndroidAutoClusterView.formatKw(it)} ?: "—",.365f*w,.54f*h,.047f*h,align=Paint.Align.CENTER)
+        conceptDial(canvas,.185f*w,.48f*h,.455f*h,snapshot?.speedKph,240f)
+        // Recessed centre obscures the needle hub, as on the reference's digital speed dial.
+        fill.shader=RadialGradient(.185f*w,.43f*h,.245f*h,Color.rgb(41,43,45),Color.rgb(8,9,10),Shader.TileMode.CLAMP)
+        canvas.drawCircle(.185f*w,.48f*h,.245f*h,fill);fill.shader=null
+        line.color=withAlpha(theme.accent,160);line.strokeWidth=.005f*h;canvas.drawCircle(.185f*w,.48f*h,.242f*h,line)
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.185f*w,.53f*h,.17f*h,weight=400,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",.185f*w,.60f*h,.03f*h,theme.secondary,align=Paint.Align.CENTER)
         conceptHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+    }
+
+    private val loungeScenery: Bitmap? by lazy {
+        runCatching { context.assets.open("cluster-themes/midnight-fjord.png").use { BitmapFactory.decodeStream(it) } }.getOrNull()
     }
 
     private fun drawMusicPanorama(canvas:Canvas,w:Float,h:Float) {
         fill.shader=LinearGradient(0f,0f,.65f*w,h,Color.rgb(6,26,33),Color.rgb(3,12,19),Shader.TileMode.CLAMP)
         canvas.drawRect(0f,0f,.62f*w,h,fill);fill.shader=null
+        loungeScenery?.takeUnless { it.isRecycled }?.let { scenery ->
+            canvas.save()
+            canvas.clipRect(0f,0f,.62f*w,h)
+            val scale=maxOf(.62f*w/scenery.width,h/scenery.height)
+            val bw=scenery.width*scale;val bh=scenery.height*scale
+            canvas.drawBitmap(scenery,null,RectF(.31f*w-bw/2f,h/2f-bh/2f,.31f*w+bw/2f,h/2f+bh/2f),art)
+            fill.shader=LinearGradient(0f,0f,.62f*w,0f,Color.argb(60,2,15,22),Color.argb(185,2,15,22),Shader.TileMode.CLAMP)
+            canvas.drawRect(0f,0f,.62f*w,h,fill);fill.shader=null
+            canvas.restore()
+        }
         fill.shader=RadialGradient(.38f*w,.42f*h,.50f*h,withAlpha(theme.accent,30),Color.TRANSPARENT,Shader.TileMode.CLAMP)
         canvas.drawRect(0f,0f,.62f*w,h,fill);fill.shader=null
         studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.035f*w,.49f*h,.205f*h,weight=300)
@@ -1852,26 +1869,33 @@ internal class ThemedClusterView(
     }
 
     private fun drawDaylightFuture(canvas:Canvas,w:Float,h:Float) {
-        fill.shader=LinearGradient(0f,0f,w,0f,intArrayOf(Color.rgb(243,246,247),Color.rgb(243,246,247),Color.TRANSPARENT,
-            Color.TRANSPARENT,Color.rgb(243,246,247),Color.rgb(243,246,247)),floatArrayOf(0f,.19f,.35f,.65f,.81f,1f),Shader.TileMode.CLAMP)
-        canvas.drawRect(0f,0f,w,h,fill);fill.shader=null
-        // Sculpted translucent arcs, distinct from the circular night instruments.
-        for(right in listOf(false,true)) {
-            val path=Path().apply {
-                val sign=if(right) -1f else 1f;val edge=if(right) w else 0f
-                moveTo(edge+sign*.15f*w,.11f*h)
-                cubicTo(edge+sign*.09f*w,.11f*h,edge+sign*.035f*w,.31f*h,edge+sign*.035f*w,.48f*h)
-                cubicTo(edge+sign*.035f*w,.68f*h,edge+sign*.09f*w,.75f*h,edge+sign*.15f*w,.75f*h)
-            }
-            line.color=Color.argb(110,255,255,255);line.strokeWidth=.054f*h;canvas.drawPath(path,line)
-            line.color=withAlpha(if(right) theme.accent else theme.charge,100);line.strokeWidth=.036f*h;canvas.drawPath(path,line)
-            line.color=Color.WHITE;line.strokeWidth=1.5f;canvas.drawPath(path,line)
+        // A continuous pearl instrument shell. The right side remains an open live map.
+        val shell=Path().apply {
+            moveTo(0f,0f);lineTo(.36f*w,0f)
+            cubicTo(.46f*w,.06f*h,.44f*w,.18f*h,.40f*w,.26f*h)
+            cubicTo(.35f*w,.37f*h,.45f*w,.61f*h,.43f*w,.78f*h)
+            cubicTo(.41f*w,.92f*h,.37f*w,h,.32f*w,h)
+            lineTo(0f,h);close()
         }
-        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.15f*w,.47f*h,.23f*h,weight=400,align=Paint.Align.CENTER)
-        studioText(canvas,"km/h",.15f*w,.54f*h,.033f*h,theme.secondary,align=Paint.Align.CENTER)
-        studioText(canvas,snapshot?.rangeKm?.roundToInt()?.toString() ?: "—",.85f*w,.47f*h,.15f*h,weight=400,align=Paint.Align.CENTER)
-        studioText(canvas,"km",.85f*w,.54f*h,.033f*h,theme.secondary,align=Paint.Align.CENTER)
-        studioFlow(canvas,RectF(.79f*w,.65f*h,.95f*w,.69f*h),true)
+        canvas.save();canvas.translate(.006f*h,.012f*h)
+        fill.color=Color.argb(90,22,30,32);canvas.drawPath(shell,fill);canvas.restore()
+        fill.shader=LinearGradient(0f,0f,.39f*w,h,intArrayOf(Color.rgb(248,247,241),Color.rgb(213,216,211),Color.WHITE,Color.rgb(186,191,188)),null,Shader.TileMode.CLAMP)
+        canvas.drawPath(shell,fill);fill.shader=null
+        line.color=Color.WHITE;line.strokeWidth=.004f*h;canvas.drawPath(shell,line)
+        val cx=.215f*w;val cy=.49f*h;val r=.40f*h
+        for(i in 0..5) {
+            line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,intArrayOf(Color.WHITE,Color.rgb(135,150,149),Color.WHITE,Color.rgb(186,185,173)),null,Shader.TileMode.CLAMP)
+            line.strokeWidth=.012f*h
+            canvas.drawOval(RectF(cx-r+i*.012f*h,cy-r+i*.012f*h,cx+r-i*.012f*h,cy+r-i*.012f*h),line)
+        };line.shader=null
+        fill.shader=RadialGradient(cx-.08f*h,cy-.13f*h,r*.83f,intArrayOf(Color.WHITE,Color.rgb(243,244,240),Color.rgb(185,193,191)),null,Shader.TileMode.CLAMP)
+        canvas.drawCircle(cx,cy,r*.81f,fill);fill.shader=null
+        line.color=Color.rgb(100,174,167);line.strokeWidth=.014f*h
+        canvas.drawArc(RectF(cx-r*.90f,cy-r*.90f,cx+r*.90f,cy+r*.90f),115f,235f,false,line)
+        line.color=Color.rgb(215,195,154)
+        canvas.drawArc(RectF(cx-r*.90f,cy-r*.90f,cx+r*.90f,cy+r*.90f),-8f,85f,false,line)
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",cx,.53f*h,.22f*h,weight=300,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",cx,.60f*h,.034f*h,theme.secondary,align=Paint.Align.CENTER)
         conceptHeader(canvas,w,h);studioFooter(canvas,w,h,true)
     }
 
@@ -2100,10 +2124,10 @@ internal class ThemedClusterView(
      */
     private fun directionsBox(w: Float, h: Float, withJourney: Boolean): RectF {
         when (theme.layout) {
-            ClusterTheme.Layout.TURBINE_LUXURY -> return RectF(.32f*w, .13f*h, .68f*w, (if(withJourney) .34f else .29f)*h)
-            ClusterTheme.Layout.PERFORMANCE_COCKPIT -> return RectF(.84f*w, .18f*h, .985f*w, .86f*h)
+            ClusterTheme.Layout.TURBINE_LUXURY -> return RectF(.62f*w, .17f*h, .975f*w, (if(withJourney) .40f else .35f)*h)
+            ClusterTheme.Layout.PERFORMANCE_COCKPIT -> return RectF(.49f*w, .60f*h, .79f*w, (if(withJourney) .86f else .81f)*h)
             ClusterTheme.Layout.MUSIC_PANORAMA -> return RectF(.65f*w, .20f*h, .97f*w, (if(withJourney) .43f else .36f)*h)
-            ClusterTheme.Layout.DAYLIGHT_FUTURE -> return RectF(.25f*w, .65f*h, .75f*w, (if(withJourney) .88f else .83f)*h)
+            ClusterTheme.Layout.DAYLIGHT_FUTURE -> return RectF(.46f*w, .67f*h, .96f*w, (if(withJourney) .88f else .83f)*h)
             else -> Unit
         }
 
@@ -2182,7 +2206,7 @@ internal class ThemedClusterView(
 
     private fun drawConceptDirections(canvas:Canvas,w:Float,h:Float,next:ClusterTurnGuidance,box:RectF) {
         val daylight=theme.layout==ClusterTheme.Layout.DAYLIGHT_FUTURE
-        val vertical=theme.layout==ClusterTheme.Layout.PERFORMANCE_COCKPIT
+        val vertical=false
         val radius=if(vertical) .015f*h else .025f*h
         fill.shader=LinearGradient(box.left,box.top,box.right,box.bottom,
             if(daylight) Color.argb(248,250,251,251) else Color.argb(242,22,32,42),
