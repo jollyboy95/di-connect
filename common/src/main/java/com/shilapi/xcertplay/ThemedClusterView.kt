@@ -66,6 +66,7 @@ internal class ThemedClusterView(
     fun setSnapshot(next: GwmVehicleData.Snapshot?) {
         if (next == snapshot) return
         snapshot = next
+        smoothAt = SystemClock.uptimeMillis()
         invalidate()
     }
 
@@ -106,6 +107,7 @@ internal class ThemedClusterView(
         stopMusic = null
         removeCallbacks(tick)
         removeCallbacks(clockTick)
+        removeCallbacks(smoothTick)
         bavBase?.recycle(); bavBase = null
         atelierBase?.recycle(); atelierBase = null
         super.onDetachedFromWindow()
@@ -118,6 +120,7 @@ internal class ThemedClusterView(
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
+        advanceSmoothing()
         if (theme.dim > 0) canvas.drawColor(Color.argb(theme.dim, 0, 0, 0))
         val showMusic = preview || AirPlayPersistence.loadGwmMusicCard(context)
         when (theme.layout) {
@@ -150,19 +153,19 @@ internal class ThemedClusterView(
             drawHeader(canvas, w, h)
             snapshot?.let { data ->
                 drawSpeed(canvas, w, h, data.speedKph)
-                drawFlow(canvas, w, h, data.batteryCurrentA)
+                drawFlow(canvas, w, h, smoothAmps)
                 drawBottomRow(canvas, w, h, data)
             } ?: drawFlow(canvas, w, h, null)
             if (showMusic) drawMusic(canvas, w, h)
             }
         }
         if (connection == ClusterConnection.CARPLAY) guidance?.takeIf { it.icon != 0 }?.let {
-            if (isConceptLayout()) drawCard(canvas,w,h,it,directionsBox(w,h,journeyLine(it)!=null))
+            if (isConceptLayout()) drawDirections(canvas,w,h,it)
             else drawCard(canvas,w,h,it)
         }
         // Android Auto: Di-Connect's own directions card, when switched on or while the preview runs.
-        else if ((preview && isConceptLayout()) || (!preview && (NavDemo.active || ClusterThemeStore.directionsCard(context))))
-            guidance?.takeIf { it.icon != 0 }?.let { drawCard(canvas, w, h, it, directionsBox(w, h, journeyLine(it) != null)) }
+        else if (preview || NavDemo.active || ClusterThemeStore.directionsCard(context))
+            guidance?.takeIf { it.icon != 0 }?.let { drawDirections(canvas, w, h, it) }
     }
 
     // ---- type and panels ------------------------------------------------------------------
@@ -745,8 +748,7 @@ internal class ThemedClusterView(
         else { fill.shader = null; fill.color = Color.argb(60, 255, 255, 255); canvas.drawRect(rect, fill) }
         canvas.restore()
         progress()?.let { done ->
-            rect.set(ax, ay + side + 8f * s, ax + side, ay + side + 12f * s); fill.color = Color.argb(50, 255, 255, 255); canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
-            rect.right = ax + side * done; fill.color = theme.accent; canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
+            wavyProgress(canvas, ax, ax + side, ay + side + 10f * s, done)
         }
         type(.03f * h, theme.text, 700, Paint.Align.CENTER)
         canvas.drawText(fit(title, box.width() - 24f * s), box.centerX(), ay + side + 42f * s, text)
@@ -770,7 +772,7 @@ internal class ThemedClusterView(
         canvas.drawText(speed, .2f * w, y, text)
         val sw = text.measureText(speed)
         type(.022f * h, theme.secondary, 500); canvas.drawText("km/h", .2f * w + sw + 8f * s, y, text)
-        val kw = data?.batteryCurrentA?.let { GwmAndroidAutoClusterView.batteryKw(it) }
+        val kw = kwNow()
         type(.026f * h, theme.accent, 500); canvas.drawText(kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", .29f * w, y, text)
         type(.026f * h, theme.secondary, 500)
         val fuel = listOfNotNull(data?.fuelPercent?.let { "${it.roundToInt()}%" }, data?.rangeKm?.let { "${it.roundToInt()} km" }).joinToString(" · ")
@@ -838,7 +840,7 @@ internal class ThemedClusterView(
         val pcy = .47f * h
         val pr = .155f * h
         dialFace(canvas, pcx, pcy, pr)
-        val kw = data?.batteryCurrentA?.let { GwmAndroidAutoClusterView.batteryKw(it) }
+        val kw = kwNow()
         val f = ((kw ?: 0f) / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f)
         val up = Math.toRadians(270.0)
         val half = Math.toRadians(110.0)
@@ -913,7 +915,7 @@ internal class ThemedClusterView(
         type(.03f * h, theme.secondary, 600); canvas.drawText("km/h", left + sw + 6f * s, .335f * h, text)
         divider(canvas, left, inner, .375f * h)
         // Power.
-        val kw = data?.batteryCurrentA?.let { GwmAndroidAutoClusterView.batteryKw(it) }
+        val kw = kwNow()
         sideLabel(canvas, "POWER", left, .425f * h)
         type(.036f * h, when { kw == null -> theme.secondary; kw >= 0 -> theme.accent; else -> theme.charge }, 700, Paint.Align.RIGHT)
         canvas.drawText(kw?.let { GwmAndroidAutoClusterView.formatKw(it) } ?: "—", inner, .43f * h, text)
@@ -957,8 +959,7 @@ internal class ThemedClusterView(
             type(.03f * h, theme.text, 700); canvas.drawText(fit(title, tw), tx, .82f * h, text)
             music.info.artist?.takeIf { it.isNotBlank() }?.let { type(.024f * h, theme.secondary, 500); canvas.drawText(fit(it, tw), tx, .865f * h, text) }
             progress()?.let { done ->
-                rect.set(tx, .895f * h, inner, .895f * h + 4f * s); fill.color = Color.argb(50, 255, 255, 255); canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
-                rect.right = tx + tw * done; fill.color = theme.accent; canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
+                wavyProgress(canvas, tx, inner, .895f * h + 2f * s, done)
             }
         }
     }
@@ -1004,7 +1005,7 @@ internal class ThemedClusterView(
         type(.022f * h, theme.secondary, 600, Paint.Align.LEFT, .2f); canvas.drawText("KM/H", .5f * w + half + .006f * w, .875f * h, text)
         // Left wing, all on the bottom line under the car's indicators: fuel, then power.
         val row = .962f * h
-        val kw = data?.batteryCurrentA?.let { GwmAndroidAutoClusterView.batteryKw(it) }
+        val kw = kwNow()
         val fl = .03f * w
         drawPump(canvas, fl, row - .03f * h, .03f * h)
         type(.03f * h, theme.text, 600)
@@ -1094,7 +1095,68 @@ internal class ThemedClusterView(
         canvas.drawRect(0f, 0f, until * w, h, fill); fill.shader = null
     }
 
-    private fun kwNow(): Float? = snapshot?.batteryCurrentA?.let { GwmAndroidAutoClusterView.batteryKw(it) }
+    private fun kwNow(): Float? = smoothAmps?.let { GwmAndroidAutoClusterView.batteryKw(it) }
+
+    // ---- smooth power readings ---------------------------------------------------------------
+    // The car reports battery current in steps about once a second. Drawing each step as it
+    // arrives made power bars jump, so the shown value glides towards each new reading.
+
+    /** Battery current as drawn: eased towards the latest reading. */
+    private var smoothAmps: Float? = null
+    private var smoothAt = 0L
+    private val smoothTick = Runnable { invalidate() }
+
+    private fun advanceSmoothing() {
+        val target = snapshot?.batteryCurrentA
+        val current = smoothAmps
+        val now = SystemClock.uptimeMillis()
+        if (target == null || current == null || preview) { smoothAmps = target; smoothAt = now; return }
+        val dt = (now - smoothAt).coerceIn(0L, 250L)
+        smoothAt = now
+        val next = current + (target - current) * (1f - kotlin.math.exp(-dt / SMOOTH_MS).toFloat())
+        val settled = kotlin.math.abs(target - next) < SMOOTH_SETTLE_AMPS
+        smoothAmps = if (settled) target else next
+        // About 30 frames a second while gliding, then nothing until the next reading.
+        if (!settled) { removeCallbacks(smoothTick); postDelayed(smoothTick, 33L) }
+    }
+
+    // ---- wavy music progress -----------------------------------------------------------------
+
+    private val wavePath = Path()
+
+    /**
+     * Music progress the way Android Auto now draws it (Material 3 Expressive): the played part is
+     * a gentle wave, the rest a straight track, with a small gap at the playhead.
+     */
+    private fun wavyProgress(canvas: Canvas, left: Float, right: Float, centreY: Float, done: Float,
+                             played: Int = theme.accent, track: Int = withAlpha(theme.text, 55)) {
+        if (right <= left) return
+        val h = height.toFloat()
+        val stroke = maxOf(.0055f * h, 2f)
+        val amp = .0042f * h
+        val wave = .032f * h
+        val head = left + (right - left) * done.coerceIn(0f, 1f)
+        val gap = stroke * 1.5f
+        line.shader = null; line.strokeCap = Paint.Cap.ROUND; line.strokeWidth = stroke
+        if (right - (head + gap) > stroke) {
+            line.color = track
+            canvas.drawLine(head + gap, centreY, right, centreY, line)
+        }
+        if (head - left > stroke) {
+            wavePath.rewind()
+            wavePath.moveTo(left, centreY)
+            val step = maxOf(1.5f, wave / 18f)
+            var x = left
+            while (x < head) {
+                x = minOf(head, x + step)
+                // The wave eases in at the start and out into the playhead.
+                val ease = ((x - left) / (wave / 2f)).coerceIn(0f, 1f) * ((head - x) / (wave / 2f)).coerceIn(0f, 1f)
+                wavePath.lineTo(x, centreY + amp * ease * sin(2.0 * Math.PI * (x - left) / wave).toFloat())
+            }
+            line.color = played
+            canvas.drawPath(wavePath, line)
+        }
+    }
 
     private fun kwColor(kw: Float?) = when { kw == null -> theme.secondary; kw >= 0 -> theme.accent; else -> theme.charge }
 
@@ -1434,8 +1496,7 @@ internal class ThemedClusterView(
             type(.034f * h, theme.text, 700); canvas.drawText(fit(title, right - tx), tx, top + .05f * h, text)
             music.info.artist?.takeIf { it.isNotBlank() }?.let { type(.026f * h, theme.secondary, 500); canvas.drawText(fit(it, right - tx), tx, top + .095f * h, text) }
             progress()?.let { done ->
-                rect.set(tx, top + .112f * h, right, top + .112f * h + 4f * s); fill.color = withAlpha(theme.text, 50); canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
-                rect.right = tx + (right - tx) * done; fill.color = theme.accent; canvas.drawRoundRect(rect, 2f * s, 2f * s, fill)
+                wavyProgress(canvas, tx, right, top + .112f * h + 2f * s, done)
             }
         }
         // Odometer bottom right of the panel, clear of the car's icons on the left.
@@ -1647,11 +1708,7 @@ internal class ThemedClusterView(
             studioText(canvas, it, x, box.top + side * .70f, minOf(.027f * h, side * .23f), theme.secondary, width = tw)
         }
         progress()?.let { done ->
-            val y = box.top + side * .88f
-            fill.shader = null; fill.color = withAlpha(theme.text, 40)
-            canvas.drawRoundRect(RectF(x, y, box.right, y + .007f * h), .0035f * h, .0035f * h, fill)
-            fill.color = theme.accent
-            canvas.drawRoundRect(RectF(x, y, x + tw * done, y + .007f * h), .0035f * h, .0035f * h, fill)
+            wavyProgress(canvas, x, box.right, box.top + side * .88f + .0035f * h, done)
         }
     }
 
@@ -1879,9 +1936,7 @@ internal class ThemedClusterView(
         music.info.title?.takeIf{it.isNotBlank()}?.let{studioText(canvas,it,x,.685f*h,.037f*h,weight=400,width=right-x)}
         music.info.artist?.takeIf{it.isNotBlank()}?.let{studioText(canvas,it,x,.737f*h,.027f*h,theme.secondary,width=right-x)}
         progress()?.let{fraction ->
-            fill.shader=null;fill.color=withAlpha(theme.text,50)
-            canvas.drawRoundRect(RectF(x,.775f*h,right,.782f*h),.003f*h,.003f*h,fill)
-            fill.color=theme.accent;canvas.drawRoundRect(RectF(x,.775f*h,x+(right-x)*fraction,.782f*h),.003f*h,.003f*h,fill)
+            wavyProgress(canvas,x,right,.7785f*h,fraction)
         }
         }
         studioFlow(canvas,RectF(.33f*w,.59f*h,.51f*w,.605f*h),false)
@@ -1985,17 +2040,14 @@ internal class ThemedClusterView(
         music.info.artist?.takeIf{it.isNotBlank()}?.let{studioText(canvas,it,x,box.top+box.height()*.61f,
             (if(large) .034f else .027f)*h,theme.secondary,width=available)}
         progress()?.let { done ->
-            val y=box.top+box.height()*.79f
-            fill.shader=null;fill.color=withAlpha(theme.text,65)
-            canvas.drawRoundRect(RectF(x,y,right,y+.006f*h),.003f*h,.003f*h,fill)
-            fill.color=theme.accent;canvas.drawRoundRect(RectF(x,y,x+available*done,y+.006f*h),.003f*h,.003f*h,fill)
+            wavyProgress(canvas,x,right,box.top+box.height()*.79f+.003f*h,done)
         }
     }
 
     private fun drawAuroraOpen(canvas:Canvas,w:Float,h:Float) {
         drawHeader(canvas,w,h)
         snapshot?.speedKph?.let{drawSpeed(canvas,w,h,it)}
-        drawFlow(canvas,w,h,snapshot?.batteryCurrentA)
+        drawFlow(canvas,w,h,smoothAmps)
         openMusic(canvas,RectF(.695f*w,.29f*h,.975f*w,.515f*h),large=true)
         drawOpenFooter(canvas,w,h)
     }
@@ -2557,6 +2609,9 @@ internal class ThemedClusterView(
         // Music Lounge keeps its guidance on the map side, away from the music instruments.
         if (theme.layout == ClusterTheme.Layout.MUSIC_LOUNGE)
             return RectF(.69f * w, (if (withJourney) .59f else .67f) * h, .97f * w, .88f * h)
+        // Full-map layouts from before the turn-card flag left this right-hand space for Google's
+        // card. With Google's card gone, Di-Connect's own turn card sits there, journey below it.
+        if (usesRightDirections()) return RectF(RIGHT_LEFT * w, .42f * h, RIGHT_RIGHT * w, .62f * h)
         val (from, to) = theme.mapWindow ?: (0f to 1f)
         val centre = (from + to) / 2f * w
         val half = .135f * w
@@ -2564,8 +2619,74 @@ internal class ThemedClusterView(
         return RectF(centre - half, .12f * h, centre + half, (if (withJourney) .41f else .33f) * h)
     }
 
+    // ---- split directions ---------------------------------------------------------------------
+    // The next turn (arrow, distance, road) and the journey (time left, distance left, arrival)
+    // can sit in different places. A layout that returns a [journeyBox] gets the journey as its
+    // own panel; every other layout keeps one combined card.
+
+    /** Set while the turn card draws in split mode, so it leaves the journey out. */
+    private var journeyHidden = false
+
+    /** Where this layout puts the journey on its own, or null to keep it in the turn card. */
+    private fun journeyBox(w: Float, h: Float): RectF? =
+        if (usesRightDirections()) RectF(RIGHT_LEFT * w, .645f * h, RIGHT_RIGHT * w, .715f * h) else null
+
+    /** Layouts drawn for a full map with no directions spot of their own. */
+    private fun usesRightDirections() = theme.mapWindow == null && !isConceptLayout() &&
+        theme.layout !in setOf(ClusterTheme.Layout.BAVARIAN, ClusterTheme.Layout.MUSIC_LOUNGE)
+
+    private fun drawDirections(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance) {
+        val split = journeyBox(w, h)
+        val parts = journeyParts(next)
+        if (split == null || parts.isEmpty()) {
+            drawCard(canvas, w, h, next, directionsBox(w, h, parts.isNotEmpty()))
+            return
+        }
+        journeyHidden = true
+        try { drawCard(canvas, w, h, next, directionsBox(w, h, false)) } finally { journeyHidden = false }
+        drawJourney(canvas, split, parts)
+    }
+
+    /** The journey as its own panel: one column per detail, or one row each in a tall panel. */
+    private fun drawJourney(canvas: Canvas, box: RectF, parts: List<String>) {
+        val h = height.toFloat()
+        val daylight = theme.layout == ClusterTheme.Layout.DAYLIGHT_FUTURE && !theme.id.endsWith("daylight-dusk")
+        val radius = minOf(box.height() / 2f, .025f * h)
+        fill.alpha = 255
+        fill.shader = LinearGradient(box.left, box.top, box.right, box.bottom,
+            if (daylight) Color.argb(248, 250, 251, 251) else Color.argb(240, 20, 30, 40),
+            if (daylight) Color.argb(235, 232, 239, 242) else Color.argb(245, 4, 12, 20), Shader.TileMode.CLAMP)
+        canvas.drawRoundRect(box, radius, radius, fill); fill.shader = null
+        line.shader = null; line.color = withAlpha(theme.text, 70); line.strokeWidth = 1.2f
+        canvas.drawRoundRect(box, radius, radius, line)
+        val tall = box.height() > box.width()
+        val count = parts.size
+        val size = minOf(.032f * h, if (tall) box.height() / count * .4f else box.height() * .42f)
+        parts.forEachIndexed { i, part ->
+            val colour = if (i == count - 1) theme.accent else theme.text
+            if (tall) {
+                val rowH = box.height() / count
+                studioText(canvas, part, box.centerX(), box.top + rowH * i + rowH / 2f + size * .35f, size, colour, 500,
+                    width = box.width() - .03f * h, align = Paint.Align.CENTER)
+            } else {
+                val colW = box.width() / count
+                val cx = box.left + colW * i + colW / 2f
+                studioText(canvas, part, cx, box.centerY() + size * .35f, size, colour, 500,
+                    width = colW - .02f * h, align = Paint.Align.CENTER)
+                if (i > 0) {
+                    line.color = withAlpha(theme.text, 45)
+                    canvas.drawLine(box.left + colW * i, box.top + box.height() * .25f, box.left + colW * i, box.bottom - box.height() * .25f, line)
+                }
+            }
+        }
+    }
+
     /** "12min · 9.7 km · Arrive 2:54 pm" from whatever journey details the phone sent, or null. */
-    private fun journeyLine(next: ClusterTurnGuidance): String? {
+    private fun journeyLine(next: ClusterTurnGuidance): String? =
+        journeyParts(next).takeIf { it.isNotEmpty() && !journeyHidden }?.joinToString("  ·  ")
+
+    /** Time left, distance left and arrival time, each only when the phone sent it. */
+    private fun journeyParts(next: ClusterTurnGuidance): List<String> {
         val parts = mutableListOf<String>()
         next.remainingSeconds?.takeIf { it > 0 }?.let { seconds ->
             val hours = (seconds / 3600).toInt()
@@ -2577,7 +2698,7 @@ internal class ThemedClusterView(
         next.arrivalEpochSeconds?.takeIf { it > 0 }?.let {
             parts += context.getString(R.string.turn_card_info_arrival, SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(it * 1000L)))
         }
-        return parts.takeIf { it.isNotEmpty() }?.joinToString("  ·  ")
+        return parts
     }
 
     private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance,
@@ -2698,6 +2819,11 @@ internal class ThemedClusterView(
         const val MUSIC_TOP = .125f
         const val MUSIC_BOTTOM = .379f
         const val AA_LABEL_COVER = .775f
+        const val RIGHT_LEFT = .70f
+        const val RIGHT_RIGHT = .97f
+        /** How quickly a power reading glides to a new value; about 1 s to settle. */
+        const val SMOOTH_MS = 280.0
+        const val SMOOTH_SETTLE_AMPS = .15f
         private val FUEL_GOLD = Color.rgb(255, 196, 64)
         const val SIDEBAR_RIGHT = .205f
         const val DECK_TOP = .84f

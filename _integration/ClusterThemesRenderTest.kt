@@ -51,13 +51,13 @@ class ClusterThemesRenderTest {
             var drawn = 0
             for (y in 0 until height step 4) for (x in 0 until width / 3 step 4) if (bitmap.getPixel(x, y) != background) drawn++
             assertTrue("${theme.id} on $connection draws its instruments", drawn > 500)
-            // A theme with its own map window has Google's card inside that window instead.
-            // The full-map instrument layout draws Di-Connect's directions instead (turn card hidden).
+            // Google's card is hidden with the turn-card flag, so every Android Auto theme draws
+            // Di-Connect's own directions somewhere; nothing needs keeping clear for Google.
             if (connection == ClusterConnection.ANDROID_AUTO && theme.dim == 0 && theme.mapWindow == null &&
-                theme.layout != ClusterTheme.Layout.BAVARIAN && theme.layout !in conceptLayouts) {
-                for (y in (height * .42f).toInt() until (height * .74f).toInt() step 3)
-                    for (x in (width * .76f).toInt() until (width * .99f).toInt() step 3)
-                        assertEquals("${theme.id} covers Google's card at $x,$y", background, bitmap.getPixel(x, y))
+                theme.layout != ClusterTheme.Layout.BAVARIAN && theme.layout != ClusterTheme.Layout.MUSIC_LOUNGE &&
+                theme.layout !in conceptLayouts) {
+                assertNotEquals("${theme.id} draws directions on the right", background,
+                    bitmap.getPixel((width * .835f).toInt(), (height * .52f).toInt()))
             }
             if (connection == ClusterConnection.CARPLAY && theme.layout !in conceptLayouts) {
                 assertNotEquals("${theme.id} draws the CarPlay directions card", background,
