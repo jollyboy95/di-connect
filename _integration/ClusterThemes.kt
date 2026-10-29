@@ -47,7 +47,7 @@ internal data class ClusterTheme(
      * cluster on the left, one solid sidebar, or a console along the bottom edge. All keep Google's
      * card on Android Auto (the right, 42-74 % down) clear.
      */
-    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE, HYBRID_SPORT, VAPORWAVE_STEREO, MUSIC_LOUNGE, BAVARIAN, TURBINE_LUXURY, PERFORMANCE_COCKPIT, MUSIC_PANORAMA, DAYLIGHT_FUTURE }
+    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE, HYBRID_SPORT, VAPORWAVE_STEREO, MUSIC_LOUNGE, BAVARIAN, TURBINE_LUXURY, PERFORMANCE_COCKPIT, MUSIC_PANORAMA, DAYLIGHT_FUTURE, SMOKED_GLASS, AURUM_TOUR, WOODLAND_RETREAT }
     enum class Face { SANS, SERIF, MONO }
 
     /**
@@ -59,6 +59,7 @@ internal data class ClusterTheme(
         Layout.SPLIT, Layout.HYBRID_SPORT, Layout.VAPORWAVE_STEREO, Layout.MUSIC_LOUNGE -> SPLIT_MAP
         Layout.CENTRE -> CENTRE_MAP
         Layout.MUSIC_PANORAMA -> .62f to 1f
+        Layout.WOODLAND_RETREAT -> .54f to 1f
         else -> null
     }
 

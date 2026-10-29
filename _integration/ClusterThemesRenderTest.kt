@@ -54,12 +54,12 @@ class ClusterThemesRenderTest {
             // A theme with its own map window has Google's card inside that window instead.
             // The full-map instrument layout draws Di-Connect's directions instead (turn card hidden).
             if (connection == ClusterConnection.ANDROID_AUTO && theme.dim == 0 && theme.mapWindow == null &&
-                theme.layout !in setOf(ClusterTheme.Layout.BAVARIAN, ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT, ClusterTheme.Layout.DAYLIGHT_FUTURE)) {
+                theme.layout !in setOf(ClusterTheme.Layout.BAVARIAN, ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT, ClusterTheme.Layout.DAYLIGHT_FUTURE, ClusterTheme.Layout.SMOKED_GLASS, ClusterTheme.Layout.AURUM_TOUR)) {
                 for (y in (height * .42f).toInt() until (height * .74f).toInt() step 3)
                     for (x in (width * .76f).toInt() until (width * .99f).toInt() step 3)
                         assertEquals("${theme.id} covers Google's card at $x,$y", background, bitmap.getPixel(x, y))
             }
-            if (connection == ClusterConnection.CARPLAY) {
+            if (connection == ClusterConnection.CARPLAY && theme.layout !in conceptLayouts) {
                 assertNotEquals("${theme.id} draws the CarPlay directions card", background,
                     bitmap.getPixel((width * .77f).toInt(), (height * .45f).toInt()))
             }
@@ -67,13 +67,15 @@ class ClusterThemesRenderTest {
         }
     }
 
+    private val conceptLayouts = setOf(ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT,
+        ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE, ClusterTheme.Layout.SMOKED_GLASS,
+        ClusterTheme.Layout.AURUM_TOUR, ClusterTheme.Layout.WOODLAND_RETREAT)
+
     @Test fun conceptsRenderGuidanceOverMapAtFullAndCompactSizes() {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
             .first { it.isFile }.readText().let(ThemePacks::parse)
-        val layouts = setOf(ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT,
-            ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE)
-        val concepts = catalogue.filter { it.layout in layouts }
-        assertEquals(4,concepts.size)
+        val concepts = catalogue.filter { it.layout in conceptLayouts }
+        assertEquals(7,concepts.size)
         val output=File("build/reports/gwm-cluster/themes").apply{mkdirs()}
         val artwork=Bitmap.createBitmap(300,300,Bitmap.Config.ARGB_8888)
         val cover=Canvas(artwork)
@@ -82,8 +84,8 @@ class ClusterThemesRenderTest {
         cover.drawRect(0f,0f,300f,300f,paint);paint.shader=null
         paint.color=Color.argb(140,10,30,40)
         for(i in 0..8) cover.drawRect(i*42f,140f-i*8f,i*42f+25f,300f,paint)
-        for(theme in concepts) for((w,h) in listOf(1920 to 720,960 to 360)) {
-            val view=ThemedClusterView(context,theme,ClusterConnection.ANDROID_AUTO,preview=true)
+        for(connection in ClusterConnection.entries) for(theme in concepts.filter{it.availableFor(connection)}) for((w,h) in listOf(1920 to 720,960 to 360)) {
+            val view=ThemedClusterView(context,theme,connection,preview=true)
             view.setSnapshot(GwmVehicleData.Snapshot(72f,"D",82f,380f,22f,SystemClock.elapsedRealtime(),35350f,-15f,2400f))
             view.setPreviewMusic(ClusterMusicState.Snapshot(CarPlayNowPlaying(title="Midnight Sun",artist="Ásgeir",
                 durationMillis=277000L,elapsedMillis=134000L),artwork))
@@ -112,7 +114,7 @@ class ClusterThemesRenderTest {
             var changed=0
             for(y in 0 until h step 4) for(x in 0 until w step 4) if(empty.getPixel(x,y)!=active.getPixel(x,y)) changed++
             assertTrue("${theme.name} preview hides its guidance",changed>100)
-            File(output,"${theme.id}-concept-${w}.png").outputStream().use{active.compress(Bitmap.CompressFormat.PNG,100,it)}
+            File(output,"${theme.id}-concept-${w}${if(connection==ClusterConnection.CARPLAY) "-carplay" else ""}.png").outputStream().use{active.compress(Bitmap.CompressFormat.PNG,100,it)}
             empty.recycle();active.recycle()
         }
         artwork.recycle()

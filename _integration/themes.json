@@ -382,6 +382,48 @@
       "charge": "#22BCB5",
       "surface": "#F3F6F7",
       "edge": "#667E9FAA"
+    },
+    {
+      "id": "atelier-smoked-glass",
+      "name": "Smoked Glass",
+      "category": "tech",
+      "layout": "smoked_glass",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#F5F6F2",
+      "secondary": "#B1C4CA",
+      "accent": "#E6BD72",
+      "charge": "#76D7E8",
+      "surface": "#111B23",
+      "edge": "#9BB5A88A"
+    },
+    {
+      "id": "atelier-aurum-tour",
+      "name": "Aurum Grand Tour",
+      "category": "luxury",
+      "layout": "aurum_tour",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#F4ECD5",
+      "secondary": "#C6BFA9",
+      "accent": "#DBC18B",
+      "charge": "#D3BA7C",
+      "surface": "#101216",
+      "edge": "#9BB5A88A"
+    },
+    {
+      "id": "atelier-woodland-retreat",
+      "name": "Woodland Retreat",
+      "category": "everyday",
+      "layout": "woodland_retreat",
+      "panel": "card",
+      "speed": "plain",
+      "text": "#193422",
+      "secondary": "#46573D",
+      "accent": "#35502D",
+      "charge": "#9FAF5E",
+      "surface": "#F2EFDA",
+      "edge": "#9BB5A88A"
     }
   ]
 }

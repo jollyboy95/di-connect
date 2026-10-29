@@ -107,6 +107,7 @@ internal class ThemedClusterView(
         removeCallbacks(tick)
         removeCallbacks(clockTick)
         bavBase?.recycle(); bavBase = null
+        atelierBase?.recycle(); atelierBase = null
         super.onDetachedFromWindow()
     }
 
@@ -137,6 +138,9 @@ internal class ThemedClusterView(
             ClusterTheme.Layout.PERFORMANCE_COCKPIT -> drawPerformanceCockpit(canvas, w, h)
             ClusterTheme.Layout.MUSIC_PANORAMA -> drawMusicPanorama(canvas, w, h)
             ClusterTheme.Layout.DAYLIGHT_FUTURE -> drawDaylightFuture(canvas, w, h)
+            ClusterTheme.Layout.SMOKED_GLASS -> drawSmokedGlass(canvas, w, h)
+            ClusterTheme.Layout.AURUM_TOUR -> drawAurumTour(canvas, w, h)
+            ClusterTheme.Layout.WOODLAND_RETREAT -> drawWoodlandRetreat(canvas, w, h)
             ClusterTheme.Layout.BAVARIAN -> drawBavarian(canvas, w, h, showMusic)
             ClusterTheme.Layout.CLASSIC -> {
             drawHeader(canvas, w, h)
@@ -1731,7 +1735,8 @@ internal class ThemedClusterView(
     }
 
     private fun isConceptLayout() = theme.layout in setOf(ClusterTheme.Layout.TURBINE_LUXURY,
-        ClusterTheme.Layout.PERFORMANCE_COCKPIT, ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE)
+        ClusterTheme.Layout.PERFORMANCE_COCKPIT, ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE,
+        ClusterTheme.Layout.SMOKED_GLASS, ClusterTheme.Layout.AURUM_TOUR, ClusterTheme.Layout.WOODLAND_RETREAT)
 
     private fun conceptHeader(canvas: Canvas, w: Float, h: Float) {
         snapshot?.outsideTempC?.let { studioText(canvas, "${it.roundToInt()}°C", .025f*w,.075f*h,.033f*h,weight=400) }
@@ -1897,6 +1902,230 @@ internal class ThemedClusterView(
         studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",cx,.53f*h,.22f*h,weight=300,align=Paint.Align.CENTER)
         studioText(canvas,"km/h",cx,.60f*h,.034f*h,theme.secondary,align=Paint.Align.CENTER)
         conceptHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+    }
+
+    // ---- Atelier themes: material-led instruments, each with a distinct navigation surface ----
+
+    private var atelierBase: Bitmap? = null
+    private var atelierSize = 0L
+    private val forestScenery: Bitmap? by lazy {
+        runCatching { context.assets.open("cluster-themes/woodland-dawn.png").use { BitmapFactory.decodeStream(it) } }.getOrNull()
+    }
+
+    /** Static craftwork is cached; vehicle and guidance updates never repaint the texture. */
+    private fun atelierBackdrop(canvas: Canvas, w: Float, h: Float, draw: (Canvas) -> Unit) {
+        val key = (w.toLong() shl 32) or h.toLong()
+        if (atelierBase == null || atelierSize != key) {
+            atelierBase?.recycle()
+            atelierBase = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888).also { draw(Canvas(it)) }
+            atelierSize = key
+        }
+        atelierBase?.let { canvas.drawBitmap(it, 0f, 0f, art) }
+    }
+
+    private fun materialPanel(canvas: Canvas, box: RectF, radius: Float, light: Boolean = false, gold: Boolean = false) {
+        val d = height * .004f
+        fill.shader = null; fill.color = Color.argb(85, 0, 0, 0)
+        canvas.drawRoundRect(RectF(box.left-d, box.top+d, box.right+d, box.bottom+3*d), radius+d, radius+d, fill)
+        fill.shader = LinearGradient(box.left, box.top, box.right, box.bottom,
+            if (light) intArrayOf(Color.rgb(255,255,245),Color.rgb(228,230,209),Color.rgb(199,208,186))
+            else intArrayOf(Color.argb(245,67,83,94),Color.argb(247,18,27,33),Color.argb(250,4,9,14)),
+            null,Shader.TileMode.CLAMP)
+        canvas.drawRoundRect(box,radius,radius,fill);fill.shader=null
+        line.shader=LinearGradient(box.left,box.top,box.right,box.bottom,
+            if(gold) intArrayOf(Color.rgb(244,225,164),Color.rgb(105,88,46),Color.rgb(222,199,143))
+            else intArrayOf(Color.argb(220,231,246,246),Color.argb(60,117,150,157),Color.argb(160,166,192,194)),null,Shader.TileMode.CLAMP)
+        line.strokeWidth=height*.0025f;canvas.drawRoundRect(box,radius,radius,line);line.shader=null
+        // An angled reflection, clipped into the surface rather than another floating rectangle.
+        canvas.save();val clip=Path().apply{addRoundRect(box,radius,radius,Path.Direction.CW)};canvas.clipPath(clip)
+        val gloss=Path().apply{moveTo(box.left,box.top);lineTo(box.left+box.width()*.68f,box.top);lineTo(box.left+box.width()*.42f,box.bottom);lineTo(box.left,box.bottom);close()}
+        fill.shader=LinearGradient(0f,box.top,0f,box.bottom,Color.argb(if(light) 100 else 30,255,255,255),Color.TRANSPARENT,Shader.TileMode.CLAMP)
+        canvas.drawPath(gloss,fill);fill.shader=null;canvas.restore()
+    }
+
+    private fun atelierHeader(canvas: Canvas,w:Float,h:Float) {
+        val p=Path().apply{moveTo(.37f*w,0f);lineTo(.63f*w,0f);lineTo(.61f*w,.10f*h);quadTo(.607f*w,.118f*h,.59f*w,.118f*h);lineTo(.41f*w,.118f*h);quadTo(.393f*w,.118f*h,.39f*w,.10f*h);close()}
+        fill.shader=LinearGradient(0f,0f,0f,.12f*h,Color.argb(235,96,111,116),Color.argb(245,16,25,31),Shader.TileMode.CLAMP)
+        canvas.drawPath(p,fill);fill.shader=null
+        line.color=withAlpha(theme.accent,140);line.strokeWidth=.002f*h;canvas.drawPath(p,line)
+        // The actual gear letter is the H7's own layer, in the centre of this surround.
+        snapshot?.outsideTempC?.let{studioText(canvas,"${it.roundToInt()}°C",.428f*w,.073f*h,.033f*h,Color.rgb(235,240,238),align=Paint.Align.CENTER)}
+        studioText(canvas,SimpleDateFormat("h:mm a",Locale.getDefault()).format(Date()),.57f*w,.073f*h,.033f*h,Color.rgb(235,240,238),align=Paint.Align.CENTER)
+    }
+
+    private fun atelierMusic(canvas:Canvas,box:RectF) {
+        if (!(preview || AirPlayPersistence.loadGwmMusicCard(context))) return
+        if (music.info.title.isNullOrBlank() && music.artwork == null) return
+        studioMusic(canvas,box,false)
+    }
+
+    private fun drawSmokedGlass(canvas:Canvas,w:Float,h:Float) {
+        atelierBackdrop(canvas,w,h) { base ->
+            materialPanel(base,RectF(.018f*w,.05f*h,.345f*w,.985f*h),.035f*h)
+            // Long swept bezels around a pair of deep, independently lit energy wells.
+            for(right in listOf(false,true)) {
+                val x=if(right) .292f*w else .070f*w
+                val sign=if(right) -1f else 1f
+                val well=Path().apply{moveTo(x-sign*.016f*w,.20f*h);lineTo(x+sign*.008f*w,.23f*h);lineTo(x+sign*.018f*w,.54f*h);quadTo(x+sign*.005f*w,.59f*h,x-sign*.005f*w,.57f*h);close()}
+                fill.shader=LinearGradient(x,.20f*h,x+sign*.02f*w,.59f*h,Color.rgb(52,66,70),Color.rgb(1,9,14),Shader.TileMode.CLAMP)
+                base.drawPath(well,fill);fill.shader=null
+                line.color=withAlpha(if(right) theme.charge else theme.accent,120);line.strokeWidth=.002f*h;base.drawPath(well,line)
+            }
+            materialPanel(base,RectF(.06f*w,.68f*h,.314f*w,.83f*h),.019f*h)
+        }
+        val power=kwNow()
+        for(right in listOf(false,true)) for(i in 0 until 14) {
+            val x=if(right) .292f*w else .070f*w
+            val sign=if(right) -1f else 1f
+            val fraction=power?.let{(if(right) -it else it).coerceAtLeast(0f)/GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW}
+            val lit=fraction!=null && i/14f<fraction
+            val y=.54f*h-i*.021f*h
+            val skew=(13-i)*.0006f*w*sign
+            fill.shader=LinearGradient(x-.012f*w,y,x+.012f*w,y,if(lit) (if(right) theme.charge else theme.accent) else Color.rgb(36,53,60),if(lit) Color.rgb(241,244,218) else Color.rgb(17,31,38),Shader.TileMode.CLAMP)
+            canvas.drawRoundRect(RectF(x-.012f*w+skew,y,x+.012f*w+skew,y+.014f*h),.002f*h,.002f*h,fill);fill.shader=null
+        }
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.185f*w,.455f*h,.19f*h,weight=300,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",.185f*w,.525f*h,.032f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioText(canvas,power?.let{GwmAndroidAutoClusterView.formatKw(it)} ?: "—",.185f*w,.615f*h,.040f*h,theme.accent,align=Paint.Align.CENTER)
+        atelierMusic(canvas,RectF(.07f*w,.695f*h,.305f*w,.815f*h))
+        atelierHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+    }
+
+    private fun drawAurumTour(canvas:Canvas,w:Float,h:Float) {
+        val cx=.19f*w;val cy=.455f*h;val r=.43f*h
+        atelierBackdrop(canvas,w,h) { base ->
+            val shoulder=Path().apply{moveTo(0f,0f);lineTo(.35f*w,0f);cubicTo(.38f*w,.25f*h,.39f*w,.70f*h,.33f*w,h);lineTo(0f,h);close()}
+            fill.shader=LinearGradient(0f,0f,.38f*w,h,Color.rgb(36,34,31),Color.rgb(3,5,8),Shader.TileMode.CLAMP)
+            base.drawPath(shoulder,fill);fill.shader=null
+            for(i in 0..5) {
+                line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,intArrayOf(Color.rgb(87,78,55),Color.rgb(248,231,181),Color.rgb(87,78,55),Color.rgb(209,187,128)),null,Shader.TileMode.CLAMP)
+                line.strokeWidth=.007f*h;base.drawCircle(cx,cy,r-i*.008f*h,line)
+            };line.shader=null
+            fill.shader=RadialGradient(cx,cy,r,Color.rgb(7,10,13),Color.rgb(38,35,29),Shader.TileMode.CLAMP)
+            base.drawCircle(cx,cy,r*.88f,fill);fill.shader=null
+            for(i in 0..100) {
+                val a=Math.toRadians(135.0+i*2.7);val major=i%5==0
+                line.color=if(major) theme.accent else withAlpha(theme.accent,100);line.strokeWidth=if(major) .0023f*h else .001f*h
+                base.drawLine(cx+(cos(a)*r*.96f).toFloat(),cy+(sin(a)*r*.96f).toFloat(),cx+(cos(a)*r*(if(major) .89f else .93f)).toFloat(),cy+(sin(a)*r*(if(major) .89f else .93f)).toFloat(),line)
+            }
+            // Six radial satin facets catch the light around a dark floating hub.
+            for(i in 0..5) {
+                val a=Math.toRadians(i*60.0)
+                val facet=Path().apply{moveTo(cx,cy);lineTo(cx+(cos(a)*r*.86).toFloat(),cy+(sin(a)*r*.86).toFloat());lineTo(cx+(cos(a+.45)*r*.86).toFloat(),cy+(sin(a+.45)*r*.86).toFloat());close()}
+                fill.shader=LinearGradient(cx,cy,cx+(cos(a)*r).toFloat(),cy+(sin(a)*r).toFloat(),Color.argb(0,235,215,163),Color.argb(40,235,215,163),Shader.TileMode.CLAMP)
+                base.drawPath(facet,fill);fill.shader=null
+            }
+            for(i in 0..3) {
+                line.shader=LinearGradient(cx-r,cy-r,cx+r,cy+r,Color.rgb(250,232,182),Color.rgb(74,66,46),Shader.TileMode.CLAMP)
+                line.strokeWidth=.010f*h;base.drawCircle(cx,cy,r*(.54f-i*.028f),line)
+            };line.shader=null
+            fill.shader=RadialGradient(cx,cy-r*.20f,r*.44f,Color.rgb(43,43,37),Color.rgb(5,8,11),Shader.TileMode.CLAMP)
+            base.drawCircle(cx,cy,r*.43f,fill);fill.shader=null
+            // The bottom contour belongs to the dashboard; the map still fills the upper right.
+            val lower=Path().apply{moveTo(.34f*w,h);lineTo(.39f*w,.91f*h);lineTo(.68f*w,.91f*h);lineTo(.73f*w,h);close()}
+            fill.color=Color.rgb(4,8,11);base.drawPath(lower,fill)
+            line.color=withAlpha(theme.accent,100);line.strokeWidth=.002f*h;base.drawPath(lower,line)
+        }
+        // Separate signed arcs represent battery power, never the fuel percentage.
+        val kw=kwNow()
+        for(regen in listOf(false,true)) {
+            val oval=RectF(cx-r*.75f,cy-r*.75f,cx+r*.75f,cy+r*.75f)
+            val start=if(regen) 145f else -35f
+            line.strokeWidth=.058f*h;line.color=Color.argb(70,131,117,81);canvas.drawArc(oval,start,70f,false,line)
+            kw?.let {
+                val f=(if(regen) -it else it).coerceAtLeast(0f)/GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW
+                line.shader=LinearGradient(cx-r,cy,cx+r,cy,Color.rgb(133,96,31),Color.rgb(255,221,133),Shader.TileMode.CLAMP)
+                canvas.drawArc(oval,start,70f*f.coerceIn(0f,1f),false,line);line.shader=null
+            }
+        }
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",cx,.50f*h,.15f*h,weight=300,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",cx,.56f*h,.029f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioText(canvas,kw?.let{GwmAndroidAutoClusterView.formatKw(it)} ?: "—",cx,.73f*h,.032f*h,theme.accent,align=Paint.Align.CENTER)
+        atelierMusic(canvas,RectF(.115f*w,.78f*h,.33f*w,.89f*h))
+        atelierHeader(canvas,w,h);studioFooter(canvas,w,h,true)
+    }
+
+    private fun leaf(canvas:Canvas,x:Float,y:Float,size:Float,angle:Float) {
+        canvas.save();canvas.rotate(angle,x,y)
+        val p=Path().apply{moveTo(x,y);cubicTo(x-size*.8f,y-size*.45f,x-size*.2f,y-size,x,y-size);cubicTo(x+size*.55f,y-size*.5f,x+size*.2f,y-size*.15f,x,y);close()}
+        fill.shader=LinearGradient(x-size,y-size,x+size,y,Color.rgb(191,193,106),Color.rgb(40,74,42),Shader.TileMode.CLAMP)
+        canvas.drawPath(p,fill);fill.shader=null
+        line.color=Color.argb(130,231,220,149);line.strokeWidth=size*.025f;canvas.drawLine(x,y,x,y-size*.84f,line);canvas.restore()
+    }
+
+    private fun drawWoodlandRetreat(canvas:Canvas,w:Float,h:Float) {
+        atelierBackdrop(canvas,w,h) { base ->
+            // Scenic left side; the phone owns the separate, correctly sized map on the right.
+            fill.color=Color.rgb(22,47,32);base.drawRect(0f,0f,.54f*w,h,fill)
+            forestScenery?.let { scenery ->
+                base.save();base.clipRect(0f,0f,.56f*w,h)
+                val scale=maxOf(.56f*w/scenery.width,h/scenery.height);val bw=scenery.width*scale;val bh=scenery.height*scale
+                base.drawBitmap(scenery,null,RectF(.28f*w-bw/2,h/2-bh/2,.28f*w+bw/2,h/2+bh/2),art);base.restore()
+            }
+            fill.shader=LinearGradient(0f,.73f*h,0f,h,Color.TRANSPARENT,Color.argb(230,5,16,10),Shader.TileMode.CLAMP)
+            base.drawRect(0f,.73f*h,.56f*w,h,fill);fill.shader=null
+            val shell=Path().apply{moveTo(.065f*w,.59f*h);cubicTo(.035f*w,.32f*h,.10f*w,.12f*h,.21f*w,.14f*h);cubicTo(.30f*w,.11f*h,.40f*w,.22f*h,.39f*w,.40f*h);lineTo(.37f*w,.65f*h);lineTo(.10f*w,.68f*h);close()}
+            base.save();base.translate(0f,.012f*h);fill.color=Color.argb(100,0,0,0);base.drawPath(shell,fill);base.restore()
+            fill.shader=LinearGradient(0f,.15f*h,0f,.68f*h,intArrayOf(Color.WHITE,Color.rgb(245,241,213),Color.rgb(190,194,166)),null,Shader.TileMode.CLAMP)
+            base.drawPath(shell,fill);fill.shader=null
+            line.shader=LinearGradient(0f,.14f*h,0f,.68f*h,Color.rgb(254,234,174),Color.rgb(120,113,68),Shader.TileMode.CLAMP)
+            line.strokeWidth=.008f*h;base.drawPath(shell,line);line.shader=null
+            for(right in listOf(false,true)) {
+                val x=if(right) .35f*w else .09f*w
+                fill.shader=RadialGradient(x,.43f*h,.13f*h,Color.rgb(70,88,41),Color.rgb(16,41,26),Shader.TileMode.CLAMP)
+                base.drawOval(RectF(x-.035f*w,.32f*h,x+.035f*w,.57f*h),fill);fill.shader=null
+                leaf(base,x-.01f*w,.57f*h,.043f*h,if(right) 20f else -35f)
+                leaf(base,x+.01f*w,.56f*h,.035f*h,if(right) -25f else 35f)
+            }
+            val timber=RectF(.085f*w,.64f*h,.405f*w,.855f*h)
+            materialPanel(base,timber,.045f*h,true,true)
+            // Long flowing grain, always static, with enough contrast for live media text.
+            base.save();val clip=Path().apply{addRoundRect(timber,.045f*h,.045f*h,Path.Direction.CW)};base.clipPath(clip)
+            for(i in 0..30) {
+                val yy=timber.top+i*timber.height()/30
+                val grain=Path().apply{moveTo(timber.left,yy);cubicTo(timber.left+timber.width()*.35f,yy-.01f*h,timber.left+timber.width()*.6f,yy+.012f*h,timber.right,yy)}
+                line.color=Color.argb(if(i%3==0) 46 else 18,123,91,42);line.strokeWidth=if(i%3==0) .0013f*h else .0008f*h;base.drawPath(grain,line)
+            };base.restore()
+            leaf(base,.388f*w,.825f*h,.045f*h,40f)
+        }
+        studioText(canvas,snapshot?.speedKph?.roundToInt()?.toString() ?: "—",.22f*w,.49f*h,.20f*h,weight=300,align=Paint.Align.CENTER)
+        studioText(canvas,"km/h",.22f*w,.555f*h,.032f*h,theme.secondary,align=Paint.Align.CENTER)
+        studioText(canvas,kwNow()?.let{GwmAndroidAutoClusterView.formatKw(it)} ?: "—",.09f*w,.45f*h,.032f*h,Color.rgb(237,223,165),align=Paint.Align.CENTER)
+        studioText(canvas,snapshot?.rangeKm?.roundToInt()?.toString() ?: "—",.35f*w,.44f*h,.041f*h,Color.rgb(237,223,165),align=Paint.Align.CENTER)
+        studioText(canvas,"km",.35f*w,.48f*h,.025f*h,Color.rgb(224,220,179),align=Paint.Align.CENTER)
+        atelierMusic(canvas,RectF(.10f*w,.665f*h,.37f*w,.83f*h))
+        atelierHeader(canvas,w,h)
+        // Footer text has a dark forest floor behind it, independent of the pearl palette.
+        val light=Color.rgb(228,236,215)
+        snapshot?.fuelPercent?.let{studioText(canvas,"${it.roundToInt()}%",.045f*w,.965f*h,.027f*h,light)}
+        snapshot?.odometerKm?.let{studioText(canvas,"ODO  ${NumberFormat.getIntegerInstance().format(it.roundToInt())} km",.975f*w,.965f*h,.026f*h,light,align=Paint.Align.RIGHT)}
+    }
+
+    private fun drawAtelierDirections(canvas:Canvas,w:Float,h:Float,next:ClusterTurnGuidance,box:RectF) {
+        val wood=theme.layout==ClusterTheme.Layout.WOODLAND_RETREAT
+        val gold=theme.layout==ClusterTheme.Layout.AURUM_TOUR
+        val radius=if(wood) .10f*h else .025f*h
+        if(gold) {
+            val p=Path().apply{moveTo(box.left+.035f*w,box.top);lineTo(box.right,box.top);lineTo(box.right,box.bottom);lineTo(box.left+.035f*w,box.bottom);lineTo(box.left,box.centerY());close()}
+            canvas.save();canvas.translate(0f,.01f*h);fill.color=Color.argb(120,0,0,0);canvas.drawPath(p,fill);canvas.restore()
+            fill.shader=LinearGradient(box.left,box.top,box.right,box.bottom,Color.rgb(43,42,36),Color.rgb(4,8,12),Shader.TileMode.CLAMP);canvas.drawPath(p,fill);fill.shader=null
+            line.shader=LinearGradient(box.left,box.top,box.right,box.bottom,Color.rgb(246,225,163),Color.rgb(100,89,62),Shader.TileMode.CLAMP)
+            line.strokeWidth=.003f*h;canvas.drawPath(p,line);line.shader=null
+        } else materialPanel(canvas,box,radius,wood,wood)
+        val pad=if(gold) .045f*w else .020f*w
+        val side=.11f*h;val x=box.left+pad;val y=box.top+.045f*h
+        val icon=if(next.icon in HudRoundaboutGlyph.ICONS) {roundabout.exitNumber=next.roundaboutExit;roundabout.setTint(theme.text);roundabout}
+            else ContextCompat.getDrawable(context,clusterTurnGlyphRes(next.icon))?.mutate()?.apply{setTint(theme.text)}
+        icon?.setBounds(x.toInt(),y.toInt(),(x+side).toInt(),(y+side).toInt());icon?.draw(canvas)
+        val tx=x+side+.02f*h;val available=box.right-tx-.02f*w
+        studioText(canvas,distanceLabel(next.distanceMeters),tx,y+.046f*h,.052f*h,weight=500,width=available)
+        val road=if(next.roundaboutExit in 1..9) context.getString(R.string.turn_card_exit,next.roundaboutExit) else next.road
+        if(road.isNotBlank()) studioText(canvas,road,tx,y+.105f*h,.037f*h,theme.accent,width=available)
+        journeyLine(next)?.let{
+            val divider=box.bottom-.068f*h
+            line.color=withAlpha(theme.accent,80);line.strokeWidth=.0013f*h;canvas.drawLine(box.left+pad,divider,box.right-.02f*w,divider,line)
+            studioText(canvas,it,box.left+pad,box.bottom-.025f*h,.027f*h,theme.secondary,width=box.width()-pad-.02f*w)
+        }
     }
 
     // ---- Isar Drive: chevron instruments over a full-width map ------------------------------
@@ -2124,6 +2353,9 @@ internal class ThemedClusterView(
      */
     private fun directionsBox(w: Float, h: Float, withJourney: Boolean): RectF {
         when (theme.layout) {
+            ClusterTheme.Layout.SMOKED_GLASS -> return RectF(.71f*w,.37f*h,.97f*w,(if(withJourney) .66f else .59f)*h)
+            ClusterTheme.Layout.AURUM_TOUR -> return RectF(.70f*w,.34f*h,.995f*w,(if(withJourney) .64f else .58f)*h)
+            ClusterTheme.Layout.WOODLAND_RETREAT -> return RectF(.715f*w,.35f*h,.98f*w,(if(withJourney) .70f else .63f)*h)
             ClusterTheme.Layout.TURBINE_LUXURY -> return RectF(.62f*w, .17f*h, .975f*w, (if(withJourney) .40f else .35f)*h)
             ClusterTheme.Layout.PERFORMANCE_COCKPIT -> return RectF(.49f*w, .60f*h, .79f*w, (if(withJourney) .86f else .81f)*h)
             ClusterTheme.Layout.MUSIC_PANORAMA -> return RectF(.65f*w, .20f*h, .97f*w, (if(withJourney) .43f else .36f)*h)
@@ -2163,6 +2395,10 @@ internal class ThemedClusterView(
     private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance,
                          box: RectF = RectF(CARD_LEFT * w, CARD_TOP * h, CARD_RIGHT * w, CARD_BOTTOM * h)) {
         val s = h / 720f
+        if (theme.layout in setOf(ClusterTheme.Layout.SMOKED_GLASS, ClusterTheme.Layout.AURUM_TOUR, ClusterTheme.Layout.WOODLAND_RETREAT)) {
+            drawAtelierDirections(canvas,w,h,next,box)
+            return
+        }
         if (isConceptLayout()) {
             drawConceptDirections(canvas, w, h, next, box)
             return
