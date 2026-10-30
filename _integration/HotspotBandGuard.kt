@@ -76,23 +76,41 @@ internal object HotspotBandGuard {
                 }
                 fun hasBand(nodes: List<Node>) = nodes.any { it.text.equals("AP Band", true) }
                 fun tap(node: Node) { sh("input tap ${node.x} ${node.y}") }
-                fun inFront() = sh("dumpsys activity activities | grep -m1 mResumedActivity").contains(HOTSPOT_APP)
-                fun leave() { repeat(3) { if (inFront()) { sh("input keyevent 4"); pause(500) } } }
+                /** True while a settings screen, not Di-Connect, is in front. */
+                fun inFront() = sh("dumpsys activity activities | grep -m1 mResumedActivity").let {
+                    !it.contains(context.packageName) && (it.contains(HOTSPOT_APP) || it.contains("settings", true))
+                }
+                fun leave() { repeat(6) { if (inFront()) { sh("input keyevent 4"); pause(500) } } }
                 fun isFive(text: String) = Regex("""\b5(\.0)?\s*G""", RegexOption.IGNORE_CASE).containsMatchIn(text)
+                fun squash(t: String) = t.lowercase().replace("-", "").replace(" ", "").replace("&", "")
 
                 val before = frequency()
                 if (before != null && before < 3000) Log.w(TAG, "hotspot is on 2.4 GHz ($before MHz); switching to 5 GHz")
-                sh("am start -n $HOTSPOT_APP/.MainActivity >/dev/null 2>&1")
-                pause(1800)
-                fun isHotspotRow(n: Node) = n.text.lowercase().let { it.replace("-", "").replace(" ", "").startsWith("wifihotspot") }
-                var nodes = screenUntil { hasBand(it) || it.any(::isHotspotRow) }
-                // The app opens on "Hotspot & tethering": tap the "Wi-Fi hotspot" row, not the title.
-                if (!hasBand(nodes)) {
-                    nodes.firstOrNull(::isHotspotRow)?.let { tap(it); pause(1500); nodes = screenUntil { n -> hasBand(n) || n.any { it.text.equals("Advanced", true) } } }
+                // Straight to the hotspot page where the car allows it; otherwise the car's settings app.
+                val direct = listOf("com.android.settings.WIFI_TETHER_SETTINGS", "android.settings.TETHER_SETTINGS")
+                var nodes: List<Node> = emptyList()
+                for (action in direct) {
+                    sh("am start -a $action >/dev/null 2>&1"); pause(1500)
+                    nodes = screen()
+                    if (hasBand(nodes) || nodes.any { squash(it.text).startsWith("wifihotspot") || squash(it.text) == "advanced" }) break
                 }
-                // AP Band sits under a collapsed "Advanced" row.
-                if (!hasBand(nodes)) {
-                    nodes.firstOrNull { it.text.trim().equals("Advanced", true) }?.let { tap(it); pause(1000); nodes = screenUntil(::hasBand) }
+                if (!hasBand(nodes) && nodes.none { squash(it.text).startsWith("wifihotspot") }) {
+                    sh("am start -n $HOTSPOT_APP/.MainActivity >/dev/null 2>&1"); pause(1800)
+                    nodes = screen()
+                }
+                // From whichever page opened, step towards AP Band: each step taps the deepest entry on
+                // screen, so it works from the main menu, "Hotspot & tethering" or the hotspot page.
+                val path = listOf<(String) -> Boolean>(
+                    { it == "advanced" },
+                    { it.startsWith("wifihotspot") },
+                    { it.startsWith("hotspottethering") || it == "hotspot" || it == "tethering" || it.startsWith("hotspotandtethering") },
+                    { it.startsWith("networkinternet") || it.startsWith("networkandinternet") || it == "network" || it == "wlan" },
+                )
+                repeat(6) {
+                    if (hasBand(nodes)) return@repeat
+                    val next = path.firstNotNullOfOrNull { match -> nodes.firstOrNull { match(squash(it.text)) } } ?: return@repeat
+                    tap(next); pause(1300)
+                    nodes = screenUntil { n -> hasBand(n) || n.any { node -> path.any { it(squash(node.text)) } && node.text != next.text } }
                 }
                 val band = nodes.indexOfFirst { it.text.equals("AP Band", true) }
                 if (band < 0) {
