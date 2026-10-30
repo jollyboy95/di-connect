@@ -950,7 +950,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     override fun onPause() {
         isForeground = false
         AppLog.i("AapProjectionActivity: onPause")
-        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()
         super.onPause()
         RenameNotice.dismiss()
         // Clear any activity-local fullscreen override when leaving the Activity so
@@ -1807,6 +1807,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private val bydFullscreen = com.andrerinas.openheadunit.utils.BydFullscreen()
 
     override fun onDestroy() {
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)
         bydFullscreen.release()
         super.onDestroy()
         if (isFinishReceiverRegistered) {

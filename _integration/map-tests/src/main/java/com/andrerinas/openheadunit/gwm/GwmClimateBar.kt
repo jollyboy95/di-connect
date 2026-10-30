@@ -6,22 +6,18 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
-import android.graphics.PixelFormat
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.media.AudioManager
-import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.os.Parcel
-import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
-import android.view.WindowManager
 import com.andrerinas.openheadunit.utils.AppLog
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -35,7 +31,7 @@ import kotlin.math.roundToInt
  * uses; the car only acts on changes sent as its voice assistant (measured on the H7). Android Auto
  * is told to keep its own controls above the strip ([insetFraction]), so nothing is hidden.
  */
-internal object GwmClimateBar {
+object GwmClimateBar {
     private const val PREF = "climate-bar"
     /** Height of the strip as a fraction of the screen height. */
     const val HEIGHT_FRACTION = .11f
@@ -49,28 +45,38 @@ internal object GwmClimateBar {
 
     private var view: BarView? = null
 
-    fun show(context: Context) {
-        if (view != null || !enabled(context) || !GwmMode.active(context)) return
-        if (!Settings.canDrawOverlays(context)) { AppLog.w("ClimateBar: no overlay permission"); return }
-        val app = context.applicationContext
-        val wm = app.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val height = (app.resources.displayMetrics.heightPixels * HEIGHT_FRACTION).roundToInt()
-        val bar = BarView(app)
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT, height,
-            if (Build.VERSION.SDK_INT >= 26) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT).apply { gravity = Gravity.BOTTOM or Gravity.START }
-        runCatching { wm.addView(bar, params); view = bar; bar.start() }
-            .onFailure { AppLog.w("ClimateBar: could not show: ${it.message}") }
+    /**
+     * Presses the car's own volume key (true = up). Set by Di-Connect at start-up: the H7 ignores
+     * Android's media volume, but obeys its volume keys, as on the steering wheel.
+     */
+    @Volatile var volumeKey: ((Boolean) -> Unit)? = null
+
+    /**
+     * Adds the strip to the Android Auto screen's own window, so anything the car opens on top
+     * (its climate screen, settings, launcher) covers it like the rest of Android Auto.
+     */
+    fun show(activity: android.app.Activity) {
+        if (!enabled(activity) || !GwmMode.active(activity)) return
+        val root = activity.window?.decorView as? android.view.ViewGroup ?: return
+        view?.let { if (it.parent === root) { it.start(); return } else hide(activity) }
+        val height = (activity.resources.displayMetrics.heightPixels * HEIGHT_FRACTION).roundToInt()
+        val bar = BarView(activity.applicationContext)
+        runCatching {
+            root.addView(bar, android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, height, Gravity.BOTTOM))
+            bar.elevation = 1000f
+            view = bar
+            bar.start()
+        }.onFailure { AppLog.w("ClimateBar: could not show: ${it.message}") }
     }
 
-    fun hide(context: Context) {
+    /** Stops reading the car while Android Auto is not in front. */
+    fun pause() { view?.stop() }
+
+    fun hide(activity: android.app.Activity) {
         val bar = view ?: return
         view = null
         bar.stop()
-        runCatching { (context.applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager).removeView(bar) }
+        (bar.parent as? android.view.ViewGroup)?.removeView(bar)
     }
 
     // ---- car values -------------------------------------------------------------------------
@@ -126,8 +132,8 @@ internal object GwmClimateBar {
     @SuppressLint("ViewConstructor")
     private class BarView(context: Context) : View(context) {
         private val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        private val worker = HandlerThread("climate-bar").apply { start() }
-        private val io = Handler(worker.looper)
+        private var worker: HandlerThread? = null
+        private var io: Handler = Handler(Looper.getMainLooper())
         private val main = Handler(Looper.getMainLooper())
         @Volatile private var values: Map<String, Float> = emptyMap()
         /** A just-tapped value shown at once, until the car reports it back. */
@@ -148,8 +154,19 @@ internal object GwmClimateBar {
             }
         }
 
-        fun start() { io.post(poll) }
-        fun stop() { io.removeCallbacksAndMessages(null); worker.quitSafely() }
+        fun start() {
+            if (worker != null) return
+            val thread = HandlerThread("climate-bar").apply { start() }
+            worker = thread
+            io = Handler(thread.looper)
+            io.post(poll)
+        }
+        fun stop() {
+            val thread = worker ?: return
+            io.removeCallbacksAndMessages(null)
+            thread.quitSafely()
+            worker = null
+        }
 
         private fun value(key: String): Float? {
             pending[key]?.let { (v, at) ->
@@ -178,9 +195,18 @@ internal object GwmClimateBar {
             set(key, target.toFloat(), target.toString())
         }
 
+        /** The H7 fan runs 1 to 7. */
+        private fun stepFan(delta: Int) {
+            val current = value(FAN)?.toInt() ?: return
+            val target = (current + delta).coerceIn(1, 7)
+            if (target != current) set(FAN, target.toFloat(), target.toString())
+        }
+
         private fun stepVolume(delta: Int) {
-            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, if (delta > 0) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER, 0)
-            invalidate()
+            val key = volumeKey
+            if (key != null) io.post { runCatching { key(delta > 0) } }
+            else audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, if (delta > 0) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
+                AudioManager.FLAG_SHOW_UI)
         }
 
         override fun onDraw(canvas: Canvas) {
@@ -240,27 +266,53 @@ internal object GwmClimateBar {
                 buttons += RectF(l, 0f, r, h) to { cycleVent(key) }
             }
 
-            // Left, passenger side: volume, temperature, seat ventilation.
-            pill(16f * u, 400f * u); caption("VOLUME", 16f * u, 400f * u)
-            button(64f * u, "−") { stepVolume(-1) }
-            val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
-            val level = audio.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / max
-            val bl = 110f * u; val br = 306f * u
-            fill.color = Color.rgb(40, 56, 80); canvas.drawRoundRect(RectF(bl, cy - 6f * u, br, cy + 6f * u), 6f * u, 6f * u, fill)
-            fill.color = accent; canvas.drawRoundRect(RectF(bl, cy - 6f * u, bl + (br - bl) * level, cy + 6f * u), 6f * u, 6f * u, fill)
-            button(352f * u, "+") { stepVolume(1) }
-            temp(PASS_TEMP, 420f * u, 760f * u, "PASSENGER")
-            vent(PASS_VENT, 776f * u, 900f * u, "SEAT")
+            fun fan(l: Float, r: Float) {
+                val ac = (value(AC) ?: 0f) > .5f
+                pill(l, r); caption(if (ac) "FAN  ·  A/C ON" else "FAN", l, r)
+                button(l + 46f * u, "−") { stepFan(-1) }
+                button(r - 46f * u, "+") { stepFan(1) }
+                val speed = value(FAN)?.toInt() ?: 0
+                val bars = 7
+                val bw = 10f * u
+                val gap = 6f * u
+                val total = bars * bw + (bars - 1) * gap
+                var bx = (l + r) / 2f - total / 2f
+                for (i in 0 until bars) {
+                    val bh = (10f + i * 4.5f) * u
+                    fill.color = if (i < speed) accent else Color.rgb(50, 66, 90)
+                    canvas.drawRoundRect(RectF(bx, cy + 20f * u - bh, bx + bw, cy + 20f * u), 3f * u, 3f * u, fill)
+                    bx += bw + gap
+                }
+            }
 
-            // Centre: what the physical buttons set, shown for reference.
-            val fan = value(FAN)?.toInt()
-            val ac = (value(AC) ?: 0f) > .5f
-            label(listOfNotNull(if (ac) "A/C" else "A/C off", fan?.let { "Fan $it" }).joinToString("   ·   "),
-                w / 2f, cy + 12f * u, 30f * u, if (ac) accent else Color.rgb(150, 170, 195), bold = true)
+            // Evenly across the width. Right-hand drive: passenger on the left, driver on the right.
+            val margin = 16f * u
+            val space = 14f * u
+            val weights = floatArrayOf(2.4f, 3.0f, 1.35f, 3.3f, 1.35f, 3.0f)
+            val unit = (w - 2f * margin - space * (weights.size - 1)) / weights.sum()
+            val edges = ArrayList<Pair<Float, Float>>()
+            var x0 = margin
+            for (wt in weights) { edges += x0 to (x0 + wt * unit); x0 += wt * unit + space }
 
-            // Right, driver side: seat ventilation then temperature, nearest the driver.
-            vent(DRIVER_VENT, w - 900f * u, w - 776f * u, "SEAT")
-            temp(DRIVER_TEMP, w - 760f * u, w - 420f * u, "DRIVER")
+            // Volume uses the car's own volume keys, so no level here; the car shows its own.
+            val (vl, vr) = edges[0]
+            pill(vl, vr); caption("VOLUME", vl, vr)
+            button(vl + 46f * u, "−") { stepVolume(-1) }
+            button(vr - 46f * u, "+") { stepVolume(1) }
+            val sx = (vl + vr) / 2f
+            fill.color = Color.rgb(235, 240, 248)
+            val speaker = android.graphics.Path().apply {
+                moveTo(sx - 16f * u, cy - 8f * u); lineTo(sx - 6f * u, cy - 8f * u); lineTo(sx + 6f * u, cy - 20f * u)
+                lineTo(sx + 6f * u, cy + 20f * u); lineTo(sx - 6f * u, cy + 8f * u); lineTo(sx - 16f * u, cy + 8f * u); close()
+            }
+            canvas.drawPath(speaker, fill)
+            stroke.color = Color.rgb(235, 240, 248); stroke.strokeWidth = 3f * u
+            for (r in listOf(12f, 22f)) canvas.drawArc(RectF(sx + 4f * u - r * u, cy - r * u, sx + 4f * u + r * u, cy + r * u), -45f, 90f, false, stroke)
+            temp(PASS_TEMP, edges[1].first, edges[1].second, "PASSENGER")
+            vent(PASS_VENT, edges[2].first, edges[2].second, "SEAT")
+            fan(edges[3].first, edges[3].second)
+            vent(DRIVER_VENT, edges[4].first, edges[4].second, "SEAT")
+            temp(DRIVER_TEMP, edges[5].first, edges[5].second, "DRIVER")
         }
 
         @SuppressLint("ClickableViewAccessibility")

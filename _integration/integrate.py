@@ -2801,3 +2801,13 @@ edit(dest/'src/main/java/com/andrerinas/openheadunit/aap/AapProjectionActivity.k
      """        isForeground = false
         AppLog.i("AapProjectionActivity: onPause")
         com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)"""))
+
+# Climate strip lives in the Android Auto activity's window; reading stops when it pauses.
+edit(dest/'src/main/java/com/andrerinas/openheadunit/aap/AapProjectionActivity.kt',
+    ('        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)\n',
+     '        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()\n'),
+    ('    override fun onDestroy() {\n        bydFullscreen.release()',
+     '    override fun onDestroy() {\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)\n        bydFullscreen.release()'))
+# The strip's volume buttons press the car's own volume keys over local ADB (kept on by AdbSwitch).
+edit(D,('        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()\n',
+        Path('target/_integration/volume-hook.kt').read_text()))
