@@ -60,6 +60,7 @@ internal object HotspotBandGuard {
                 fun sh(command: String) = adb.shell(command, 10_000).orEmpty()
                 fun frequency() = Regex("""mReportedFrequency:\s*(\d+)""").find(sh("dumpsys wifi | grep -m1 mReportedFrequency"))
                     ?.groupValues?.get(1)?.toIntOrNull()
+                fun pause(ms: Long) = Thread.sleep(ms)
                 fun screen(): List<Node> {
                     sh("uiautomator dump $DUMP >/dev/null 2>&1")
                     return NODE.findAll(sh("cat $DUMP")).map {
@@ -75,7 +76,6 @@ internal object HotspotBandGuard {
                 }
                 fun hasBand(nodes: List<Node>) = nodes.any { it.text.equals("AP Band", true) }
                 fun tap(node: Node) { sh("input tap ${node.x} ${node.y}") }
-                fun pause(ms: Long) = Thread.sleep(ms)
                 fun inFront() = sh("dumpsys activity activities | grep -m1 mResumedActivity").contains(HOTSPOT_APP)
                 fun leave() { repeat(3) { if (inFront()) { sh("input keyevent 4"); pause(500) } } }
                 fun isFive(text: String) = Regex("""\b5(\.0)?\s*G""", RegexOption.IGNORE_CASE).containsMatchIn(text)
