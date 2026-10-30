@@ -34,7 +34,7 @@ import kotlin.math.roundToInt
 object GwmClimateBar {
     private const val PREF = "climate-bar"
     /** Height of the strip as a fraction of the screen height. */
-    const val HEIGHT_FRACTION = .11f
+    const val HEIGHT_FRACTION = .075f
 
     private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(GwmSettings.PREFS, Context.MODE_PRIVATE)
     fun enabled(context: Context) = prefs(context).getBoolean(PREF, false)
