@@ -524,6 +524,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
     }
     private fun consumeBluetoothAutoConnectIntent(intent: Intent): Boolean {
+        if (intent.getBooleanExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO, false)) {
+            intent.removeExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO)
+            if (!com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this))
+                handler.post { if (!isFinishing && !isDestroyed) connectAndroidAuto(choosePhoneIfNeeded = false) }
+            return false
+        }
         val requested = intent.getBooleanExtra(PhoneBluetoothReceiver.EXTRA_AUTO_CONNECT, false)
         intent.removeExtra(PhoneBluetoothReceiver.EXTRA_AUTO_CONNECT)
         return requested && DiPlayPreferences.connectOnPhoneBluetooth(this) &&
@@ -6657,6 +6663,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")
         appendLine(HotspotBandProbe.report())
         appendLine(HotspotBandGuard.report())
+        appendLine(DiConnectPhoneWake.report())
         appendLine(AdbSwitch.report(appContext))
         appendLine(WheelKeyService.report(appContext))
         WheelKeyLog.report(WheelKeyService.connected()).forEach { appendLine(it) }

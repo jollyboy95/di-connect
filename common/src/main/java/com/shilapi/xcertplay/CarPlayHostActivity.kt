@@ -1190,6 +1190,7 @@ class CarPlayHostActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         WheelKeyService.restoreIfNeeded(this)
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
         hostAppearanceResumed = true
         updateCallPopupGuard()
         val savedNightMode = AirPlayPersistence.loadCarPlayNightMode(this)
@@ -1956,6 +1957,7 @@ class CarPlayHostActivity : ComponentActivity() {
         updateCallPopupGuard()
         AppAppearanceRuntime.clearHost(this)
         nightModeController.pause()
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()
         super.onPause()
     }
 
@@ -2058,6 +2060,7 @@ class CarPlayHostActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)
         runCatching { unregisterReceiver(bluetoothOnReceiver) }
         runCatching { unregisterReceiver(gwmRouteSettingsReceiver) }
         mainHandler.removeCallbacks(hideTemporarySystemBars)
@@ -5087,7 +5090,15 @@ class CarPlayHostActivity : ComponentActivity() {
         val disableSafeArea = mainDisplayDisableSafeArea || nativeMasks
         val display = scaledDisplay.copy(
             safeArea = if (disableSafeArea) null else AirPlaySafeArea.toInsets(
-                mapping = AirPlayPersistence.loadSafeAreaRect(this, size.width, size.height),
+                mapping = AirPlayPersistence.loadSafeAreaRect(this, size.width, size.height).let { saved ->
+                    val strip = com.andrerinas.openheadunit.gwm.GwmClimateBar.insetFraction(this)
+                    if (strip <= 0f) saved else {
+                        val base = saved ?: com.shilapi.xcertplay.airplay.AirPlaySafeArea.full(size.width, size.height)
+                        val limit = (size.height * (1f - strip)).toInt()
+                        if (base.bottom <= limit) base
+                        else com.shilapi.xcertplay.airplay.SafeAreaRect(base.left, base.top, base.right, maxOf(base.top + 1, limit))
+                    }
+                },
                 activityWidthPixels = size.width,
                 activityHeightPixels = size.height,
                 displayWidthPixels = scaledDisplay.widthPixels,

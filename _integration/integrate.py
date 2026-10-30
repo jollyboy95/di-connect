@@ -2816,3 +2816,49 @@ edit(D,('        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on")
 edit(root/'common/src/main/java/com/shilapi/xcertplay/BootReceiver.kt',
     ('        PhoneAudioRoute.attach(context)\n', '        PhoneAudioRoute.attach(context)\n        AdbSwitch.keepOn(context)\n'))
 edit(D,('        appendLine(HotspotBandGuard.report())\n', '        appendLine(HotspotBandGuard.report())\n        appendLine(AdbSwitch.report(appContext))\n'))
+
+# One primary phone (Oct 2026). With Android Auto as what Di-Connect opens with and an Android phone
+# chosen, that phone reaching the car's Bluetooth connects Android Auto (over CarPlay if needed), and
+# an iPhone reaching it no longer starts CarPlay; CarPlay stays a tap away.
+(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPhoneWake.kt').write_text(
+    Path('target/_integration/DiConnectPhoneWake.kt').read_text())
+edit(root/'common/src/main/java/com/shilapi/xcertplay/PhoneBluetoothReceiver.kt',
+    ('''        if (intent.action != BluetoothDevice.ACTION_ACL_CONNECTED ||
+            !DiPlayPreferences.connectOnPhoneBluetooth(context) ||
+            CarPlayBackgroundSession.hasSession()) return''',
+     '''        if (intent.action != BluetoothDevice.ACTION_ACL_CONNECTED) return
+        if (DiConnectPhoneWake.handle(context, intent)) return
+        if (!DiPlayPreferences.connectOnPhoneBluetooth(context) ||
+            CarPlayBackgroundSession.hasSession()) return'''))
+edit(D,('    private fun consumeBluetoothAutoConnectIntent(intent: Intent): Boolean {\n',
+    '''    private fun consumeBluetoothAutoConnectIntent(intent: Intent): Boolean {
+        if (intent.getBooleanExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO, false)) {
+            intent.removeExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO)
+            if (!com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this))
+                handler.post { if (!isFinishing && !isDestroyed) connectAndroidAuto(choosePhoneIfNeeded = false) }
+            return false
+        }
+'''),
+    ('        appendLine(HotspotBandGuard.report())\n', '        appendLine(HotspotBandGuard.report())\n        appendLine(DiConnectPhoneWake.report())\n'))
+
+# Climate strip on CarPlay too: the same strip in CarPlay's window, and CarPlay's safe area ends
+# above it so the iPhone keeps its controls clear of the strip.
+host_cp = root/'common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt'
+edit(host_cp,
+    ('        super.onResume()\n        WheelKeyService.restoreIfNeeded(this)\n',
+     '        super.onResume()\n        WheelKeyService.restoreIfNeeded(this)\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)\n'),
+    ('        nightModeController.pause()\n        super.onPause()',
+     '        nightModeController.pause()\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()\n        super.onPause()'),
+    ('    override fun onDestroy() {\n        runCatching { unregisterReceiver(bluetoothOnReceiver) }',
+     '    override fun onDestroy() {\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)\n        runCatching { unregisterReceiver(bluetoothOnReceiver) }'),
+    ('                mapping = AirPlayPersistence.loadSafeAreaRect(this, size.width, size.height),\n                activityWidthPixels = size.width,',
+     '''                mapping = AirPlayPersistence.loadSafeAreaRect(this, size.width, size.height).let { saved ->
+                    val strip = com.andrerinas.openheadunit.gwm.GwmClimateBar.insetFraction(this)
+                    if (strip <= 0f) saved else {
+                        val base = saved ?: com.shilapi.xcertplay.airplay.AirPlaySafeArea.full(size.width, size.height)
+                        val limit = (size.height * (1f - strip)).toInt()
+                        if (base.bottom <= limit) base
+                        else com.shilapi.xcertplay.airplay.SafeAreaRect(base.left, base.top, base.right, maxOf(base.top + 1, limit))
+                    }
+                },
+                activityWidthPixels = size.width,'''))
