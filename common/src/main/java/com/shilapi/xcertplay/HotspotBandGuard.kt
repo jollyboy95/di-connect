@@ -38,7 +38,19 @@ internal object HotspotBandGuard {
         if (checkedThisRun || !enabled(context)) return
         checkedThisRun = true
         val app = context.applicationContext
-        Thread({ ensureFiveGhz(app) }, "hotspot-band-guard").start()
+        // Straight after the head unit boots, adbd is often not listening yet, and the car has
+        // usually put the band back to Both at that same boot. Keep trying until ADB answers.
+        Thread({
+            val deadline = System.currentTimeMillis() + 5 * 60_000L
+            var result = ensureFiveGhz(app)
+            var tries = 1
+            while (result.contains("Local ADB not available") && System.currentTimeMillis() < deadline) {
+                runCatching { Thread.sleep(if (tries < 6) 10_000L else 30_000L) }
+                tries++
+                result = ensureFiveGhz(app)
+            }
+            if (tries > 1) last = "$last (attempt $tries)"
+        }, "hotspot-band-guard").start()
     }
 
     private data class Node(val text: String, val x: Int, val y: Int)
