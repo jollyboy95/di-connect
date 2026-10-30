@@ -1120,13 +1120,14 @@ internal class ThemedClusterView(
         val current = smoothAmps
         val now = SystemClock.uptimeMillis()
         if (target == null || current == null || preview) { smoothAmps = target; smoothAt = now; return }
-        val dt = (now - smoothAt).coerceIn(0L, 250L)
+        val dt = (now - smoothAt).coerceIn(0L, 400L)
         smoothAt = now
         val next = current + (target - current) * (1f - kotlin.math.exp(-dt / SMOOTH_MS).toFloat())
         val settled = kotlin.math.abs(target - next) < SMOOTH_SETTLE_AMPS
         smoothAmps = if (settled) target else next
-        // About 30 frames a second while gliding, then nothing until the next reading.
-        if (!settled) { removeCallbacks(smoothTick); postDelayed(smoothTick, 33L) }
+        // About 12 frames a second while gliding, then nothing until the next reading. Kept low so a
+        // busy theme never competes with the car's audio for the processor.
+        if (!settled) { removeCallbacks(smoothTick); postDelayed(smoothTick, 80L) }
     }
 
     // ---- wavy music progress -----------------------------------------------------------------
@@ -3677,8 +3678,9 @@ internal class ThemedClusterView(
         const val RIGHT_LEFT = .70f
         const val RIGHT_RIGHT = .97f
         /** How quickly a power reading glides to a new value; about 1 s to settle. */
-        const val SMOOTH_MS = 280.0
-        const val SMOOTH_SETTLE_AMPS = .15f
+        const val SMOOTH_MS = 300.0
+        /** About 0.3 kW: closer than this the bar stops gliding and shows the reading. */
+        const val SMOOTH_SETTLE_AMPS = 1f
         private val FUEL_GOLD = Color.rgb(255, 196, 64)
         const val SIDEBAR_RIGHT = .205f
         const val DECK_TOP = .84f
