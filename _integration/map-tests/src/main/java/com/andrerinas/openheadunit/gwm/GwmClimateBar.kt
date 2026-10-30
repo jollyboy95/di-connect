@@ -85,6 +85,12 @@ object GwmClimateBar {
     private const val DESCRIPTOR = "com.gwm.android.adapter.IGwmAdapterService"
     /** The car takes climate changes only from its voice assistant (H7, Oct 2026). */
     private const val CALLER = "com.gwm.voiceassistantoversea"
+    /** Quiet time after the last tap before the value is sent. */
+    private const val SETTLE_MS = 450L
+    /** How long the car gets to apply a write before it is checked. */
+    private const val VERIFY_MS = 1800L
+    /** How long a tapped value is shown before the car's own reading wins again. */
+    private const val HOLD_MS = 6000L
     const val DRIVER_TEMP = "car.hvac.driver_temperature"
     const val PASS_TEMP = "car.hvac.pass_temperature"
     const val DRIVER_VENT = "car.comfort_setting.driver_seat_ventilation_level_nine"
@@ -137,7 +143,7 @@ object GwmClimateBar {
         private val main = Handler(Looper.getMainLooper())
         @Volatile private var values: Map<String, Float> = emptyMap()
         /** A just-tapped value shown at once, until the car reports it back. */
-        private val pending = HashMap<String, Pair<Float, Long>>()
+        private val pending = java.util.concurrent.ConcurrentHashMap<String, Pair<Float, Long>>()
         private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
         private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
         private val text = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -170,16 +176,35 @@ object GwmClimateBar {
 
         private fun value(key: String): Float? {
             pending[key]?.let { (v, at) ->
-                if (System.currentTimeMillis() - at < 3000 && values[key] != v) return v
+                if (System.currentTimeMillis() - at < HOLD_MS && values[key] != v) return v
                 pending.remove(key)
             }
             return values[key]
         }
 
+        /**
+         * Shows the new value at once and sends one absolute value once the taps stop. The H7
+         * drops writes that arrive while it is still applying the last one, so a quick run of
+         * taps used to land as a single step and the display then jumped back. Each key gets one
+         * write per burst, and one resend if the car has not taken it within a couple of seconds.
+         */
         private fun set(key: String, v: Float, wire: String) {
             pending[key] = v to System.currentTimeMillis()
             invalidate()
-            io.post { write(key, wire); val now = read(context); main.post { values = now; invalidate() } }
+            io.removeCallbacksAndMessages(key)
+            io.postAtTime({ send(key, v, wire, retry = true) }, key, android.os.SystemClock.uptimeMillis() + SETTLE_MS)
+        }
+
+        private fun send(key: String, v: Float, wire: String, retry: Boolean) {
+            write(key, wire)
+            AppLog.i("ClimateBar: wrote $key=$wire")
+            io.postAtTime({
+                val now = read(context)
+                if (retry && now[key] != null && now[key] != v && pending[key]?.first == v) {
+                    AppLog.i("ClimateBar: $key reads ${now[key]}, resending $wire")
+                    send(key, v, wire, retry = false)
+                } else main.post { values = now; invalidate() }
+            }, key, android.os.SystemClock.uptimeMillis() + VERIFY_MS)
         }
 
         private fun stepTemp(key: String, delta: Float) {
