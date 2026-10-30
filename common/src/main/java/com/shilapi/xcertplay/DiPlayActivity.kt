@@ -526,7 +526,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     private fun consumeBluetoothAutoConnectIntent(intent: Intent): Boolean {
         if (intent.getBooleanExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO, false)) {
             intent.removeExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO)
-            if (!com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this))
+            if (!com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this) && !CarPlayBackgroundSession.hasSession())
                 handler.post { if (!isFinishing && !isDestroyed) connectAndroidAuto(choosePhoneIfNeeded = false) }
             return false
         }

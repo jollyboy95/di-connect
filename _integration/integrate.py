@@ -2818,8 +2818,8 @@ edit(root/'common/src/main/java/com/shilapi/xcertplay/BootReceiver.kt',
 edit(D,('        appendLine(HotspotBandGuard.report())\n', '        appendLine(HotspotBandGuard.report())\n        appendLine(AdbSwitch.report(appContext))\n'))
 
 # One primary phone (Oct 2026). With Android Auto as what Di-Connect opens with and an Android phone
-# chosen, that phone reaching the car's Bluetooth connects Android Auto (over CarPlay if needed), and
-# an iPhone reaching it no longer starts CarPlay; CarPlay stays a tap away.
+# chosen, that phone reaching the car's Bluetooth connects Android Auto, and an iPhone reaching it
+# no longer starts CarPlay; CarPlay stays a tap (or a USB cable) away and is never taken over.
 (root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPhoneWake.kt').write_text(
     Path('target/_integration/DiConnectPhoneWake.kt').read_text())
 edit(root/'common/src/main/java/com/shilapi/xcertplay/PhoneBluetoothReceiver.kt',
@@ -2834,7 +2834,7 @@ edit(D,('    private fun consumeBluetoothAutoConnectIntent(intent: Intent): Bool
     '''    private fun consumeBluetoothAutoConnectIntent(intent: Intent): Boolean {
         if (intent.getBooleanExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO, false)) {
             intent.removeExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO)
-            if (!com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this))
+            if (!com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this) && !CarPlayBackgroundSession.hasSession())
                 handler.post { if (!isFinishing && !isDestroyed) connectAndroidAuto(choosePhoneIfNeeded = false) }
             return false
         }
