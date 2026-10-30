@@ -43,6 +43,10 @@ internal object HotspotBandGuard {
 
     private data class Node(val text: String, val x: Int, val y: Int)
 
+    /** Plain text: XML entities decoded and Android's non-breaking hyphens made ordinary. */
+    private fun norm(t: String) = t.replace("&amp;", "&").replace("&#8209;", "-").replace('\u2011', '-').replace('\u2010', '-')
+        .replace('\u00a0', ' ').trim()
+
     private val NODE = Regex("""<node\b[^>]*?\btext="([^"]*)"[^>]*?\bbounds="\[(\d+),(\d+)]\[(\d+),(\d+)]"""")
 
     /** Blocking. Returns what happened, in one line. */
@@ -60,9 +64,16 @@ internal object HotspotBandGuard {
                     sh("uiautomator dump $DUMP >/dev/null 2>&1")
                     return NODE.findAll(sh("cat $DUMP")).map {
                         val (t, a, b, c, d) = it.destructured
-                        Node(t.replace("&amp;", "&"), (a.toInt() + c.toInt()) / 2, (b.toInt() + d.toInt()) / 2)
+                        Node(norm(t), (a.toInt() + c.toInt()) / 2, (b.toInt() + d.toInt()) / 2)
                     }.filter { it.text.isNotBlank() }.toList()
                 }
+                /** Reads the screen until [found] matches or about 5 s pass, for a page still loading. */
+                fun screenUntil(found: (List<Node>) -> Boolean): List<Node> {
+                    var nodes = screen()
+                    repeat(4) { if (found(nodes)) return nodes; pause(1200); nodes = screen() }
+                    return nodes
+                }
+                fun hasBand(nodes: List<Node>) = nodes.any { it.text.equals("AP Band", true) }
                 fun tap(node: Node) { sh("input tap ${node.x} ${node.y}") }
                 fun pause(ms: Long) = Thread.sleep(ms)
                 fun inFront() = sh("dumpsys activity activities | grep -m1 mResumedActivity").contains(HOTSPOT_APP)
@@ -73,22 +84,25 @@ internal object HotspotBandGuard {
                 if (before != null && before < 3000) Log.w(TAG, "hotspot is on 2.4 GHz ($before MHz); switching to 5 GHz")
                 sh("am start -n $HOTSPOT_APP/.MainActivity >/dev/null 2>&1")
                 pause(1800)
-                var nodes = screen()
+                fun isHotspotRow(n: Node) = n.text.lowercase().let { it.replace("-", "").replace(" ", "").startsWith("wifihotspot") }
+                var nodes = screenUntil { hasBand(it) || it.any(::isHotspotRow) }
                 // The app opens on "Hotspot & tethering": tap the "Wi-Fi hotspot" row, not the title.
-                if (nodes.none { it.text.equals("AP Band", true) }) {
-                    nodes.firstOrNull { it.text.trim().equals("Wi-Fi hotspot", true) || it.text.trim().equals("WiFi hotspot", true) }
-                        ?.let { tap(it); pause(1500); nodes = screen() }
+                if (!hasBand(nodes)) {
+                    nodes.firstOrNull(::isHotspotRow)?.let { tap(it); pause(1500); nodes = screenUntil { n -> hasBand(n) || n.any { it.text.equals("Advanced", true) } } }
                 }
                 // AP Band sits under a collapsed "Advanced" row.
-                if (nodes.none { it.text.equals("AP Band", true) }) {
-                    nodes.firstOrNull { it.text.trim().equals("Advanced", true) }?.let { tap(it); pause(1000); nodes = screen() }
+                if (!hasBand(nodes)) {
+                    nodes.firstOrNull { it.text.trim().equals("Advanced", true) }?.let { tap(it); pause(1000); nodes = screenUntil(::hasBand) }
                 }
                 val band = nodes.indexOfFirst { it.text.equals("AP Band", true) }
-                if (band < 0) { leave(); return@use "AP Band not found on the car's hotspot screen (was ${before ?: "?"} MHz)" }
+                if (band < 0) {
+                    val seen = nodes.take(12).joinToString(" | ") { it.text.take(30) }
+                    leave(); return@use "AP Band not found (was ${before ?: "?"} MHz). Screen showed: ${seen.ifBlank { "nothing readable" }}"
+                }
                 val setting = nodes.getOrNull(band + 1)?.text.orEmpty()
                 if (isFive(setting)) { leave(); return@use "already $setting, running at ${before ?: "?"} MHz" }
                 tap(nodes[band]); pause(1200)
-                nodes = screen()
+                nodes = screenUntil { n -> n.any { isFive(it.text) } }
                 val option = nodes.firstOrNull { isFive(it.text) }
                     ?: run { leave(); return@use "5 GHz option not found (setting was '$setting', ${before ?: "?"} MHz)" }
                 tap(option); pause(900)
