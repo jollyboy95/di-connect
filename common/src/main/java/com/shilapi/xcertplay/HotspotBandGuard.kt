@@ -126,8 +126,10 @@ internal object HotspotBandGuard {
                 tap(option); pause(900)
                 screen().firstOrNull { it.text.trim().lowercase() in setOf("ok", "save", "confirm", "apply", "done") }?.let { tap(it); pause(700) }
                 leave()
-                pause(4000) // the hotspot restarts on a band change
-                "switched from '$setting' to 5 GHz (was ${before ?: "?"} MHz, now ${frequency() ?: "?"} MHz)"
+                // The hotspot restarts on a band change: wait up to about 20 s for it to report again.
+                var after: Int? = null
+                for (i in 0 until 10) { pause(2000); after = frequency(); if (after != null && after > 0) break }
+                "switched from '$setting' to 5 GHz (was ${before ?: "?"} MHz, now ${after ?: "still restarting"}${if (after != null) " MHz" else ""})"
             }
         } }.getOrElse { "failed: ${it.javaClass.simpleName}" }
         val line = "${SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())} $result"
