@@ -123,7 +123,9 @@ object HotspotManager {
         try {
             try {
                 val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-                if (wm.isWifiEnabled) {
+                if (com.andrerinas.openheadunit.gwm.GwmMode.active(context)) {
+                    AppLog.i("HotspotManager: GWM head unit has separate Wi-Fi and hotspot radios; leaving Wi-Fi on.")
+                } else if (wm.isWifiEnabled) {
                     @Suppress("DEPRECATION")
                     wm.isWifiEnabled = false
                     Thread.sleep(500) // Let the radio settle

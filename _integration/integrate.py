@@ -2775,3 +2775,15 @@ edit(root/'common/src/main/AndroidManifest.xml',
      '    <uses-permission android:name="android.permission.WRITE_SETTINGS" />\n'
      '    <!-- Granted once over local ADB, so Di-Connect can switch ADB on for a moment itself. -->\n'
      '    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />'))
+
+# GWM: the H7 runs Wi-Fi (wlan0) and its hotspot (wlan1) on separate radios, so switching the
+# hotspot on must not switch the car's Wi-Fi off. On Android 9 setWifiEnabled(false) still works.
+edit(aa_java/'utils/HotspotManager.kt',
+    ('''                if (wm.isWifiEnabled) {
+                    @Suppress("DEPRECATION")
+                    wm.isWifiEnabled = false''',
+     '''                if (com.andrerinas.openheadunit.gwm.GwmMode.active(context)) {
+                    AppLog.i("HotspotManager: GWM head unit has separate Wi-Fi and hotspot radios; leaving Wi-Fi on.")
+                } else if (wm.isWifiEnabled) {
+                    @Suppress("DEPRECATION")
+                    wm.isWifiEnabled = false'''))
