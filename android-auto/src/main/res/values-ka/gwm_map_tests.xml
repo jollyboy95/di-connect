@@ -31,4 +31,6 @@
     <string name="aa_gwm_nav_protocol_active">ბოლო კავშირი: მოთხოვნილი %1$s, ტელეფონმა უპასუხა %2$s</string>
     <string name="aa_gwm_cluster_hevc_test">დაფის რუკა H.265-ში (ექსპერიმენტული)</string>
     <string name="aa_gwm_cluster_hevc_note">ითხოვს დაფის რუკას H.265-ში მანქანის აპარატული HEVC დეკოდერით. უფრო მკვეთრი იმავე მონაცემებით. გამორთეთ, თუ რუკა გაშავდება ან შეფერხდება. გამოსაყენებლად გადატვირთეთ მთავარი მოწყობილობა.</string>
+    <string name="aa_gwm_climate_bar">კლიმატის ზოლი ცენტრალურ ეკრანზე (ექსპერიმენტული)</string>
+    <string name="aa_gwm_climate_bar_note">ვიწრო ზოლი Android Auto-ის ქვეშ ორივე სავარძლის ტემპერატურითა და ვენტილაციით და მგზავრის ხმით. Android Auto თავის მართვას ზემოთ ინახავს. გამოსაყენებლად გადატვირთეთ მთავარი მოწყობილობა.</string>
 </resources>

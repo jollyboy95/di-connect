@@ -31,4 +31,6 @@
     <string name="aa_gwm_nav_protocol_active">Son bağlantı: istenen %1$s, telefonun yanıtı %2$s</string>
     <string name="aa_gwm_cluster_hevc_test">Gösterge haritası H.265 ile (deneysel)</string>
     <string name="aa_gwm_cluster_hevc_note">Gösterge haritasını aracın donanım HEVC çözücüsüyle H.265 olarak ister. Aynı veriyle daha net. Harita kararır veya takılırsa kapatın. Uygulamak için ana üniteyi yeniden başlatın.</string>
+    <string name="aa_gwm_climate_bar">Orta ekranda klima şeridi (deneysel)</string>
+    <string name="aa_gwm_climate_bar_note">Android Auto altında iki koltuğun sıcaklığı ve havalandırması ile yolcu için ses düzeyi olan ince bir şerit. Android Auto kontrollerini şeridin üstünde tutar. Uygulamak için ana üniteyi yeniden başlatın.</string>
 </resources>

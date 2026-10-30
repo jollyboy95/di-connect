@@ -31,4 +31,6 @@
     <string name="aa_gwm_nav_protocol_active">Letzte Verbindung: angefordert %1$s, Telefon antwortete %2$s</string>
     <string name="aa_gwm_cluster_hevc_test">Kombiinstrument-Karte in H.265 (experimentell)</string>
     <string name="aa_gwm_cluster_hevc_note">Fordert die Karte im Kombiinstrument als H.265 an, mit dem HEVC-Hardwaredecoder des Autos. Schärfer bei gleicher Datenmenge. Ausschalten, wenn die Karte schwarz wird oder ruckelt. Zum Übernehmen das Infotainment neu starten.</string>
+    <string name="aa_gwm_climate_bar">Klimaleiste auf dem Zentraldisplay (experimentell)</string>
+    <string name="aa_gwm_climate_bar_note">Schmale Leiste unter Android Auto mit Temperatur und Sitzbelüftung für beide Sitze und Lautstärke für den Beifahrer. Android Auto hält seine Bedienelemente darüber. Zum Übernehmen das Infotainment neu starten.</string>
 </resources>

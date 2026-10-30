@@ -31,4 +31,6 @@
     <string name="aa_gwm_nav_protocol_active">Laatste verbinding: aangevraagd %1$s, telefoon antwoordde %2$s</string>
     <string name="aa_gwm_cluster_hevc_test">Dashboardkaart in H.265 (experimenteel)</string>
     <string name="aa_gwm_cluster_hevc_note">Vraagt de dashboardkaart als H.265 aan, met de hardware-HEVC-decoder van de auto. Scherper bij dezelfde data. Zet uit als de kaart zwart wordt of hapert. Herstart de headunit om toe te passen.</string>
+    <string name="aa_gwm_climate_bar">Klimaatbalk op het middenscherm (experimenteel)</string>
+    <string name="aa_gwm_climate_bar_note">Een smalle balk onder Android Auto met temperatuur en stoelventilatie voor beide stoelen en volume voor de passagier. Android Auto houdt zijn bediening erboven. Herstart de headunit om toe te passen.</string>
 </resources>

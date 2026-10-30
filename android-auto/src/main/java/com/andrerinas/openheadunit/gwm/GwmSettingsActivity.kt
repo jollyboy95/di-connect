@@ -234,6 +234,10 @@ class GwmSettingsActivity : BaseActivity() {
             GwmMapExperiments.saveTurnCard(this, it)
             toast(getString(R.string.aa_gwm_map_tests_reconnect))
         }
+        toggle(R.string.aa_gwm_climate_bar, getString(R.string.aa_gwm_climate_bar_note), GwmClimateBar.enabled(this)) {
+            GwmClimateBar.setEnabled(this, it)
+            toast(getString(R.string.aa_gwm_map_tests_reconnect))
+        }
         toggle(R.string.aa_gwm_cluster_hevc_test, getString(R.string.aa_gwm_cluster_hevc_note), GwmMapExperiments.clusterHevc(this)) {
             GwmMapExperiments.saveClusterHevc(this, it)
             toast(getString(R.string.aa_gwm_map_tests_reconnect))

@@ -31,4 +31,6 @@
     <string name="aa_gwm_nav_protocol_active">Última conexión: solicitado %1$s, el teléfono respondió %2$s</string>
     <string name="aa_gwm_cluster_hevc_test">Mapa del tablero en H.265 (experimental)</string>
     <string name="aa_gwm_cluster_hevc_note">Pide al teléfono el mapa del tablero en H.265, con el decodificador HEVC por hardware del auto. Más nítido con los mismos datos. Desactívalo si el mapa queda en negro o se entrecorta. Reinicia la unidad principal para aplicarlo.</string>
+    <string name="aa_gwm_climate_bar">Barra de clima en la pantalla central (experimental)</string>
+    <string name="aa_gwm_climate_bar_note">Una barra delgada bajo Android Auto con temperatura y ventilación de ambos asientos, y volumen para el acompañante. Android Auto mantiene sus controles encima. Reinicia la unidad principal para aplicarlo.</string>
 </resources>

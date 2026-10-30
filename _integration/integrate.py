@@ -2787,3 +2787,17 @@ edit(aa_java/'utils/HotspotManager.kt',
                 } else if (wm.isWifiEnabled) {
                     @Suppress("DEPRECATION")
                     wm.isWifiEnabled = false'''))
+
+# Climate strip (Oct 2026): on GWM, a slim strip under Android Auto for both seats' temperature and
+# ventilation and passenger volume, shown while the projection is in front.
+edit(dest/'src/main/java/com/andrerinas/openheadunit/aap/AapProjectionActivity.kt',
+    ("""        isForeground = true
+        AppLog.i("AapProjectionActivity: onResume")""",
+     """        isForeground = true
+        AppLog.i("AapProjectionActivity: onResume")
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)"""),
+    ("""        isForeground = false
+        AppLog.i("AapProjectionActivity: onPause")""",
+     """        isForeground = false
+        AppLog.i("AapProjectionActivity: onPause")
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)"""))

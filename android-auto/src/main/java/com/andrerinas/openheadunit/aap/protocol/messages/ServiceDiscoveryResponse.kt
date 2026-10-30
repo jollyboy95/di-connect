@@ -114,6 +114,14 @@ class ServiceDiscoveryResponse(private val context: Context)
                         setMarginWidth(phoneWidthMargin)
                         setMarginHeight(phoneHeightMargin)
                         setVideoCodecType(effectiveCodec)
+                        // GWM climate strip: Android Auto keeps its own controls above it.
+                        val strip = com.andrerinas.openheadunit.gwm.GwmClimateBar.insetFraction(context)
+                        if (strip > 0f) {
+                            val bottom = ((HeadUnitScreenConfig.getNegotiatedHeight() - 2 * phoneHeightMargin) * strip).toInt()
+                            val insets = Media.Insets.newBuilder().setTop(0).setLeft(0).setRight(0).setBottom(bottom).build()
+                            setUiConfig(Media.UiConfig.newBuilder().setContentInsets(insets).setStableContentInsets(insets).build())
+                            AppLog.i("[ServiceDiscovery] Climate strip: bottom content inset $bottom px")
+                        }
                     }.build())
                 }.build()
             }.build()

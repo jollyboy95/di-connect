@@ -31,4 +31,6 @@
     <string name="aa_gwm_nav_protocol_active">Utolsó kapcsolat: kérve %1$s, a telefon válasza %2$s</string>
     <string name="aa_gwm_cluster_hevc_test">Műszerfal-térkép H.265-ben (kísérleti)</string>
     <string name="aa_gwm_cluster_hevc_note">H.265 formátumban kéri a műszerfal térképét, az autó hardveres HEVC dekóderével. Élesebb ugyanannyi adatnál. Kapcsolja ki, ha a térkép elsötétül vagy akad. Az érvényesítéshez indítsa újra a fejegységet.</string>
+    <string name="aa_gwm_climate_bar">Klímasáv a középső kijelzőn (kísérleti)</string>
+    <string name="aa_gwm_climate_bar_note">Keskeny sáv az Android Auto alatt mindkét ülés hőmérsékletével és szellőztetésével, valamint az utas hangerejével. Az Android Auto fölötte tartja a vezérlőit. Az érvényesítéshez indítsa újra a fejegységet.</string>
 </resources>
