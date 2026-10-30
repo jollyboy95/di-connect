@@ -51,11 +51,41 @@ internal object AdbSwitch {
         return work()
     }
 
-    /** At start-up: switches ADB on if the car turned it off and Di-Connect may do so. */
+    @Volatile private var lastAction = "not run"
+    private val handler by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
+
+    /**
+     * At start-up and boot: switches developer options and ADB on if the car turned them off.
+     * Checked again after about 20 s, 1 min and 3 min, as the car may reset ADB late in its boot.
+     */
     fun keepOn(context: Context) {
         val app = context.applicationContext
-        if (enabled(app) || !canSwitch(app)) return
-        runCatching { Settings.Global.putInt(app.contentResolver, Settings.Global.ADB_ENABLED, 1) }
-            .onSuccess { Log.i(TAG, "ADB switched on at start-up") }
+        ensure(app, "start")
+        for (delay in longArrayOf(20_000L, 60_000L, 180_000L)) {
+            handler.postDelayed({ Thread({ ensure(app, "${delay / 1000} s check") }, "adb-keep-on").start() }, delay)
+        }
+    }
+
+    private fun ensure(app: Context, why: String) {
+        val time = java.text.SimpleDateFormat("h:mm:ss a", java.util.Locale.US).format(java.util.Date())
+        if (!canSwitch(app)) { lastAction = "$time $why: no permission yet (turn ADB on once and use the 5 GHz button)"; return }
+        if (enabled(app)) { lastAction = "$time $why: ADB already on"; return }
+        val result = runCatching {
+            val resolver = app.contentResolver
+            if (Settings.Global.getInt(resolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 1)
+                Settings.Global.putInt(resolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 1)
+            Settings.Global.putInt(resolver, Settings.Global.ADB_ENABLED, 1)
+            Thread.sleep(500)
+            if (enabled(app)) "switched ADB on" else "asked to switch ADB on but the car kept it off"
+        }.getOrElse { "could not switch ADB: ${it.javaClass.simpleName}: ${it.message}" }
+        lastAction = "$time $why: $result"
+        Log.i(TAG, lastAction)
+    }
+
+    fun report(context: Context): String {
+        val r = context.applicationContext.contentResolver
+        val adb = runCatching { Settings.Global.getInt(r, Settings.Global.ADB_ENABLED, 0) }.getOrNull()
+        val dev = runCatching { Settings.Global.getInt(r, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) }.getOrNull()
+        return "ADB keep-on: permission=${canSwitch(context)} adb_enabled=$adb developer_options=$dev last=$lastAction"
     }
 }

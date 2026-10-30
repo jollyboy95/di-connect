@@ -6657,6 +6657,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")
         appendLine(HotspotBandProbe.report())
         appendLine(HotspotBandGuard.report())
+        appendLine(AdbSwitch.report(appContext))
         appendLine(WheelKeyService.report(appContext))
         WheelKeyLog.report(WheelKeyService.connected()).forEach { appendLine(it) }
         appendLine()

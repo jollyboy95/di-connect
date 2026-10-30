@@ -2811,3 +2811,8 @@ edit(dest/'src/main/java/com/andrerinas/openheadunit/aap/AapProjectionActivity.k
 # The strip's volume buttons press the car's own volume keys over local ADB (kept on by AdbSwitch).
 edit(D,('        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()\n',
         Path('target/_integration/volume-hook.kt').read_text()))
+
+# ADB keep-on also at boot, and its state in the diagnostic report.
+edit(root/'common/src/main/java/com/shilapi/xcertplay/BootReceiver.kt',
+    ('        PhoneAudioRoute.attach(context)\n', '        PhoneAudioRoute.attach(context)\n        AdbSwitch.keepOn(context)\n'))
+edit(D,('        appendLine(HotspotBandGuard.report())\n', '        appendLine(HotspotBandGuard.report())\n        appendLine(AdbSwitch.report(appContext))\n'))
