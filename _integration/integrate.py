@@ -2862,3 +2862,101 @@ edit(host_cp,
                     }
                 },
                 activityWidthPixels = size.width,'''))
+
+# ---- UI modernisation, stage 1 (Oct 2026 concept): colours, glass cards, category tiles, car picture ----
+# The concept's palette: deeper navy, a brighter blue accent and switch track, the concept's green.
+edit(root/'common/src/main/java/com/shilapi/xcertplay/DiPlayPalette.kt',
+    ('''            background = Color.rgb(12, 17, 27),
+            surface = Color.rgb(21, 30, 44),
+            button = Color.rgb(31, 43, 61),
+            outline = Color.rgb(42, 56, 75),
+            railSelected = Color.rgb(24, 54, 92),
+            railSelectedOutline = Color.rgb(42, 82, 130),
+            primaryText = Color.rgb(241, 245, 252),
+            secondaryText = Color.rgb(168, 182, 202),
+            accent = Color.rgb(166, 200, 255),
+            onAccent = Color.rgb(12, 17, 27),
+            accentTrack = Color.rgb(50, 88, 140),
+            trackOff = Color.rgb(42, 56, 75),
+            warning = Color.rgb(255, 196, 128),
+            success = Color.rgb(127, 205, 154),
+            danger = Color.rgb(190, 45, 45),
+            ripple = 0x336F9FD9,
+            focusRing = Color.rgb(166, 200, 255),
+            systemBar = Color.rgb(12, 17, 27),''','''            background = Color.rgb(9, 14, 23),
+            surface = Color.rgb(17, 25, 38),
+            button = Color.rgb(26, 37, 54),
+            outline = Color.rgb(37, 50, 72),
+            railSelected = Color.rgb(18, 52, 104),
+            railSelectedOutline = Color.rgb(47, 111, 214),
+            primaryText = Color.rgb(241, 245, 252),
+            secondaryText = Color.rgb(168, 182, 202),
+            accent = Color.rgb(92, 164, 255),
+            onAccent = Color.rgb(9, 14, 23),
+            accentTrack = Color.rgb(47, 128, 255),
+            trackOff = Color.rgb(44, 58, 80),
+            warning = Color.rgb(255, 196, 128),
+            success = Color.rgb(61, 220, 132),
+            danger = Color.rgb(190, 45, 45),
+            ripple = 0x335CA4FF,
+            focusRing = Color.rgb(92, 164, 255),
+            systemBar = Color.rgb(9, 14, 23),'''))
+edit(root/'common/src/test/java/com/shilapi/xcertplay/DiPlayPaletteTest.kt',
+    ('assertEquals(Color.rgb(12, 17, 27), palette.background)', 'assertEquals(Color.rgb(9, 14, 23), palette.background)'),
+    ('assertEquals(Color.rgb(21, 30, 44), palette.surface)', 'assertEquals(Color.rgb(17, 25, 38), palette.surface)'),
+    ('assertEquals(Color.rgb(31, 43, 61), palette.button)', 'assertEquals(Color.rgb(26, 37, 54), palette.button)'),
+    ('assertEquals(Color.rgb(42, 56, 75), palette.outline)', 'assertEquals(Color.rgb(37, 50, 72), palette.outline)'),
+    ('assertEquals(Color.rgb(24, 54, 92), palette.railSelected)', 'assertEquals(Color.rgb(18, 52, 104), palette.railSelected)'),
+    ('assertEquals(Color.rgb(42, 82, 130), palette.railSelectedOutline)', 'assertEquals(Color.rgb(47, 111, 214), palette.railSelectedOutline)'),
+    ('assertEquals(Color.rgb(166, 200, 255), palette.accent)', 'assertEquals(Color.rgb(92, 164, 255), palette.accent)'),
+    ('assertEquals(Color.rgb(127, 205, 154), palette.success)', 'assertEquals(Color.rgb(61, 220, 132), palette.success)'),
+    ('assertEquals(0x336F9FD9, palette.ripple)', 'assertEquals(0x335CA4FF, palette.ripple)'),
+    ('WaitingScreenColors(Color.rgb(12, 17, 27), Color.rgb(241, 245, 252)', 'WaitingScreenColors(Color.rgb(9, 14, 23), Color.rgb(241, 245, 252)'))
+edit(root/'common/src/main/res/values/themes.xml',
+    ('#A6C8FF', '#5CA4FF', 2), ('#0C111B', '#090E17', 3))
+edit(root/'common/src/main/res/values/colors.xml',
+    ('<color name="window_background_dark">#0C111B</color>', '<color name="window_background_dark">#090E17</color>'),
+    ('<color name="dialog_background_dark">#151E2C</color>', '<color name="dialog_background_dark">#111926</color>'))
+
+(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectStyle.kt').write_text(Path('target/_integration/ui/DiConnectStyle.kt').read_text())
+(root/'common/src/test/java/com/shilapi/xcertplay/DiConnectUiPreviewTest.kt').write_text(Path('target/_integration/ui/DiConnectUiPreviewTest.kt').read_text())
+(root/'common/src/main/res/drawable-nodpi').mkdir(parents=True, exist_ok=True)
+shutil.copy(Path('target/_integration/ui/dc_vehicle_hero.webp'), root/'common/src/main/res/drawable-nodpi/dc_vehicle_hero.webp')
+
+ui_host = D
+edit(ui_host,
+    # Glass cards everywhere a card or panel is drawn.
+    ('    private fun rounded(color: Int, stroke: Int) = GradientDrawable().apply { setColor(color); cornerRadius = layoutCornerRadius() * 1.35f; setStroke(dp(1), stroke) }',
+     '    private fun rounded(color: Int, stroke: Int) = DiConnectStyle.glass(color, stroke, layoutCornerRadius() * 1.35f, dp(1))'),
+    # Settings categories: the concept's coloured icon tiles and a chevron.
+    ('''            addView(ImageView(this@DiPlayActivity).apply {
+                setImageResource(settingsCategoryIcon(category))
+                imageTintList = ColorStateList.valueOf(if (warning) WARNING else ACCENT)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginEnd = dp(20) })''',
+     '''            addView(DiConnectStyle.iconTile(this@DiPlayActivity, settingsCategoryIcon(category),
+                DiConnectStyle.categoryTint(category), dp(46)), LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(18) })'''),
+    ('''                addView(label(summary, 13, MUTED).apply { setPadding(0, dp(3), 0, 0) })
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+        })
+        setOnClickListener { openSettingsCategory(category) }''',
+     '''                addView(label(summary, 13, MUTED).apply { setPadding(0, dp(3), 0, 0) })
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(ImageView(this@DiPlayActivity).apply {
+                setImageResource(R.drawable.ic_dp_chevron)
+                imageTintList = ColorStateList.valueOf(MUTED)
+                if (resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) scaleX = -1f
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginStart = dp(12) })
+        })
+        setOnClickListener { openSettingsCategory(category) }'''),
+    # Home: the car picture in place of the badge on the full layout.
+    ('''        val branding = column().apply {
+            gravity = Gravity.CENTER
+            addView(logo, LinearLayout.LayoutParams(dp(96), dp(96)))
+        }''',
+     '''        val branding = column().apply {
+            gravity = Gravity.CENTER
+            if (compact) addView(logo, LinearLayout.LayoutParams(dp(96), dp(96)))
+            else addView(VehicleHeroView(this@DiPlayActivity, BG, ACCENT), LinearLayout.LayoutParams(-1, dp(if (wide) 260 else 200)))
+        }'''))

@@ -100,6 +100,31 @@ jobs:
       - name: Render actual Android Auto cluster and check protected regions
         timeout-minutes: 15
         run: ./gradlew :common:testDebugUnitTest --tests '*GwmAndroidAutoClusterRenderTest' --tests '*GwmAndroidAutoHudRenderTest' --tests '*ClusterThemesRenderTest' $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
+      - name: Render the redesigned screens
+        if: ${{ !cancelled() && startsWith(github.head_ref || github.ref_name, 'ui/') }}
+        continue-on-error: true
+        timeout-minutes: 15
+        run: ./gradlew :common:testDebugUnitTest --tests '*DiConnectUiPreviewTest' --tests '*DiConnectHomeScreenshotsTest' $GRADLE_ARGS 2>&1 | tee -a "$RUNNER_TEMP/gradle-output.log"
+      - name: Share screen pictures for review
+        if: ${{ !cancelled() && startsWith(github.head_ref || github.ref_name, 'ui/') }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          # The redesigned screens on the ui-renders branch of the public releases repo. Never fails the build.
+          if [ -z "$GH_TOKEN" ] || ! ls common/build/reports/di-connect-ui/*.png >/dev/null 2>&1; then exit 0; fi
+          remote="https://x-access-token:${GH_TOKEN}@github.com/jollyboy95/di-connect-releases.git"
+          dir="$RUNNER_TEMP/ui-renders"; rm -rf "$dir"
+          if ! git clone --quiet --depth 1 --branch ui-renders "$remote" "$dir" 2>/dev/null; then
+            git init --quiet "$dir"; git -C "$dir" checkout --quiet --orphan ui-renders; git -C "$dir" remote add origin "$remote"
+          fi
+          rm -f "$dir"/*.png
+          cp common/build/reports/di-connect-ui/*.png "$dir"/
+          cp common/build/reports/di-connect-home/*.png "$dir"/ 2>/dev/null || true
+          echo "Screen pictures from ${GITHUB_SHA}" > "$dir/README.md"
+          cd "$dir"; git add -A
+          git -c user.name="Di-Connect CI" -c user.email="ci@users.noreply.github.com" commit --quiet -m "Screen pictures for ${GITHUB_SHA::7}" || exit 0
+          git push --quiet origin HEAD:ui-renders
       - name: Share theme pictures for review
         if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         continue-on-error: true
@@ -265,7 +290,9 @@ jobs:
       # Di-Connect's updater reads. Needs the RELEASES_TOKEN secret (a fine-grained token limited to
       # jollyboy95/di-connect-releases, Contents: read and write). Skipped while it is not set.
       - name: Publish update to di-connect-releases
-        if: ${{ success() && github.event_name != 'pull_request' || success() && github.event.pull_request.head.repo.full_name == github.repository }}
+        # maintenance/* and ui/* branches (work awaiting review) build an Actions artifact only, so an
+        # unreviewed build is never offered as an in-app update.
+        if: ${{ success() && !startsWith(github.head_ref || github.ref_name, 'maintenance/') && !startsWith(github.head_ref || github.ref_name, 'ui/') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
