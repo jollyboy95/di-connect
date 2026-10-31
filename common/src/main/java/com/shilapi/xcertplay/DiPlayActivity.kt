@@ -1347,7 +1347,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         val branding = column().apply {
             gravity = Gravity.CENTER
-            addView(logo, LinearLayout.LayoutParams(dp(96), dp(96)))
+            if (compact) addView(logo, LinearLayout.LayoutParams(dp(96), dp(96)))
+            else addView(VehicleHeroView(this@DiPlayActivity, BG, ACCENT), LinearLayout.LayoutParams(-1, dp(if (wide) 240 else 200)))
         }
         right.addView(homeButton(getString(R.string.connect_with_usb), false) { connect(false) }, matchButton(height = if (compact) 54 else 68))
         if (!compact) right.addView(label(getString(R.string.plug_your_iphone_into_a_usb_data_port_allow_carplay_when_y), 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(dp(8), dp(10), dp(8), dp(24)) })
@@ -1410,7 +1411,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 addView(space(40), LinearLayout.LayoutParams(dp(40), 1))
                 addView(second, LinearLayout.LayoutParams(0, if (stretchSecond) -1 else -2, 1f))
             }
-            body.addView(columns(left, branding, true))
+            body.addView(columns(left, branding, false))
             body.addView(space(26))
             body.addView(columns(card, right))
         } else {
@@ -1694,15 +1695,18 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         contentDescription = getString(R.string.settings_open_category, settingsCategoryTitle(category))
         addView(row().apply {
             gravity = Gravity.CENTER_VERTICAL
-            addView(ImageView(this@DiPlayActivity).apply {
-                setImageResource(settingsCategoryIcon(category))
-                imageTintList = ColorStateList.valueOf(if (warning) WARNING else ACCENT)
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }, LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginEnd = dp(20) })
+            addView(DiConnectStyle.iconTile(this@DiPlayActivity, settingsCategoryIcon(category),
+                DiConnectStyle.categoryTint(category), dp(46)), LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(18) })
             addView(column().apply {
                 addView(label(settingsCategoryTitle(category), 17, if (warning) WARNING else TEXT, true))
                 addView(label(summary, 13, MUTED).apply { setPadding(0, dp(3), 0, 0) })
             }, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(ImageView(this@DiPlayActivity).apply {
+                setImageResource(R.drawable.ic_dp_chevron)
+                imageTintList = ColorStateList.valueOf(MUTED)
+                if (resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) scaleX = -1f
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginStart = dp(12) })
         })
         setOnClickListener { openSettingsCategory(category) }
     }
@@ -7330,7 +7334,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         })
     }
 
-    private fun rounded(color: Int, stroke: Int) = GradientDrawable().apply { setColor(color); cornerRadius = layoutCornerRadius() * 1.35f; setStroke(dp(1), stroke) }
+    private fun rounded(color: Int, stroke: Int) = DiConnectStyle.glass(color, stroke, layoutCornerRadius() * 1.35f, dp(1))
     private fun matchButton(top: Int = 0, height: Int = 68) = LinearLayout.LayoutParams(-1, dp(height)).apply { topMargin = dp(top) }
     private fun space(height: Int) = View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dp(height)); tag = SPACER }
 

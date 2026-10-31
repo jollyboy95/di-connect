@@ -1064,7 +1064,7 @@ class AdaptiveSettingsUiTest {
             val destination = descendants(screen.window.decorView).single {
                 it.contentDescription == screen.getString(R.string.settings_open_category, title)
             }
-            assertEquals(1, descendants(destination).filterIsInstance<ImageView>().count())
+            assertEquals(2, descendants(destination).filterIsInstance<ImageView>().count())
         }
     }
 
