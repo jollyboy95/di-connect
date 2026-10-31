@@ -90,7 +90,8 @@ internal class VehicleHeroView(context: Context, private val pageColor: Int, pri
         clip.reset()
         clip.addRoundRect(bounds, radius, radius, Path.Direction.CW)
         picture?.let { bitmap ->
-            val scale = maxOf(w / bitmap.width.toFloat(), h / bitmap.height.toFloat())
+            // Fit the entire SUV rather than centre-cropping its front and wheels.
+            val scale = minOf(w / bitmap.width.toFloat(), h / bitmap.height.toFloat())
             val matrix = Matrix().apply {
                 setScale(scale, scale)
                 postTranslate((w - bitmap.width * scale) / 2f, (h - bitmap.height * scale) / 2f)
