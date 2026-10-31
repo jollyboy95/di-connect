@@ -35,20 +35,59 @@ internal object AdbSwitch {
      */
     fun <T> withAdb(context: Context, work: () -> T): T {
         val app = context.applicationContext
-        val turnedOn = !enabled(app) && canSwitch(app) &&
-            runCatching { Settings.Global.putInt(app.contentResolver, Settings.Global.ADB_ENABLED, 1) }.getOrDefault(false)
-        if (turnedOn) {
-            Log.i(TAG, "ADB switched on")
-            // adbd takes a moment to come up after being enabled.
-            val until = System.currentTimeMillis() + 6_000
-            while (System.currentTimeMillis() < until) {
-                val ready = runCatching { LocalAdb(AdbKeys.load(app)).use { it.connect(mayAsk = false) } }.getOrNull() == LocalAdb.Access.READY
-                if (ready) break
-                Thread.sleep(400)
-            }
+        if (canSwitch(app)) {
+            if (!enabled(app)) {
+                if (runCatching { Settings.Global.putInt(app.contentResolver, Settings.Global.ADB_ENABLED, 1) }.getOrDefault(false)) {
+                    Log.i(TAG, "ADB switched on")
+                    waitReady(app, 8_000)
+                }
+            } else if (!reachable(app)) restartIfStuck(app, "on demand")
         }
         // Left on: the driver wants ADB available without visiting the car's settings.
         return work()
+    }
+
+    /** True when the head unit's adbd answers on its local port and accepts Di-Connect's key. */
+    private fun reachable(app: Context): Boolean =
+        runCatching { LocalAdb(AdbKeys.load(app)).use { it.connect(mayAsk = false) } }.getOrNull() == LocalAdb.Access.READY
+
+    private fun waitReady(app: Context, ms: Long): Boolean {
+        val until = System.currentTimeMillis() + ms
+        while (System.currentTimeMillis() < until) {
+            if (reachable(app)) return true
+            Thread.sleep(500)
+        }
+        return false
+    }
+
+    /** True when something listens on adbd's local port at all (a refusal means adbd is not on it). */
+    private fun portOpen(): Boolean = runCatching {
+        java.net.Socket().use { it.connect(java.net.InetSocketAddress("127.0.0.1", 5555), 1_500); true }
+    }.getOrDefault(false)
+
+    @Volatile private var lastRestart = 0L
+
+    /**
+     * ADB can read as on while adbd is not answering on its local port (seen on the H7 after a
+     * restart): the same off-and-on the driver would do in the car's settings restarts adbd. At
+     * most once a minute, so a slow boot is not interrupted over and over.
+     */
+    private fun restartIfStuck(app: Context, why: String): Boolean {
+        val now = System.currentTimeMillis()
+        if (now - lastRestart < 60_000) return false
+        lastRestart = now
+        val port = if (portOpen()) "port open, no answer" else "port closed"
+        val ok = runCatching {
+            val resolver = app.contentResolver
+            Settings.Global.putInt(resolver, Settings.Global.ADB_ENABLED, 0)
+            Thread.sleep(1_500)
+            Settings.Global.putInt(resolver, Settings.Global.ADB_ENABLED, 1)
+            waitReady(app, 12_000)
+        }.getOrDefault(false)
+        val time = java.text.SimpleDateFormat("h:mm:ss a", java.util.Locale.US).format(java.util.Date())
+        lastAction = "$time $why: ADB on but not answering ($port); switched off and on: ${if (ok) "answering now" else "still not answering"}"
+        Log.i(TAG, lastAction)
+        return ok
     }
 
     @Volatile private var lastAction = "not run"
@@ -60,7 +99,8 @@ internal object AdbSwitch {
      */
     fun keepOn(context: Context) {
         val app = context.applicationContext
-        ensure(app, "start")
+        // Off the caller's thread: the boot receiver calls this on the main thread.
+        Thread({ ensure(app, "start") }, "adb-keep-on").start()
         for (delay in longArrayOf(20_000L, 60_000L, 180_000L)) {
             handler.postDelayed({ Thread({ ensure(app, "${delay / 1000} s check") }, "adb-keep-on").start() }, delay)
         }
@@ -69,7 +109,13 @@ internal object AdbSwitch {
     private fun ensure(app: Context, why: String) {
         val time = java.text.SimpleDateFormat("h:mm:ss a", java.util.Locale.US).format(java.util.Date())
         if (!canSwitch(app)) { lastAction = "$time $why: no permission yet (turn ADB on once and use the 5 GHz button)"; return }
-        if (enabled(app)) { lastAction = "$time $why: ADB already on"; return }
+        if (enabled(app)) {
+            if (reachable(app)) lastAction = "$time $why: ADB already on and answering"
+            // At start adbd may simply not be up yet; the later checks restart it if it stays silent.
+            else if ((why == "start" || !restartIfStuck(app, why)) && !lastAction.contains("switched off and on"))
+                lastAction = "$time $why: ADB on but not answering yet"
+            return
+        }
         val result = runCatching {
             val resolver = app.contentResolver
             if (Settings.Global.getInt(resolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 1)
