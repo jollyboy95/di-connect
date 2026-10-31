@@ -1,0 +1,20 @@
+{
+  "diplay": {
+    "repository": "shihabal3amri/DiPlay",
+    "branch": "main",
+    "synced_commit": "615b32ce",
+    "synced_version": "0.2.22",
+    "donor_fork": "jollyboy95/d-play-gwm-h7",
+    "donor_commit": "fcdbce6f9e4a0b90679633e7a589df8f2d31a567",
+    "reviewed": "2026-10-31"
+  },
+  "diauto": {
+    "repository": "shihabal3amri/DiAuto",
+    "branch": "main",
+    "synced_commit": "f304672",
+    "synced_version": "0.3.12",
+    "donor_fork": "jollyboy95/DiAuto-GWM",
+    "donor_commit": "4febfe1568faab5bf6899575b31e1c708298759f",
+    "reviewed": "2026-10-31"
+  }
+}

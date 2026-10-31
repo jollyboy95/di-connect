@@ -2,7 +2,7 @@
 
 D-Play GWM is the CarPlay and UI foundation. Android Auto is imported as an Android library in the same APK, not an external app dependency.
 
-- D-Play source: jollyboy95/d-play-gwm-h7 at 3df998919f075bc6e21efb5e8a314347813647a1.
+- D-Play source: jollyboy95/d-play-gwm-h7 at fcdbce6f9e4a0b90679633e7a589df8f2d31a567.
 - Android Auto source: jollyboy95/DiAuto-GWM at 4febfe1568faab5bf6899575b31e1c708298759f (gwm-h7-hud-fit, the r16 DiAuto GWM build), including its GWM/Haval H7 port. It uses D-Play's gwm-adapter module rather than its own copy.
 - Separate application ID: com.jollyboy95.diconnect (debug suffix .debug).
 - Open Android Auto from the existing D-Play home card. CarPlay is stopped before AA opens. Starting CarPlay waits for AA service teardown.

@@ -425,7 +425,10 @@ edit(D,(needle,'''        androidAutoButton = homeButton(getString(R.string.di_c
     ('        connectButton = homeButton(getString(R.string.connect_phone), true) {','        connectButton = homeButton(getString(R.string.connect_phone), false) {'),
     ('        homeCardTitle = label(getString(R.string.wireless_carplay), 12, ACCENT, true)','        homeCardTitle = label(getString(R.string.di_connect_home_title), 12, ACCENT, true)'))
 # Reuse existing D-Play button geometry and keep connection copy localised.
-STRINGS=sorted((root/'common/src/main/res').glob('values*/strings.xml'))
+# Upstream DiPlay 0.2.22 added Korean and Turkish. Di-Connect's own strings are written for its nine
+# locales; the two new ones get the English text for anything of ours (see the end of this script).
+UPSTREAM_ONLY_LOCALES={'values-ko','values-tr'}
+STRINGS=sorted(p for p in (root/'common/src/main/res').glob('values*/strings.xml') if p.parent.name not in UPSTREAM_ONLY_LOCALES)
 require(root/'common/src/main/res/values/strings.xml' in STRINGS,'D-Play base strings.xml not found')
 for p in STRINGS:
     edit(p,('</resources>','    <string name="di_connect_android_auto">Android Auto</string>\n</resources>'))
@@ -436,7 +439,7 @@ for p in STRINGS:
 
 D-Play GWM is the CarPlay and UI foundation. Android Auto is imported as an Android library in the same APK, not an external app dependency.
 
-- D-Play source: jollyboy95/d-play-gwm-h7 at 3df998919f075bc6e21efb5e8a314347813647a1.
+- D-Play source: jollyboy95/d-play-gwm-h7 at fcdbce6f9e4a0b90679633e7a589df8f2d31a567.
 - Android Auto source: jollyboy95/DiAuto-GWM at 4febfe1568faab5bf6899575b31e1c708298759f (gwm-h7-hud-fit, the r16 DiAuto GWM build), including its GWM/Haval H7 port. It uses D-Play's gwm-adapter module rather than its own copy.
 - Separate application ID: com.jollyboy95.diconnect (debug suffix .debug).
 - Open Android Auto from the existing D-Play home card. CarPlay is stopped before AA opens. Starting CarPlay waits for AA service teardown.
@@ -494,7 +497,7 @@ for name in ['DiPlay-GWM-H7-arm64-debug.apk','DiPlay-GWM-H7-arm64-debug.apk.sha2
 # All preview builds use the same committed debug signing key and application ID.
 # CI supplies monotonically increasing seconds since 2026 as gwmRevision.
 edit(root/'mobile/build.gradle.kts',
-    ('versionName = "0.2.21"','versionName = "0.1.0"'),
+    ('versionName = "0.2.22"','versionName = "0.1.0"'),
     ('if (file("gwm-debug.keystore").isFile) signingConfig = signingConfigs.getByName("gwmDebug")','check(file("gwm-debug.keystore").isFile) { "Di-Connect update signing key is missing" }\n            signingConfig = signingConfigs.getByName("gwmDebug")'),
     ('"-hud-test" + (gwmRevision?.let { "-gwm.r$it" } ?: "")','"-preview" + (gwmRevision?.let { ".r$it" } ?: "")'))
 # Keep the normal build workflow with the combined source for subsequent code changes.
@@ -955,11 +958,11 @@ edit(D,
 '''),
     # "Connect when Di-Connect opens" connects Android Auto unless CarPlay is chosen.
     ('''            if (setupError == null && !CarPlayBackgroundSession.hasSession() &&
-                DiPlayPreferences.autoConnect(this) && intent.getStringExtra("page") == null && page != "setup") {
+                DiPlayPreferences.autoConnect(this) && requestedPage(intent) == null && page != "setup") {
                 handler.post { connect(DiPlayPreferences.autoConnectWireless(this)) }
             }''',f'''            val carPlayFirst = {AA_}.opensWithCarPlay(this)
             if ((setupError == null || !carPlayFirst) && !CarPlayBackgroundSession.hasSession() &&
-                DiPlayPreferences.autoConnect(this) && intent.getStringExtra("page") == null && page != "setup") {{
+                DiPlayPreferences.autoConnect(this) && requestedPage(intent) == null && page != "setup") {{
                 handler.post {{
                     if (carPlayFirst) connect(DiPlayPreferences.autoConnectWireless(this))
                     else connectAndroidAuto(choosePhoneIfNeeded = false)
@@ -2846,11 +2849,12 @@ edit(D,('    private fun consumeBluetoothAutoConnectIntent(intent: Intent): Bool
 host_cp = root/'common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt'
 edit(host_cp,
     ('        super.onResume()\n        WheelKeyService.restoreIfNeeded(this)\n',
-     '        super.onResume()\n        WheelKeyService.restoreIfNeeded(this)\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)\n'),
+     '        super.onResume()\n        WheelKeyService.restoreIfNeeded(this)\n        if (!forwarded) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)\n'),
     ('        nightModeController.pause()\n        super.onPause()',
-     '        nightModeController.pause()\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()\n        super.onPause()'),
-    ('    override fun onDestroy() {\n        runCatching { unregisterReceiver(bluetoothOnReceiver) }',
-     '    override fun onDestroy() {\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)\n        runCatching { unregisterReceiver(bluetoothOnReceiver) }'),
+     '        nightModeController.pause()\n        if (!forwarded) com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()\n        super.onPause()'),
+    # Upstream 0.2.22: a forwarded duplicate screen returns early and never reaches this point.
+    ('        CarPlayScreen.destroyed(this)\n        runCatching { unregisterReceiver(bluetoothOnReceiver) }',
+     '        CarPlayScreen.destroyed(this)\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)\n        runCatching { unregisterReceiver(bluetoothOnReceiver) }'),
     ('                mapping = AirPlayPersistence.loadSafeAreaRect(this, size.width, size.height),\n                activityWidthPixels = size.width,',
      '''                mapping = AirPlayPersistence.loadSafeAreaRect(this, size.width, size.height).let { saved ->
                     val strip = com.andrerinas.openheadunit.gwm.GwmClimateBar.insetFraction(this)
@@ -2862,3 +2866,52 @@ edit(host_cp,
                     }
                 },
                 activityWidthPixels = size.width,'''))
+
+
+# Korean and Turkish (upstream locales Di-Connect has no translations for yet): every string of ours
+# that they lack falls back to its English text, as Android would show anyway, so the translation
+# check still sees every settings string present with the same placeholders.
+import xml.etree.ElementTree as _ET
+_res=root/'common/src/main/res'
+_base={}
+for _f in sorted((_res/'values').glob('*.xml')):
+    for _e in _ET.parse(_f).getroot().findall('string'):
+        if _e.get('translatable')!='false': _base[_e.get('name')]=_f
+_raw={}
+for _f in sorted((_res/'values').glob('*.xml')):
+    for _m in re.finditer(r'(<string name="([^"]+)"[^>]*>.*?</string>)', _f.read_text(), re.S): _raw.setdefault(_m.group(2), _m.group(1))
+for _loc in sorted(UPSTREAM_ONLY_LOCALES):
+    _have=set()
+    for _f in (_res/_loc).glob('*.xml'):
+        _have|={_e.get('name') for _e in _ET.parse(_f).getroot().findall('string')}
+    _missing=[k for k in _base if k not in _have and k in _raw]
+    (_res/_loc/'di_connect_english_fallback.xml').write_text('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'+''.join('    '+_raw[k]+'\n' for k in _missing)+'</resources>\n')
+    print(f'{_loc}: {len(_missing)} Di-Connect strings fall back to English')
+
+# Upstream 0.2.22 caps update downloads at 64 MB, sized for DiPlay alone (under 20 MB). Di-Connect
+# carries Android Auto and its themes too (about 40 MB in Oct 2026), so its cap leaves real room.
+edit(root/'common/src/main/java/com/shilapi/xcertplay/update/UpdateClient.kt',
+    ('    internal const val MAXIMUM_DOWNLOAD_BYTES = 64L * 1024 * 1024',
+     '    internal const val MAXIMUM_DOWNLOAD_BYTES = 128L * 1024 * 1024'))
+# Its tests send just past whatever the cap is.
+edit(root/'common/src/test/java/com/shilapi/xcertplay/update/UpdateClientTest.kt',
+    ('assertRefusedAsTooLarge("/big", 70L * 1024 * 1024)', 'assertRefusedAsTooLarge("/big", UpdateClient.MAXIMUM_DOWNLOAD_BYTES + 6L * 1024 * 1024)'),
+    ('repeat(70) { out.write(chunk) }', 'repeat((UpdateClient.MAXIMUM_DOWNLOAD_BYTES / chunk.size).toInt() + 6) { out.write(chunk) }'))
+
+# Upstream 0.2.22 tests, adapted to Di-Connect:
+# - its strings say Di-Connect where DiPlay's said DiPlay;
+# - the report opens with the Android Auto section, so the last problem is found by its label;
+# - "Connect when Di-Connect opens" starts Android Auto unless CarPlay is chosen, so the boot
+#   test that expects CarPlay chooses CarPlay first.
+edit(root/'common/src/test/java/com/shilapi/xcertplay/HomeLastConnectionProblemTest.kt',
+    ('The iPhone chosen in DiPlay is no longer paired', 'The iPhone chosen in Di-Connect is no longer paired'),
+    ('在 DiPlay 選擇的 iPhone', '在 Di-Connect 選擇的 iPhone'),
+    ('        assertTrue(lines[1], lines[1].matches(Regex(',
+     '        val last = lines.first { it.startsWith("Last problem:") }\n        assertTrue(last, last.matches(Regex('),
+    ('''        assertTrue(lines[2], lines[2].startsWith("Android "))''', '''        assertTrue(lines.toString(), lines.any { it.startsWith("Android ") })'''),
+    ('''        assertEquals("Last problem: none recorded", reportLines()[1])''', '''        assertEquals("Last problem: none recorded", reportLines().first { it.startsWith("Last problem:") })'''))
+edit(root/'common/src/test/java/com/shilapi/xcertplay/LauncherIntentTest.kt',
+    ('''        DiPlayPreferences.savePhone(app, "00:11:22:33:44:55", "Test iPhone")
+        AirPlayPersistence.saveWirelessHotspotMode(app, WirelessHotspotMode.WIFI_P2P)''','''        DiPlayPreferences.savePhone(app, "00:11:22:33:44:55", "Test iPhone")
+        com.andrerinas.openheadunit.DiConnectAndroidAuto.saveOpensWithCarPlay(app, true)
+        AirPlayPersistence.saveWirelessHotspotMode(app, WirelessHotspotMode.WIFI_P2P)'''))
