@@ -29,4 +29,8 @@
     <string name="aa_gwm_nav_cluster_ready_test">仪表盘就绪信号（实验性）</string>
     <string name="aa_gwm_nav_cluster_ready_note">导航通道打开时发送仪表盘可用消息 (0x8001)。尚未证实。重新连接后生效。</string>
     <string name="aa_gwm_nav_protocol_active">上次连接：请求 %1$s，手机回复 %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">仪表盘地图使用 H.265（实验性）</string>
+    <string name="aa_gwm_cluster_hevc_note">使用车辆硬件 HEVC 解码器，请求 H.265 格式的仪表盘地图。同样数据量下更清晰。如果地图变黑或卡顿请关闭。需重启车机后生效。</string>
+    <string name="aa_gwm_climate_bar">中控屏空调条（实验性）</string>
+    <string name="aa_gwm_climate_bar_note">Android Auto 下方的细条，显示两侧座椅的温度和座椅通风，以及副驾音量。Android Auto 会把按键保持在其上方。需重启车机后生效。</string>
 </resources>

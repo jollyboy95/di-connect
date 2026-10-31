@@ -29,4 +29,8 @@
     <string name="aa_gwm_nav_cluster_ready_test">メーター準備完了の信号（実験的機能）</string>
     <string name="aa_gwm_nav_cluster_ready_note">ナビゲーションチャネルが開いたときに、メーター利用可能メッセージ (0x8001) を送ります。未検証です。再接続後に適用されます。</string>
     <string name="aa_gwm_nav_protocol_active">前回の接続: 要求 %1$s、スマートフォンの応答 %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">メーターの地図を H.265 で表示（実験的機能）</string>
+    <string name="aa_gwm_cluster_hevc_note">車のハードウェア HEVC デコーダーを使い、メーターの地図を H.265 で要求します。同じデータ量でより鮮明です。地図が黒くなったりカクついたらオフにしてください。適用するにはヘッドユニットを再起動してください。</string>
+    <string name="aa_gwm_climate_bar">センター画面のエアコンバー（実験的機能）</string>
+    <string name="aa_gwm_climate_bar_note">Android Auto の下に、両席の温度とシートベンチレーション、助手席用の音量を表示する細いバーです。Android Auto の操作部はバーの上に表示されます。適用するにはヘッドユニットを再起動してください。</string>
 </resources>

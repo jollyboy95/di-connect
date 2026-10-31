@@ -1130,6 +1130,14 @@
     <string name="di_connect_theme_category_luxury">Luxury car-inspired</string>
     <string name="di_connect_theme_category_sport">Sport and motorsport</string>
     <string name="di_connect_theme_category_night">Night</string>
+    <string name="di_connect_theme_category_concept">Concepts</string>
     <string name="di_connect_theme_category_pets">Pets</string>
     <string name="di_connect_update_wrong_signer">This download isn\'t a Di-Connect build signed with your key, so it wasn\'t installed.</string>
+    <string name="settings_gwm_hotspot_5ghz">Keep the car’s hotspot on 5 GHz (experimental)</string>
+    <string name="settings_gwm_hotspot_5ghz_description">The car sometimes sets its hotspot to Both, which can pick 2.4 GHz and make Android Auto stutter. When Di-Connect starts, it opens the car’s hotspot screen for a few seconds and sets AP Band to 5.0 GHz if it is not already. The hotspot restarts if it changes. Needs Di-Connect’s ADB access.</string>
+    <string name="settings_gwm_hotspot_5ghz_now">Set the car’s hotspot to 5 GHz now</string>
+    <string name="settings_gwm_climate_test">Climate test (experimental)</string>
+    <string name="settings_gwm_climate_test_description">Checks whether Di-Connect can change the car’s climate: one degree on the driver’s side, or A/C on and off, then reads it back. Use while parked.</string>
+    <string name="settings_gwm_climate_seat_vent">Seat vent</string>
+    <string name="settings_gwm_climate_ac">A/C on/off</string>
 </resources>

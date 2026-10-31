@@ -29,4 +29,8 @@
     <string name="aa_gwm_nav_cluster_ready_test">Signál připravenosti přístrojového štítu (experimentální)</string>
     <string name="aa_gwm_nav_cluster_ready_note">Při otevření navigačního kanálu odešle zprávu o dostupnosti přístrojového štítu (0x8001). Neověřeno. Platí po opětovném připojení.</string>
     <string name="aa_gwm_nav_protocol_active">Poslední připojení: požadováno %1$s, telefon odpověděl %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">Mapa na přístrojové desce v H.265 (experimentální)</string>
+    <string name="aa_gwm_cluster_hevc_note">Požádá telefon o mapu na přístrojové desce v H.265 s hardwarovým dekodérem HEVC vozu. Ostřejší při stejných datech. Vypněte, pokud mapa zčerná nebo trhá. Pro použití restartujte jednotku.</string>
+    <string name="aa_gwm_climate_bar">Klimatizační lišta na středovém displeji (experimentální)</string>
+    <string name="aa_gwm_climate_bar_note">Úzká lišta pod Android Auto s teplotou a ventilací obou sedadel a hlasitostí pro spolujezdce. Android Auto drží ovládání nad ní. Pro použití restartujte jednotku.</string>
 </resources>

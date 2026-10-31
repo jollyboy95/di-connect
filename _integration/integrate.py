@@ -1910,6 +1910,7 @@ edit(D,
         ThemeCategory.SPORT -> R.string.di_connect_theme_category_sport
         ThemeCategory.NIGHT -> R.string.di_connect_theme_category_night
         ThemeCategory.PETS -> R.string.di_connect_theme_category_pets
+        ThemeCategory.CONCEPT -> R.string.di_connect_theme_category_concept
     }
 
     private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean): View {
@@ -1996,6 +1997,7 @@ CONTROL_STRINGS={
  'di_connect_theme_category_luxury':['Luxury car-inspired', 'مستوحى من السيارات الفاخرة', 'Inspirado en coches de lujo', 'Ispirato alle auto di lusso', '高級車風', 'В стиле премиум-авто', 'У стилі преміум-авто', '豪华车风', '豪華車風'],
  'di_connect_theme_category_sport':['Sport and motorsport', 'رياضي', 'Deportivo', 'Sportivo', 'スポーツ', 'Спорт', 'Спорт', '运动', '運動'],
  'di_connect_theme_category_night':['Night', 'ليلي', 'Noche', 'Notte', 'ナイト', 'Ночь', 'Ніч', '夜间', '夜間'],
+ 'di_connect_theme_category_concept':['Concepts', 'مفاهيم', 'Conceptos', 'Concept', 'コンセプト', 'Концепты', 'Концепти', '概念', '概念'],
  'di_connect_theme_category_pets':['Pets', 'الحيوانات الأليفة', 'Mascotas', 'Animali', 'ペット', 'Питомцы', 'Улюбленці', '宠物', '寵物'],
 }
 for p in STRINGS:
@@ -2229,6 +2231,10 @@ class DiConnectUpdateTest {
 # Theme engine (Oct 2026): every cluster theme is data drawn by one renderer, picked per connection
 # on the Themes screen and swapped live. Modern (Android Auto) and Glass (CarPlay) are the original
 # renderers. Android Auto's and CarPlay's cluster layers become a ClusterThemeFrame.
+# Theme scenery is a cached local asset; production map video remains untouched.
+scenery = Path('target/_integration/theme-assets')
+if scenery.is_dir():
+    shutil.copytree(scenery, root/'common/src/main/assets/cluster-themes', dirs_exist_ok=True)
 for name in ['ClusterThemes.kt', 'ThemedClusterView.kt', 'ClusterThemeFrame.kt', 'HudThemeStyle.kt', 'ThemePacks.kt', 'NavDemo.kt']:
     source = Path('target/_integration')/name
     require(source.is_file(), f'Missing theme engine source {name}')
@@ -2601,3 +2607,258 @@ edit(D,
 ''', '''            "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")
         appendLine(HotspotBandProbe.report())
 '''))
+
+# Theme families (Oct 2026). Many themes share one design and differ only in colour. The gallery
+# shows each design once, with numbered colour dots under the preview to pick the colour.
+edit(D,
+    ('''        val categories = ThemeCategory.entries.filter { c -> ClusterThemes.availableFor(connection).any { it.category == c } }''',
+     '''        // Themes that share a design (layout, speed style, map window) and differ only in colour
+        // show as one tile with numbered colour dots; the family sits in its first theme's category.
+        val families = ClusterThemes.availableFor(connection)
+            .groupBy { listOf(it.layout, it.speed, it.mapWindow, it.native) }.values.toList()
+        val categories = ThemeCategory.entries.filter { c -> families.any { it.first().category == c } }'''),
+    ('''            val themes = ClusterThemes.availableFor(connection).filter { it.category == category }''',
+     '''            val themes = families.filter { it.first().category == category }'''),
+    ('''                    val theme = group.getOrNull(index)
+                    line.addView(if (theme == null) View(this) else themeCard(theme, connection, theme.id == selected.id),''',
+     '''                    val family = group.getOrNull(index)
+                    val theme = family?.firstOrNull { it.id == selected.id } ?: family?.first()
+                    line.addView(if (family == null || theme == null) View(this) else themeCard(theme, connection, theme.id == selected.id, family),'''),
+    ('''    private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean): View {''',
+     '''    private fun chooseTheme(theme: ClusterTheme, connection: ClusterConnection) {
+        val before = ClusterThemeStore.selected(this, ClusterConnection.ANDROID_AUTO).mapWindow
+        ClusterThemeStore.select(this, connection, theme.id)
+        // Android Auto's map is sized when it connects: a split theme needs a reconnect.
+        if (ClusterThemeStore.selected(this, ClusterConnection.ANDROID_AUTO).mapWindow != before)
+            android.widget.Toast.makeText(this, getString(R.string.di_connect_theme_split_reconnect), android.widget.Toast.LENGTH_LONG).show()
+        render()
+    }
+
+    private fun themeCard(theme: ClusterTheme, connection: ClusterConnection, selected: Boolean,
+                          family: List<ClusterTheme> = listOf(theme)): View {'''),
+    ('''            setOnClickListener {
+                val before = ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow
+                ClusterThemeStore.select(this@DiPlayActivity, connection, theme.id)
+                // Android Auto's map is sized when it connects: a split theme needs a reconnect.
+                if (ClusterThemeStore.selected(this@DiPlayActivity, ClusterConnection.ANDROID_AUTO).mapWindow != before)
+                    android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_split_reconnect), android.widget.Toast.LENGTH_LONG).show()
+                render()
+            }
+        }''',
+     '''            setOnClickListener { chooseTheme(theme, connection) }
+        }'''),
+    ('''        // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.''',
+     '''        // Colour choices for a design: one numbered dot per theme, filled with its accent colour.
+        if (family.size > 1) card.addView(row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            family.forEachIndexed { i, variant ->
+                if (i > 0) addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(10), 1))
+                val current = variant.id == theme.id
+                val accent = variant.accent or 0xFF000000.toInt()
+                addView(android.widget.TextView(this@DiPlayActivity).apply {
+                    text = "${i + 1}"
+                    gravity = Gravity.CENTER
+                    textSize = 15f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    setTextColor(if (androidx.core.graphics.ColorUtils.calculateLuminance(accent) > .5) Color.BLACK else Color.WHITE)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                        setColor(accent)
+                        setStroke(dp(if (current) 3 else 1), if (current) TEXT else BORDER)
+                    }
+                    contentDescription = variant.name
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { chooseTheme(variant, connection) }
+                }, LinearLayout.LayoutParams(dp(40), dp(40)))
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.'''))
+
+# Hotspot band guard (Oct 2026). The H7's AP Band falls back to "Both", which can pick 2.4 GHz
+# (measured: 2.4 GHz -> apBand 0 at 2437 MHz; 5.0 GHz and Both -> apBand 1 at 5745 MHz). No API sets
+# it, so over local ADB Di-Connect opens the car's hotspot screen and picks 5.0 GHz, once per start.
+(root/'common/src/main/java/com/shilapi/xcertplay/HotspotBandGuard.kt').write_text(
+    Path('target/_integration/HotspotBandGuard.kt').read_text())
+HOTSPOT_STRINGS={
+ 'settings_gwm_hotspot_5ghz':['Keep the car’s hotspot on 5 GHz (experimental)', 'إبقاء نقطة اتصال السيارة على 5 غيغاهرتز (تجريبي)', 'Mantener el punto de acceso del coche en 5 GHz (experimental)', 'Mantieni l’hotspot dell’auto a 5 GHz (sperimentale)', '車のホットスポットを 5 GHz に保つ（実験的機能）', 'Держать точку доступа автомобиля на 5 ГГц (экспериментально)', 'Тримати точку доступу авто на 5 ГГц (експериментально)', '让车辆热点保持 5 GHz（实验性）', '讓車輛熱點保持 5 GHz（實驗性）'],
+ 'settings_gwm_hotspot_5ghz_description':['The car sometimes sets its hotspot to Both, which can pick 2.4 GHz and make Android Auto stutter. When Di-Connect starts, it opens the car’s hotspot screen for a few seconds and sets AP Band to 5.0 GHz if it is not already. The hotspot restarts if it changes. Needs Di-Connect’s ADB access.', 'تضبط السيارة أحيانًا نقطة الاتصال على كليهما، ما قد يختار 2.4 غيغاهرتز ويجعل Android Auto يتقطع. عند بدء Di-Connect يفتح شاشة نقطة الاتصال في السيارة لبضع ثوانٍ ويضبط النطاق على 5.0 غيغاهرتز إن لم يكن كذلك. تُعاد تشغيل نقطة الاتصال إذا تغيّر. يحتاج إلى وصول ADB في Di-Connect.', 'El coche a veces pone su punto de acceso en Ambas, que puede elegir 2,4 GHz y hacer que Android Auto se entrecorte. Al iniciarse, Di-Connect abre unos segundos la pantalla del punto de acceso del coche y pone la banda en 5,0 GHz si no lo está. El punto de acceso se reinicia si cambia. Necesita el acceso ADB de Di-Connect.', 'A volte l’auto imposta l’hotspot su Entrambe, che può scegliere 2,4 GHz e far scattare Android Auto. All’avvio Di-Connect apre per qualche secondo la schermata hotspot dell’auto e imposta la banda a 5,0 GHz se non lo è già. L’hotspot si riavvia se cambia. Richiede l’accesso ADB di Di-Connect.', '車がホットスポットを「両方」に戻すことがあり、2.4 GHz が選ばれると Android Auto が途切れます。Di-Connect の起動時に車のホットスポット画面を数秒開き、AP バンドが 5.0 GHz でなければ切り替えます。変更時はホットスポットが再起動します。Di-Connect の ADB アクセスが必要です。', 'Автомобиль иногда ставит точку доступа на «Оба», и тогда может выбраться 2,4 ГГц, из-за чего Android Auto заикается. При запуске Di-Connect на несколько секунд открывает экран точки доступа и ставит диапазон 5,0 ГГц, если он другой. При изменении точка доступа перезапускается. Нужен доступ ADB для Di-Connect.', 'Авто іноді ставить точку доступу на «Обидва», і тоді може обратися 2,4 ГГц, через що Android Auto заїкається. Під час запуску Di-Connect на кілька секунд відкриває екран точки доступу й ставить діапазон 5,0 ГГц, якщо він інший. Після зміни точка доступу перезапускається. Потрібен доступ ADB для Di-Connect.', '车辆有时会把热点设为“两者”，可能选用 2.4 GHz，导致 Android Auto 卡顿。Di-Connect 启动时会打开车辆热点界面几秒钟，如果频段不是 5.0 GHz 就改为 5.0 GHz。更改后热点会重启。需要 Di-Connect 的 ADB 权限。', '車輛有時會把熱點設為「兩者」，可能選用 2.4 GHz，導致 Android Auto 卡頓。Di-Connect 啟動時會開啟車輛熱點畫面幾秒，如果頻段不是 5.0 GHz 就改為 5.0 GHz。變更後熱點會重新啟動。需要 Di-Connect 的 ADB 權限。'],
+ 'settings_gwm_hotspot_5ghz_now':['Set the car’s hotspot to 5 GHz now', 'ضبط نقطة اتصال السيارة على 5 غيغاهرتز الآن', 'Poner ahora el punto de acceso en 5 GHz', 'Imposta ora l’hotspot a 5 GHz', '今すぐホットスポットを 5 GHz にする', 'Переключить точку доступа на 5 ГГц сейчас', 'Перемкнути точку доступу на 5 ГГц зараз', '立即将热点设为 5 GHz', '立即將熱點設為 5 GHz'],
+}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in HOTSPOT_STRINGS.items())+'</resources>'))
+edit(D,
+    ('''        gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true) }) }
+''', '''        gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true) }) }
+        toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
+            HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
+        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
+            val app = applicationContext
+            Thread({
+                val result = HotspotBandGuard.ensureFiveGhz(app)
+                runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+            }, "hotspot-band-now").start()
+        }, matchButton(10, 56))
+'''),
+    ('''        appendLine(HotspotBandProbe.report())
+''', '''        appendLine(HotspotBandProbe.report())
+        appendLine(HotspotBandGuard.report())
+'''),
+    ('''        scheduleBackgroundUpdateChecks()
+''', '''        scheduleBackgroundUpdateChecks()
+        HotspotBandGuard.checkOnStart(applicationContext)
+'''))
+
+# Climate test (Oct 2026). Before any aircon bar, check writes on the H7: one degree on the driver's
+# temperature or A/C on/off, read back to confirm. Keys and write layout match a GWM voice-control app.
+(root/'common/src/main/java/com/shilapi/xcertplay/ClimateTest.kt').write_text(
+    Path('target/_integration/ClimateTest.kt').read_text())
+CLIMATE_STRINGS={
+ 'settings_gwm_climate_test':['Climate test (experimental)', 'اختبار التكييف (تجريبي)', 'Prueba de climatización (experimental)', 'Test climatizzazione (sperimentale)', 'エアコンテスト（実験的機能）', 'Проверка климата (экспериментально)', 'Перевірка клімату (експериментально)', '空调测试（实验性）', '空調測試（實驗性）'],
+ 'settings_gwm_climate_test_description':['Checks whether Di-Connect can change the car’s climate: one degree on the driver’s side, or A/C on and off, then reads it back. Use while parked.', 'يتحقق مما إذا كان Di-Connect يستطيع تغيير التكييف: درجة واحدة لجهة السائق أو تشغيل المكيّف وإيقافه، ثم يقرأ القيمة مجددًا. استخدمه والسيارة متوقفة.', 'Comprueba si Di-Connect puede cambiar la climatización: un grado en el lado del conductor, o encender y apagar el A/C, y vuelve a leerlo. Úsalo con el coche aparcado.', 'Verifica se Di-Connect può cambiare il clima: un grado lato guida, oppure A/C acceso e spento, poi rilegge il valore. Usalo a veicolo fermo.', 'Di-Connect がエアコンを変更できるか確認します。運転席側の温度を 1 度、または A/C のオン/オフを変え、値を読み直します。停車中に使ってください。', 'Проверяет, может ли Di-Connect менять климат: один градус со стороны водителя или включение и выключение A/C, затем считывает значение. Используйте на стоянке.', 'Перевіряє, чи може Di-Connect змінювати клімат: один градус з боку водія або вмикання й вимикання A/C, потім зчитує значення. Використовуйте на стоянці.', '检查 Di-Connect 能否调节空调：驾驶侧温度调 1 度，或开关 A/C，然后读回数值。请在停车时使用。', '檢查 Di-Connect 能否調整空調：駕駛側溫度調 1 度，或開關 A/C，然後讀回數值。請在停車時使用。'],
+ 'settings_gwm_climate_seat_vent':['Seat vent', 'تهوية المقعد', 'Ventilación asiento', 'Ventilazione sedile', 'シート送風', 'Вентиляция сиденья', 'Вентиляція сидіння', '座椅通风', '座椅通風'],
+ 'settings_gwm_climate_ac':['A/C on/off', 'تشغيل/إيقاف المكيّف', 'A/C sí/no', 'A/C on/off', 'A/C オン/オフ', 'A/C вкл/выкл', 'A/C увімк./вимк.', 'A/C 开/关', 'A/C 開/關'],
+}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in CLIMATE_STRINGS.items())+'</resources>'))
+edit(D,
+    ('''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {''',
+     '''        card.addView(label(getString(R.string.settings_gwm_climate_test), 16, TEXT, true))
+        card.addView(label(getString(R.string.settings_gwm_climate_test_description), 14, MUTED))
+        card.addView(row().apply {
+            fun climate(text: String, action: (android.content.Context) -> String) = button(text, false) {
+                val app = applicationContext
+                Thread({
+                    val result = action(app)
+                    runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+                }, "climate-test").start()
+            }
+            addView(climate("−1 °C") { ClimateTest.temperatureStep(it, -1) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+            addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(climate("+1 °C") { ClimateTest.temperatureStep(it, 1) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+            addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(climate(getString(R.string.settings_gwm_climate_ac)) { ClimateTest.toggleAc(it) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+            addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(climate(getString(R.string.settings_gwm_climate_seat_vent)) { ClimateTest.stepDriverVentilation(it) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {'''))
+
+# Dashboard codec test (Oct 2026): the H7 has OMX.qcom.video.decoder.hevc, so the dashboard map can
+# be asked for as H.265. The decoder follows the codec negotiated for that session.
+edit(aa_java/'aap/AapTransport.kt',
+    ("""            codecName = VideoDecoder.CodecType.H264.settingsValue, forceSoftware = false,""",
+     """            codecName = if (com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterHevc) VideoDecoder.CodecType.H265.settingsValue
+                else VideoDecoder.CodecType.H264.settingsValue, forceSoftware = false,"""))
+
+# GWM: the car's hotspot is its permanent one. Saving Android Auto settings restarts the service,
+# and its shutdown switched the hotspot off ("auto-enable hotspot"), which did not reliably come
+# back on the H7. On GWM, leave the car's hotspot alone when the service stops.
+edit(aa_java/'aap/AapService.kt',
+    ('''        if (!com.andrerinas.openheadunit.DiConnectEngine.handoverInProgress &&
+            App.provide(this).settings.autoEnableHotspot &&''',
+     '''        if (!com.andrerinas.openheadunit.DiConnectEngine.handoverInProgress &&
+            !com.andrerinas.openheadunit.gwm.GwmMode.active(this) &&
+            App.provide(this).settings.autoEnableHotspot &&'''))
+
+# ADB on demand (Oct 2026): the driver had to switch ADB on in the car's settings before every
+# hotspot fix. Di-Connect grants itself WRITE_SECURE_SETTINGS once over an approved connection and
+# then switches ADB on for a moment and back off itself.
+(root/'common/src/main/java/com/shilapi/xcertplay/AdbSwitch.kt').write_text(Path('target/_integration/AdbSwitch.kt').read_text())
+edit(D,('''        HotspotBandGuard.checkOnStart(applicationContext)
+''','''        HotspotBandGuard.checkOnStart(applicationContext)
+        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()
+'''))
+edit(root/'common/src/main/AndroidManifest.xml',
+    ('    <uses-permission android:name="android.permission.WRITE_SETTINGS" />',
+     '    <uses-permission android:name="android.permission.WRITE_SETTINGS" />\n'
+     '    <!-- Granted once over local ADB, so Di-Connect can switch ADB on for a moment itself. -->\n'
+     '    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />'))
+
+# GWM: the H7 runs Wi-Fi (wlan0) and its hotspot (wlan1) on separate radios, so switching the
+# hotspot on must not switch the car's Wi-Fi off. On Android 9 setWifiEnabled(false) still works.
+edit(aa_java/'utils/HotspotManager.kt',
+    ('''                if (wm.isWifiEnabled) {
+                    @Suppress("DEPRECATION")
+                    wm.isWifiEnabled = false''',
+     '''                if (com.andrerinas.openheadunit.gwm.GwmMode.active(context)) {
+                    AppLog.i("HotspotManager: GWM head unit has separate Wi-Fi and hotspot radios; leaving Wi-Fi on.")
+                } else if (wm.isWifiEnabled) {
+                    @Suppress("DEPRECATION")
+                    wm.isWifiEnabled = false'''))
+
+# Climate strip (Oct 2026): on GWM, a slim strip under Android Auto for both seats' temperature and
+# ventilation and passenger volume, shown while the projection is in front.
+edit(dest/'src/main/java/com/andrerinas/openheadunit/aap/AapProjectionActivity.kt',
+    ("""        isForeground = true
+        AppLog.i("AapProjectionActivity: onResume")""",
+     """        isForeground = true
+        AppLog.i("AapProjectionActivity: onResume")
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)"""),
+    ("""        isForeground = false
+        AppLog.i("AapProjectionActivity: onPause")""",
+     """        isForeground = false
+        AppLog.i("AapProjectionActivity: onPause")
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)"""))
+
+# Climate strip lives in the Android Auto activity's window; reading stops when it pauses.
+edit(dest/'src/main/java/com/andrerinas/openheadunit/aap/AapProjectionActivity.kt',
+    ('        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)\n',
+     '        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()\n'),
+    ('    override fun onDestroy() {\n        bydFullscreen.release()',
+     '    override fun onDestroy() {\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)\n        bydFullscreen.release()'))
+# The strip's volume buttons press the car's own volume keys over local ADB (kept on by AdbSwitch).
+edit(D,('        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()\n',
+        Path('target/_integration/volume-hook.kt').read_text()))
+
+# ADB keep-on also at boot, and its state in the diagnostic report.
+edit(root/'common/src/main/java/com/shilapi/xcertplay/BootReceiver.kt',
+    ('        PhoneAudioRoute.attach(context)\n', '        PhoneAudioRoute.attach(context)\n        AdbSwitch.keepOn(context)\n'))
+edit(D,('        appendLine(HotspotBandGuard.report())\n', '        appendLine(HotspotBandGuard.report())\n        appendLine(AdbSwitch.report(appContext))\n'))
+
+# One primary phone (Oct 2026). With Android Auto as what Di-Connect opens with and an Android phone
+# chosen, that phone reaching the car's Bluetooth connects Android Auto, and an iPhone reaching it
+# no longer starts CarPlay; CarPlay stays a tap (or a USB cable) away and is never taken over.
+(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPhoneWake.kt').write_text(
+    Path('target/_integration/DiConnectPhoneWake.kt').read_text())
+edit(root/'common/src/main/java/com/shilapi/xcertplay/PhoneBluetoothReceiver.kt',
+    ('''        if (intent.action != BluetoothDevice.ACTION_ACL_CONNECTED ||
+            !DiPlayPreferences.connectOnPhoneBluetooth(context) ||
+            CarPlayBackgroundSession.hasSession()) return''',
+     '''        if (intent.action != BluetoothDevice.ACTION_ACL_CONNECTED) return
+        if (DiConnectPhoneWake.handle(context, intent)) return
+        if (!DiPlayPreferences.connectOnPhoneBluetooth(context) ||
+            CarPlayBackgroundSession.hasSession()) return'''))
+edit(D,('    private fun consumeBluetoothAutoConnectIntent(intent: Intent): Boolean {\n',
+    '''    private fun consumeBluetoothAutoConnectIntent(intent: Intent): Boolean {
+        if (intent.getBooleanExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO, false)) {
+            intent.removeExtra(DiConnectPhoneWake.EXTRA_ANDROID_AUTO)
+            if (!com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this) && !CarPlayBackgroundSession.hasSession())
+                handler.post { if (!isFinishing && !isDestroyed) connectAndroidAuto(choosePhoneIfNeeded = false) }
+            return false
+        }
+'''),
+    ('        appendLine(HotspotBandGuard.report())\n', '        appendLine(HotspotBandGuard.report())\n        appendLine(DiConnectPhoneWake.report())\n'))
+
+# Climate strip on CarPlay too: the same strip in CarPlay's window, and CarPlay's safe area ends
+# above it so the iPhone keeps its controls clear of the strip.
+host_cp = root/'common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt'
+edit(host_cp,
+    ('        super.onResume()\n        WheelKeyService.restoreIfNeeded(this)\n',
+     '        super.onResume()\n        WheelKeyService.restoreIfNeeded(this)\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)\n'),
+    ('        nightModeController.pause()\n        super.onPause()',
+     '        nightModeController.pause()\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()\n        super.onPause()'),
+    ('    override fun onDestroy() {\n        runCatching { unregisterReceiver(bluetoothOnReceiver) }',
+     '    override fun onDestroy() {\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)\n        runCatching { unregisterReceiver(bluetoothOnReceiver) }'),
+    ('                mapping = AirPlayPersistence.loadSafeAreaRect(this, size.width, size.height),\n                activityWidthPixels = size.width,',
+     '''                mapping = AirPlayPersistence.loadSafeAreaRect(this, size.width, size.height).let { saved ->
+                    val strip = com.andrerinas.openheadunit.gwm.GwmClimateBar.insetFraction(this)
+                    if (strip <= 0f) saved else {
+                        val base = saved ?: com.shilapi.xcertplay.airplay.AirPlaySafeArea.full(size.width, size.height)
+                        val limit = (size.height * (1f - strip)).toInt()
+                        if (base.bottom <= limit) base
+                        else com.shilapi.xcertplay.airplay.SafeAreaRect(base.left, base.top, base.right, maxOf(base.top + 1, limit))
+                    }
+                },
+                activityWidthPixels = size.width,'''))

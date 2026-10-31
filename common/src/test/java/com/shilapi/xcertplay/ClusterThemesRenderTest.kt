@@ -51,20 +51,113 @@ class ClusterThemesRenderTest {
             var drawn = 0
             for (y in 0 until height step 4) for (x in 0 until width / 3 step 4) if (bitmap.getPixel(x, y) != background) drawn++
             assertTrue("${theme.id} on $connection draws its instruments", drawn > 500)
-            // A theme with its own map window has Google's card inside that window instead.
-            // The full-map instrument layout draws Di-Connect's directions instead (turn card hidden).
+            // Google's card is hidden with the turn-card flag, so every Android Auto theme draws
+            // Di-Connect's own directions somewhere; nothing needs keeping clear for Google.
             if (connection == ClusterConnection.ANDROID_AUTO && theme.dim == 0 && theme.mapWindow == null &&
-                theme.layout != ClusterTheme.Layout.BAVARIAN) {
-                for (y in (height * .42f).toInt() until (height * .74f).toInt() step 3)
-                    for (x in (width * .76f).toInt() until (width * .99f).toInt() step 3)
-                        assertEquals("${theme.id} covers Google's card at $x,$y", background, bitmap.getPixel(x, y))
+                theme.layout != ClusterTheme.Layout.BAVARIAN && theme.layout != ClusterTheme.Layout.MUSIC_LOUNGE &&
+                theme.layout !in conceptLayouts) {
+                assertNotEquals("${theme.id} draws directions on the right", background,
+                    bitmap.getPixel((width * .835f).toInt(), (height * .52f).toInt()))
             }
-            if (connection == ClusterConnection.CARPLAY) {
+            if (connection == ClusterConnection.CARPLAY && theme.layout !in conceptLayouts) {
                 assertNotEquals("${theme.id} draws the CarPlay directions card", background,
                     bitmap.getPixel((width * .77f).toInt(), (height * .45f).toInt()))
             }
             bitmap.recycle()
         }
+    }
+
+    private val conceptLayouts = setOf(ClusterTheme.Layout.TURBINE_LUXURY, ClusterTheme.Layout.PERFORMANCE_COCKPIT,
+        ClusterTheme.Layout.MUSIC_PANORAMA, ClusterTheme.Layout.DAYLIGHT_FUTURE, ClusterTheme.Layout.SMOKED_GLASS,
+        ClusterTheme.Layout.AURUM_TOUR, ClusterTheme.Layout.WOODLAND_RETREAT, ClusterTheme.Layout.AURORA_OPEN,
+        ClusterTheme.Layout.HORIZON_RIBBON,ClusterTheme.Layout.ORBIT_GLASS,ClusterTheme.Layout.NIGHTFALL_AUDIO,
+        ClusterTheme.Layout.AURORA_PLUS, ClusterTheme.Layout.ZEN, ClusterTheme.Layout.SPORT_ARC, ClusterTheme.Layout.HORIZON_BAR,
+        ClusterTheme.Layout.FLOAT_CARDS, ClusterTheme.Layout.INDUSTRIAL, ClusterTheme.Layout.VERTICAL_STACK,
+        ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH, ClusterTheme.Layout.ECLIPSE, ClusterTheme.Layout.FLOAT_GLASS,
+        ClusterTheme.Layout.HORIZON_PLUS, ClusterTheme.Layout.PRISM, ClusterTheme.Layout.OVAL_FRAME, ClusterTheme.Layout.DUAL_DIAL,
+        ClusterTheme.Layout.WIDE_HORIZON, ClusterTheme.Layout.ELONGATED)
+
+    @Test fun materialPanelsDoNotInheritThePreviousShadowOpacity() {
+        val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
+            .first { it.isFile }.readText().let(ThemePacks::parse)
+        for (layout in listOf(ClusterTheme.Layout.SMOKED_GLASS, ClusterTheme.Layout.DAYLIGHT_FUTURE)) {
+            val theme = catalogue.first { it.layout == layout }
+            val view = ThemedClusterView(context,theme,ClusterConnection.ANDROID_AUTO,preview=true)
+            val w=960;val h=360
+            view.measure(View.MeasureSpec.makeMeasureSpec(w,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(h,View.MeasureSpec.EXACTLY))
+            view.layout(0,0,w,h)
+            fun surface(background:Int):Int {
+                val bitmap=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888)
+                bitmap.eraseColor(background);view.draw(Canvas(bitmap))
+                val pixel=bitmap.getPixel((w*.10f).toInt(),(h*.13f).toInt());bitmap.recycle();return pixel
+            }
+            val dark=surface(Color.BLACK);val light=surface(Color.WHITE)
+            assertTrue("${theme.name} must retain its material opacity over a bright map",
+                kotlin.math.abs(Color.red(dark)-Color.red(light))<30 &&
+                kotlin.math.abs(Color.green(dark)-Color.green(light))<30 &&
+                kotlin.math.abs(Color.blue(dark)-Color.blue(light))<30)
+        }
+    }
+
+    @Test fun conceptsRenderGuidanceOverMapAtFullAndCompactSizes() {
+        val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
+            .first { it.isFile }.readText().let(ThemePacks::parse)
+        val concepts = (ClusterThemes.builtIn+catalogue).distinctBy{it.id}.filter { it.layout in conceptLayouts }
+        assertEquals(36,concepts.size) // 13 earlier concepts, the nine-tile sheet, the glass set and the cockpit set
+        val output=File("build/reports/gwm-cluster/themes").apply{mkdirs()}
+        val artwork=Bitmap.createBitmap(300,300,Bitmap.Config.ARGB_8888)
+        val cover=Canvas(artwork)
+        val paint=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        paint.shader=android.graphics.LinearGradient(0f,0f,300f,300f,Color.rgb(21,61,75),Color.rgb(215,163,105),android.graphics.Shader.TileMode.CLAMP)
+        cover.drawRect(0f,0f,300f,300f,paint);paint.shader=null
+        paint.color=Color.argb(140,10,30,40)
+        for(i in 0..8) cover.drawRect(i*42f,140f-i*8f,i*42f+25f,300f,paint)
+        for(connection in ClusterConnection.entries) for(theme in concepts.filter{it.availableFor(connection)}) for((w,h) in listOf(1920 to 720,960 to 360)) {
+            val view=ThemedClusterView(context,theme,connection,preview=true)
+            view.setSnapshot(GwmVehicleData.Snapshot(112f,"D",82f,380f,22f,SystemClock.elapsedRealtime(),35350f,-15f,2400f))
+            view.setPreviewMusic(ClusterMusicState.Snapshot(CarPlayNowPlaying(title="Midnight Sun",artist="Ásgeir",
+                durationMillis=277000L,elapsedMillis=134000L),artwork))
+            view.measure(View.MeasureSpec.makeMeasureSpec(w,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(h,View.MeasureSpec.EXACTLY));view.layout(0,0,w,h)
+            fun render(guidance:ClusterTurnGuidance?):Bitmap {
+                view.setGuidance(guidance)
+                val bitmap=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888)
+                val canvas=Canvas(bitmap)
+                canvas.drawColor(Color.rgb(22,48,65))
+                // Schematic test map only. Production always uses the phone's video.
+                paint.color=Color.rgb(31,64,74)
+                for(i in 0..22) for(j in 0..10) {
+                    val x=i*w/22f;val y=j*h/10f
+                    canvas.drawRect(x+3f,y+3f,x+w/29f,y+h/15f,paint)
+                }
+                paint.color=Color.rgb(82,112,129);paint.strokeWidth=h*.005f
+                for(i in -5..20) canvas.drawLine(i*w/14f,0f,(i+3)*w/14f,h.toFloat(),paint)
+                val route=android.graphics.Path().apply{moveTo(.5f*w,h.toFloat());cubicTo(.44f*w,.7f*h,.6f*w,.6f*h,.52f*w,.4f*h);lineTo(.56f*w,0f)}
+                paint.style=android.graphics.Paint.Style.STROKE;paint.strokeWidth=h*.014f;paint.color=Color.rgb(71,215,218);canvas.drawPath(route,paint);paint.style=android.graphics.Paint.Style.FILL
+                // Distinct map car marker, deliberately behind the theme like the real phone video.
+                paint.color=Color.WHITE
+                canvas.drawRoundRect(android.graphics.RectF(.51f*w,.70f*h,.535f*w,.765f*h),h*.008f,h*.008f,paint)
+                val before=bitmap.copy(Bitmap.Config.ARGB_8888,false)
+                view.draw(canvas)
+                if(theme.layout in setOf(ClusterTheme.Layout.AURORA_OPEN,ClusterTheme.Layout.HORIZON_RIBBON,
+                    ClusterTheme.Layout.ORBIT_GLASS,ClusterTheme.Layout.NIGHTFALL_AUDIO,ClusterTheme.Layout.PERFORMANCE_COCKPIT)) {
+                    // A generous central corridor protects both the vehicle and the next stretch of road.
+                    for(y in (h*.40f).toInt() until (h*.82f).toInt() step 7)
+                        for(x in (w*.43f).toInt() until (w*.65f).toInt() step 7)
+                            assertEquals("${theme.name} obscures the map vehicle/route at $x,$y",before.getPixel(x,y),bitmap.getPixel(x,y))
+                }
+                before.recycle()
+                return bitmap
+            }
+            val empty=render(null)
+            val active=render(ClusterTurnGuidance(3,0,1200,"Pacific Hwy",arrivalEpochSeconds=1793239080L,
+                remainingSeconds=1680L,remainingMeters=24000L))
+            var changed=0
+            for(y in 0 until h step 4) for(x in 0 until w step 4) if(empty.getPixel(x,y)!=active.getPixel(x,y)) changed++
+            assertTrue("${theme.name} preview hides its guidance",changed>100)
+            File(output,"${theme.id}-concept-${w}${if(connection==ClusterConnection.CARPLAY) "-carplay" else ""}.png").outputStream().use{active.compress(Bitmap.CompressFormat.PNG,100,it)}
+            empty.recycle();active.recycle()
+        }
+        artwork.recycle()
     }
 
     @Test fun choicesArePerConnectionUnlessOneThemeIsUsedForBoth() {
@@ -253,9 +346,12 @@ class ClusterThemesRenderTest {
         }
         val mono = ClusterThemes.byId("mono-line")!!
         ClusterThemeStore.setDirectionsCard(context, false)
-        draw(mono).let { assertEquals(Color.MAGENTA, it.getPixel(width / 2, (height * .2f).toInt())); it.recycle() }
+        // Older full-map layouts put the turn card on the right, where Google's card used to be.
+        val cardX = (width * .835f).toInt()
+        val cardY = (height * .52f).toInt()
+        draw(mono).let { assertEquals(Color.MAGENTA, it.getPixel(cardX, cardY)); it.recycle() }
         ClusterThemeStore.setDirectionsCard(context, true)
-        draw(mono).let { assertNotEquals(Color.MAGENTA, it.getPixel(width / 2, (height * .2f).toInt())); it.recycle() }
+        draw(mono).let { assertNotEquals(Color.MAGENTA, it.getPixel(cardX, cardY)); it.recycle() }
         // A theme with its own map window puts the card at the top of that window.
         draw(ClusterThemes.byId("split-test")!!).let {
             assertNotEquals(Color.MAGENTA, it.getPixel((width * .75f).toInt(), (height * .2f).toInt())); it.recycle()

@@ -29,4 +29,8 @@
     <string name="aa_gwm_nav_cluster_ready_test">إشارة جاهزية لوحة العدادات (تجريبي)</string>
     <string name="aa_gwm_nav_cluster_ready_note">يرسل رسالة توفر لوحة العدادات (0x8001) عند فتح قناة الملاحة. غير مثبت. يُطبَّق بعد إعادة الاتصال.</string>
     <string name="aa_gwm_nav_protocol_active">آخر اتصال: الطلب %1$s، ورد الهاتف %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">خريطة لوحة العدادات بترميز H.265 (تجريبي)</string>
+    <string name="aa_gwm_cluster_hevc_note">يطلب من الهاتف خريطة لوحة العدادات بترميز H.265 باستخدام مفكك HEVC في السيارة. أوضح بنفس كمية البيانات. أوقفه إذا أصبحت الخريطة سوداء أو متقطعة. أعد تشغيل الوحدة الرئيسية للتطبيق.</string>
+    <string name="aa_gwm_climate_bar">شريط التكييف على الشاشة الوسطى (تجريبي)</string>
+    <string name="aa_gwm_climate_bar_note">شريط رفيع أسفل Android Auto لدرجة الحرارة وتهوية المقعدين، ومستوى الصوت للراكب. يُبقي Android Auto أزراره فوقه. أعد تشغيل الوحدة الرئيسية للتطبيق.</string>
 </resources>

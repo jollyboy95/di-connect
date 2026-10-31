@@ -29,4 +29,8 @@
     <string name="aa_gwm_nav_cluster_ready_test">Semnal bord pregătit (experimental)</string>
     <string name="aa_gwm_nav_cluster_ready_note">Trimite mesajul de bord de instrumente disponibil (0x8001) când se deschide canalul de navigație. Nedovedit. Se aplică după reconectare.</string>
     <string name="aa_gwm_nav_protocol_active">Ultima conexiune: solicitat %1$s, telefonul a răspuns %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">Harta din bord în H.265 (experimental)</string>
+    <string name="aa_gwm_cluster_hevc_note">Cere telefonului harta din bord în H.265, cu decodorul HEVC hardware al mașinii. Mai clară la aceleași date. Opriți dacă harta devine neagră sau sacadează. Reporniți unitatea principală pentru a aplica.</string>
+    <string name="aa_gwm_climate_bar">Bară de climatizare pe ecranul central (experimental)</string>
+    <string name="aa_gwm_climate_bar_note">O bară subțire sub Android Auto cu temperatura și ventilația ambelor scaune și volumul pentru pasager. Android Auto își ține comenzile deasupra. Reporniți unitatea principală pentru a aplica.</string>
 </resources>

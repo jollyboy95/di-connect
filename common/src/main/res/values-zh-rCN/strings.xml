@@ -1087,6 +1087,14 @@
     <string name="di_connect_theme_category_luxury">豪华车风</string>
     <string name="di_connect_theme_category_sport">运动</string>
     <string name="di_connect_theme_category_night">夜间</string>
+    <string name="di_connect_theme_category_concept">概念</string>
     <string name="di_connect_theme_category_pets">宠物</string>
     <string name="di_connect_update_wrong_signer">此下载不是用你的密钥签名的 Di-Connect 版本，因此未安装。</string>
+    <string name="settings_gwm_hotspot_5ghz">让车辆热点保持 5 GHz（实验性）</string>
+    <string name="settings_gwm_hotspot_5ghz_description">车辆有时会把热点设为“两者”，可能选用 2.4 GHz，导致 Android Auto 卡顿。Di-Connect 启动时会打开车辆热点界面几秒钟，如果频段不是 5.0 GHz 就改为 5.0 GHz。更改后热点会重启。需要 Di-Connect 的 ADB 权限。</string>
+    <string name="settings_gwm_hotspot_5ghz_now">立即将热点设为 5 GHz</string>
+    <string name="settings_gwm_climate_test">空调测试（实验性）</string>
+    <string name="settings_gwm_climate_test_description">检查 Di-Connect 能否调节空调：驾驶侧温度调 1 度，或开关 A/C，然后读回数值。请在停车时使用。</string>
+    <string name="settings_gwm_climate_seat_vent">座椅通风</string>
+    <string name="settings_gwm_climate_ac">A/C 开/关</string>
 </resources>

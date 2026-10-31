@@ -950,6 +950,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     override fun onPause() {
         isForeground = false
         AppLog.i("AapProjectionActivity: onPause")
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()
         super.onPause()
         RenameNotice.dismiss()
         // Clear any activity-local fullscreen override when leaving the Activity so
@@ -984,6 +985,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         super.onResume()
         isForeground = true
         AppLog.i("AapProjectionActivity: onResume")
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
         // Show the one-time rename notice even here, on top of an active projection.
         RenameNotice.maybeShow(this, App.provide(this).settings)
         applyStickyOrientation()
@@ -1805,6 +1807,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private val bydFullscreen = com.andrerinas.openheadunit.utils.BydFullscreen()
 
     override fun onDestroy() {
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)
         bydFullscreen.release()
         super.onDestroy()
         if (isFinishReceiverRegistered) {

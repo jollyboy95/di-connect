@@ -23,6 +23,8 @@ internal object GwmVehicleData {
     private const val SERVICE = "gwm_adapter"
     private const val DESCRIPTOR = "com.gwm.android.adapter.IGwmAdapterService"
     private const val TRANSACTION_GET_DATA = 1
+    /** Writes values; same layout as GET_DATA with the values in place of the second array. */
+    private const val TRANSACTION_SET_DATA = 2
     private const val POLL_MILLIS = 250L
     /** A value older than this is treated as unavailable so the cluster never shows a stale speed. */
     const val STALE_MILLIS = 2_000L
@@ -42,6 +44,17 @@ internal object GwmVehicleData {
     /** Same read-only RPM keys used by SmartSplit v3.4 DataManager. */
     const val ENGINE_RPM = "car.basic.engine_speed"
     const val OFFROAD_ENGINE_RPM = "car.off_road_info.engine_rpm"
+    /**
+     * Climate and drive-mode keys, read only by the settings scan for now. Names from the same
+     * adapter namespace a GWM voice-control app uses; whether writes work is a separate question.
+     */
+    val CLIMATE_KEYS = arrayOf("car.hvac.power_mode", "car.hvac.ac_enable", "car.hvac.auto_enable", "car.hvac.driver_temperature",
+        "car.hvac.pass_temperature", "car.hvac.fan_speed", "car.hvac.sync_enable", "car.hvac.eco_enable", "car.hvac.front_defrost_enable",
+        "car.hvac.rear_defrost_enable", "car.hvac.heating_enable", "car.drive.setting.drive_mode", "car.drive_setting.drive_mode",
+        "car.comfort_setting.driver_seat_ventilation_level", "car.comfort_setting.passenger_seat_ventilation_level",
+        "car.comfort_setting.driver_seat_ventilation_level_nine", "car.comfort_setting.passenger_seat_ventilation_level_nine",
+        "car.hvac.seat_ventilation_fl_mode", "car.hvac.seat_ventilation_fr_mode",
+        "car.comfort_setting.driver_seat_heating_level", "car.comfort_setting.passenger_seat_heating_level")
     val KEYS = arrayOf(SPEED, GEAR_STATUS, CURRENT_GEAR, FUEL_PERCENT, RANGE_KM, OUTSIDE_TEMP, TOTAL_ODOMETER, ODOMETER, BATTERY_CURRENT, ENGINE_RPM, OFFROAD_ENGINE_RPM)
 
     data class Snapshot(
@@ -123,6 +136,31 @@ internal object GwmVehicleData {
         }
     }
 
+    /**
+     * Writes [values] to [keys] in one call and returns the adapter's status code. [caller] is the
+     * package name the adapter is told; the car may only take changes from apps it knows. The
+     * adapter accepting a change does not prove the car made it, so callers read the value back.
+     */
+    fun write(context: Context, keys: Array<String>, values: Array<String>, caller: String = context.packageName): Int {
+        val service = binder ?: lookup().also { binder = it }
+        val data = Parcel.obtain()
+        val reply = Parcel.obtain()
+        try {
+            data.writeInterfaceToken(DESCRIPTOR)
+            data.writeInt(1)
+            data.writeString(caller)
+            data.writeStringArray(keys)
+            data.writeStringArray(values)
+            data.writeInt(1)
+            check(service.transact(TRANSACTION_SET_DATA, data, reply, 0)) { "transact returned false" }
+            reply.readException()
+            return if (reply.dataAvail() >= 4) reply.readInt() else 0
+        } finally {
+            reply.recycle()
+            data.recycle()
+        }
+    }
+
     private fun lookup(): IBinder {
         val manager = Class.forName("android.os.ServiceManager")
         val found = manager.getMethod("getService", String::class.java).invoke(null, SERVICE) as? IBinder
@@ -185,6 +223,11 @@ internal object GwmVehicleData {
             append("  → speed=${snapshot.speedKph} gear=${snapshot.gear} fuel=${snapshot.fuelPercent}% ")
             append("range=${snapshot.rangeKm} km outside=${snapshot.outsideTempC} °C odo=${snapshot.odometerKm} km ")
             append("battery=${snapshot.batteryCurrentA} A engine=${snapshot.engineRpm} rpm")
+            val climate = runCatching { read(context, CLIMATE_KEYS) }.getOrNull()
+            appendLine()
+            appendLine("Climate and drive mode (read only):")
+            if (climate == null) appendLine("  (read failed)")
+            else CLIMATE_KEYS.forEach { appendLine("  $it = ${climate[it] ?: "(no value)"}") }
         }
     }.getOrElse { "GWM vehicle data ($SERVICE): unavailable — ${it.javaClass.simpleName}: ${it.message}" }
 }

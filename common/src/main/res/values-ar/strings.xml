@@ -1076,6 +1076,14 @@
     <string name="di_connect_theme_category_luxury">مستوحى من السيارات الفاخرة</string>
     <string name="di_connect_theme_category_sport">رياضي</string>
     <string name="di_connect_theme_category_night">ليلي</string>
+    <string name="di_connect_theme_category_concept">مفاهيم</string>
     <string name="di_connect_theme_category_pets">الحيوانات الأليفة</string>
     <string name="di_connect_update_wrong_signer">هذا التنزيل ليس إصدارًا من Di-Connect موقّعًا بمفتاحك، لذلك لم يُثبَّت.</string>
+    <string name="settings_gwm_hotspot_5ghz">إبقاء نقطة اتصال السيارة على 5 غيغاهرتز (تجريبي)</string>
+    <string name="settings_gwm_hotspot_5ghz_description">تضبط السيارة أحيانًا نقطة الاتصال على كليهما، ما قد يختار 2.4 غيغاهرتز ويجعل Android Auto يتقطع. عند بدء Di-Connect يفتح شاشة نقطة الاتصال في السيارة لبضع ثوانٍ ويضبط النطاق على 5.0 غيغاهرتز إن لم يكن كذلك. تُعاد تشغيل نقطة الاتصال إذا تغيّر. يحتاج إلى وصول ADB في Di-Connect.</string>
+    <string name="settings_gwm_hotspot_5ghz_now">ضبط نقطة اتصال السيارة على 5 غيغاهرتز الآن</string>
+    <string name="settings_gwm_climate_test">اختبار التكييف (تجريبي)</string>
+    <string name="settings_gwm_climate_test_description">يتحقق مما إذا كان Di-Connect يستطيع تغيير التكييف: درجة واحدة لجهة السائق أو تشغيل المكيّف وإيقافه، ثم يقرأ القيمة مجددًا. استخدمه والسيارة متوقفة.</string>
+    <string name="settings_gwm_climate_seat_vent">تهوية المقعد</string>
+    <string name="settings_gwm_climate_ac">تشغيل/إيقاف المكيّف</string>
 </resources>

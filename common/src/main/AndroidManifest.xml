@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Optional, user-authorized startup of the car's own hotspot. -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- Granted once over local ADB, so Di-Connect can switch ADB on for a moment itself. -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- Optional, user-authorized installation of a released update APK. -->

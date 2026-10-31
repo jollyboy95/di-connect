@@ -81,7 +81,8 @@ class AapTransport(
     internal val clusterVideo: AapVideo by lazy {
         AapVideo(
             com.andrerinas.openheadunit.App.provide(context).clusterVideoDecoder, settings,
-            codecName = VideoDecoder.CodecType.H264.settingsValue, forceSoftware = false,
+            codecName = if (com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterHevc) VideoDecoder.CodecType.H265.settingsValue
+                else VideoDecoder.CodecType.H264.settingsValue, forceSoftware = false,
         ) {
             send(VideoFocusEvent(gain = true, unsolicited = true, channel = Channel.ID_CLUSTER_VID))
         }

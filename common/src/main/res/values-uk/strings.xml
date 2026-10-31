@@ -1039,6 +1039,14 @@
     <string name="di_connect_theme_category_luxury">У стилі преміум-авто</string>
     <string name="di_connect_theme_category_sport">Спорт</string>
     <string name="di_connect_theme_category_night">Ніч</string>
+    <string name="di_connect_theme_category_concept">Концепти</string>
     <string name="di_connect_theme_category_pets">Улюбленці</string>
     <string name="di_connect_update_wrong_signer">Це завантаження не є збіркою Di-Connect, підписаною вашим ключем, тому його не встановлено.</string>
+    <string name="settings_gwm_hotspot_5ghz">Тримати точку доступу авто на 5 ГГц (експериментально)</string>
+    <string name="settings_gwm_hotspot_5ghz_description">Авто іноді ставить точку доступу на «Обидва», і тоді може обратися 2,4 ГГц, через що Android Auto заїкається. Під час запуску Di-Connect на кілька секунд відкриває екран точки доступу й ставить діапазон 5,0 ГГц, якщо він інший. Після зміни точка доступу перезапускається. Потрібен доступ ADB для Di-Connect.</string>
+    <string name="settings_gwm_hotspot_5ghz_now">Перемкнути точку доступу на 5 ГГц зараз</string>
+    <string name="settings_gwm_climate_test">Перевірка клімату (експериментально)</string>
+    <string name="settings_gwm_climate_test_description">Перевіряє, чи може Di-Connect змінювати клімат: один градус з боку водія або вмикання й вимикання A/C, потім зчитує значення. Використовуйте на стоянці.</string>
+    <string name="settings_gwm_climate_seat_vent">Вентиляція сидіння</string>
+    <string name="settings_gwm_climate_ac">A/C увімк./вимк.</string>
 </resources>

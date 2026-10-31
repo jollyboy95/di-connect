@@ -29,4 +29,8 @@
     <string name="aa_gwm_nav_cluster_ready_test">Sygnał gotowości zestawu wskaźników (eksperymentalne)</string>
     <string name="aa_gwm_nav_cluster_ready_note">Po otwarciu kanału nawigacji wysyła komunikat o dostępności zestawu wskaźników (0x8001). Nie potwierdzono. Działa po ponownym połączeniu.</string>
     <string name="aa_gwm_nav_protocol_active">Ostatnie połączenie: żądano %1$s, telefon odpowiedział %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">Mapa na desce w H.265 (eksperymentalne)</string>
+    <string name="aa_gwm_cluster_hevc_note">Prosi telefon o mapę na desce rozdzielczej w H.265, używając sprzętowego dekodera HEVC auta. Ostrzej przy tych samych danych. Wyłącz, jeśli mapa zczernieje lub się zacina. Aby zastosować, uruchom ponownie radio.</string>
+    <string name="aa_gwm_climate_bar">Pasek klimatyzacji na ekranie środkowym (eksperymentalne)</string>
+    <string name="aa_gwm_climate_bar_note">Wąski pasek pod Android Auto z temperaturą i wentylacją obu foteli oraz głośnością dla pasażera. Android Auto trzyma swoje przyciski nad nim. Aby zastosować, uruchom ponownie radio.</string>
 </resources>

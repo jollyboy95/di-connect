@@ -24,17 +24,25 @@ internal object HotspotBandProbe {
         "properties" to "getprop 2>&1 | grep -iE 'hostapd|softap|wifi.*ap|band|5g|tether' | head -n 40",
         "packages" to "pm list packages 2>&1 | grep -iE 'setting|wifi|hotspot|tether' | head -n 30",
         "wifi files" to "ls -l /data/misc/wifi /data/vendor/wifi/hostapd 2>&1 | head -n 20",
-        "cmd wifi" to "cmd wifi help 2>&1 | head -n 25",
+        "cmd wifi" to "cmd wifi help 2>&1 | head -n 4",
+        // A second access point (a 2.4 GHz radio beside the 5 GHz one) shows up as another interface.
+        "interfaces" to "for i in /sys/class/net/*; do echo \"\${i##*/} \$(cat \$i/operstate 2>/dev/null)\"; done 2>&1 | head -n 30",
+        "hostapd processes" to "ps -A 2>&1 | grep -iE 'hostapd|wpa|sap' | head -n 10",
+        "more properties" to "getprop 2>&1 | grep -iE 'sap|softap|dual|bridge|wlan|wifi\\.|hotspot|ap_band|apband' | head -n 40",
+        // What the car's hotspot app lets other apps do: activities, receivers and their actions.
+        "hotspot app" to "dumpsys package com.mak.wifisettings 2>&1 | grep -iE 'Activity|Receiver|Service|Provider|Action:|act=|authority|exported' | head -n 60",
+        "hotspot app prefs" to "dumpsys activity provider com.mak.wifisettings 2>&1 | head -n 15",
     )
 
     private val PRIVATE = Regex("ssid|psk|pass|key|bssid|mac|addr|secret|network name", RegexOption.IGNORE_CASE)
 
     /** Runs the probe over local ADB (only if already approved) and returns readable text. Blocking. */
     fun run(context: Context): String {
-        val text = runCatching {
+        val text = runCatching { AdbSwitch.withAdb(context) {
             LocalAdb(AdbKeys.load(context.applicationContext)).use { adb ->
                 when (val access = adb.connect(mayAsk = false)) {
                     LocalAdb.Access.READY -> buildString {
+                        AdbSwitch.grantSelf(context, adb)
                         for ((title, command) in COMMANDS) {
                             appendLine("[$title]")
                             val out = adb.shell(command, 8_000).orEmpty().lines()
@@ -48,7 +56,7 @@ internal object HotspotBandProbe {
                     else -> "Local ADB not available ($access). Approve Di-Connect's ADB access, then scan again."
                 }
             }
-        }.getOrElse { "Hotspot band probe failed: ${it.javaClass.simpleName}" }
+        } }.getOrElse { "Hotspot band probe failed: ${it.javaClass.simpleName}" }
         val stamped = "--- Hotspot band probe ${SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())} ---\n$text".trimEnd()
         last = stamped
         return stamped

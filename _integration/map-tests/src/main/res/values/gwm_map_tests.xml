@@ -29,4 +29,8 @@
     <string name="aa_gwm_nav_cluster_ready_test">Cluster-ready signal (experimental)</string>
     <string name="aa_gwm_nav_cluster_ready_note">Sends the instrument-cluster-available message (0x8001) when the navigation channel opens. Unproven. Applies after reconnecting.</string>
     <string name="aa_gwm_nav_protocol_active">Last connection: requested %1$s, phone answered %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">Dashboard map in H.265 (experimental)</string>
+    <string name="aa_gwm_cluster_hevc_note">Asks the phone for the dashboard map as H.265, using the car’s hardware HEVC decoder. Sharper for the same data. Turn off if the dashboard map goes black or stutters. Restart the head unit to apply.</string>
+    <string name="aa_gwm_climate_bar">Climate strip on the centre screen (experimental)</string>
+    <string name="aa_gwm_climate_bar_note">A slim strip under Android Auto with temperature and seat ventilation for both seats, and volume for the passenger. Android Auto keeps its controls above it. Restart the head unit to apply.</string>
 </resources>

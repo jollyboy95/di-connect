@@ -12,6 +12,7 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         // Starts the watcher for other apps' calls when that setting is on, even without opening DiPlay.
         PhoneAudioRoute.attach(context)
+        AdbSwitch.keepOn(context)
         val launchEnabled = AirPlayPersistence.loadAutoStartOnBoot(context)
         StartupDiagnosticSnapshot.received(context, launchEnabled)
         if (!launchEnabled) return

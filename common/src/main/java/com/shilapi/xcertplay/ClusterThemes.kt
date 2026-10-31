@@ -12,7 +12,7 @@ import java.io.File
 internal enum class ClusterConnection { ANDROID_AUTO, CARPLAY }
 
 /** The Themes screen groups themes by these; names avoid real brands on purpose. */
-internal enum class ThemeCategory { EVERYDAY, TECH, LUXURY, SPORT, NIGHT, PETS }
+internal enum class ThemeCategory { CONCEPT, EVERYDAY, TECH, LUXURY, SPORT, NIGHT, PETS }
 
 /**
  * A cluster theme is data, not code: a panel style, a speed style, a battery-flow style, a palette
@@ -47,7 +47,10 @@ internal data class ClusterTheme(
      * cluster on the left, one solid sidebar, or a console along the bottom edge. All keep Google's
      * card on Android Auto (the right, 42-74 % down) clear.
      */
-    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE, HYBRID_SPORT, VAPORWAVE_STEREO, MUSIC_LOUNGE, BAVARIAN }
+    enum class Layout { CLASSIC, MONO_LINE, TWIN_DIALS, SIDEBAR, DECK, RIBBONS, ORBIT, ARCS, PERFORMANCE, SPLIT, CENTRE, HYBRID_SPORT, VAPORWAVE_STEREO, MUSIC_LOUNGE, BAVARIAN, TURBINE_LUXURY, PERFORMANCE_COCKPIT, MUSIC_PANORAMA, DAYLIGHT_FUTURE, SMOKED_GLASS, AURUM_TOUR, WOODLAND_RETREAT, AURORA_OPEN, HORIZON_RIBBON, ORBIT_GLASS, NIGHTFALL_AUDIO,
+        AURORA_PLUS, ZEN, SPORT_ARC, HORIZON_BAR, FLOAT_CARDS, INDUSTRIAL, VERTICAL_STACK, SPLIT_BAR, STEALTH,
+        ECLIPSE, FLOAT_GLASS, HORIZON_PLUS, PRISM,
+        OVAL_FRAME, DUAL_DIAL, WIDE_HORIZON, ELONGATED }
     enum class Face { SANS, SERIF, MONO }
 
     /**
@@ -58,6 +61,8 @@ internal data class ClusterTheme(
     val mapWindow: Pair<Float, Float>? get() = when (layout) {
         Layout.SPLIT, Layout.HYBRID_SPORT, Layout.VAPORWAVE_STEREO, Layout.MUSIC_LOUNGE -> SPLIT_MAP
         Layout.CENTRE -> CENTRE_MAP
+        Layout.MUSIC_PANORAMA -> .62f to 1f
+        Layout.WOODLAND_RETREAT -> .54f to 1f
         else -> null
     }
 
@@ -149,7 +154,7 @@ internal object ClusterThemes {
             speed = ClusterTheme.Speed.TAPE, flow = ClusterTheme.Flow.LADDER, face = ClusterTheme.Face.MONO,
             text = Color.rgb(125, 255, 176), secondary = Color.argb(190, 125, 255, 176), accent = Color.rgb(125, 255, 176),
             charge = Color.rgb(125, 255, 176), surface = Color.argb(158, 2, 14, 8), edge = Color.rgb(125, 255, 176)),
-        ClusterTheme("aurora", "Aurora", ThemeCategory.NIGHT, panel = ClusterTheme.Panel.AURORA,
+        ClusterTheme("aurora", "Aurora", ThemeCategory.NIGHT, panel = ClusterTheme.Panel.AURORA, layout = ClusterTheme.Layout.AURORA_OPEN,
             speed = ClusterTheme.Speed.GLOW, flow = ClusterTheme.Flow.ORB, text = Color.rgb(238, 243, 255),
             accent = Color.rgb(255, 95, 200), charge = Color.rgb(62, 242, 200), surface = Color.argb(189, 8, 12, 34)),
         ClusterTheme("night-ops", "Night Ops", ThemeCategory.NIGHT, panel = ClusterTheme.Panel.NONE,

@@ -29,4 +29,8 @@
     <string name="aa_gwm_nav_cluster_ready_test">Sinal de painel pronto (experimental)</string>
     <string name="aa_gwm_nav_cluster_ready_note">Envia a mensagem de painel de instrumentos disponível (0x8001) quando o canal de navegação abre. Não comprovado. Vale após reconectar.</string>
     <string name="aa_gwm_nav_protocol_active">Última conexão: solicitado %1$s, o telefone respondeu %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">Mapa do painel em H.265 (experimental)</string>
+    <string name="aa_gwm_cluster_hevc_note">Pede ao telefone o mapa do painel em H.265, usando o decodificador HEVC por hardware do carro. Mais nítido com os mesmos dados. Desative se o mapa ficar preto ou travar. Reinicie a central multimídia para aplicar.</string>
+    <string name="aa_gwm_climate_bar">Barra de clima na tela central (experimental)</string>
+    <string name="aa_gwm_climate_bar_note">Uma barra fina abaixo do Android Auto com temperatura e ventilação dos dois bancos e volume para o passageiro. O Android Auto mantém seus controles acima dela. Reinicie a central multimídia para aplicar.</string>
 </resources>

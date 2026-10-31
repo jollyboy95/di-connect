@@ -29,4 +29,8 @@
     <string name="aa_gwm_nav_cluster_ready_test">계기판 준비 신호(실험적)</string>
     <string name="aa_gwm_nav_cluster_ready_note">내비게이션 채널이 열리면 계기판 사용 가능 메시지(0x8001)를 보냅니다. 검증되지 않았습니다. 다시 연결한 후 적용됩니다.</string>
     <string name="aa_gwm_nav_protocol_active">마지막 연결: 요청 %1$s, 휴대전화 응답 %2$s</string>
+    <string name="aa_gwm_cluster_hevc_test">계기판 지도를 H.265로(실험적)</string>
+    <string name="aa_gwm_cluster_hevc_note">차량의 하드웨어 HEVC 디코더로 계기판 지도를 H.265로 요청합니다. 같은 데이터로 더 선명합니다. 지도가 검게 되거나 끊기면 끄세요. 적용하려면 헤드 유닛을 다시 시작하세요.</string>
+    <string name="aa_gwm_climate_bar">센터 화면 공조 바(실험적)</string>
+    <string name="aa_gwm_climate_bar_note">Android Auto 아래에 두 좌석의 온도와 시트 통풍, 동승자용 볼륨을 보여주는 얇은 바입니다. Android Auto는 조작부를 바 위에 둡니다. 적용하려면 헤드 유닛을 다시 시작하세요.</string>
 </resources>
