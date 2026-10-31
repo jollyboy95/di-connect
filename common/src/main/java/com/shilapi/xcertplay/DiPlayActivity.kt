@@ -1287,8 +1287,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val left = column()
         if (!compact) {
             left.addView(label(getString(R.string.your_phone_your_drive), 12, ACCENT, true).apply { letterSpacing = .16f })
-            left.addView(label(getString(R.string.a_familiar_drive), if (wide) 42 else 36, TEXT, true).apply { setPadding(0, dp(12), 0, dp(10)) })
-            left.addView(label(getString(R.string.your_maps_music_and_conversations_carplay_right_here_on_yo), 19, MUTED))
+            left.addView(label("Your drive. Connected.", if (wide) 42 else 36, TEXT, true).apply { setPadding(0, dp(12), 0, dp(10)) })
+            left.addView(label("Your maps, music and calls. Android Auto and Apple CarPlay, together in Di-Connect.", 19, MUTED))
         }
         val card = card()
         homeCardTitle = label(getString(R.string.di_connect_home_title), 12, ACCENT, true).apply { letterSpacing = .12f }
@@ -1351,8 +1351,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             else addView(VehicleHeroView(this@DiPlayActivity, BG, ACCENT), LinearLayout.LayoutParams(-1, dp(if (wide) 240 else 200)))
         }
         right.addView(homeButton(getString(R.string.connect_with_usb), false) { connect(false) }, matchButton(height = if (compact) 54 else 68))
-        if (!compact) right.addView(label(getString(R.string.plug_your_iphone_into_a_usb_data_port_allow_carplay_when_y), 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(dp(8), dp(10), dp(8), dp(24)) })
-        else right.addView(space(16))
+        if (!compact) right.addView(label("Connect a compatible phone using a USB data port.", 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(dp(8), dp(10), dp(8), dp(16)) })
+        else right.addView(space(12))
         right.addView(homeButton(getString(R.string.settings), false) { page = "settings"; render() }, matchButton(height = if (compact) 54 else 68))
         if (!compact) right.addView(label(getString(R.string.make_diplay_feel_right_for_your_car), 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(24)) })
         else right.addView(space(12))
@@ -1411,9 +1411,17 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 addView(space(40), LinearLayout.LayoutParams(dp(40), 1))
                 addView(second, LinearLayout.LayoutParams(0, if (stretchSecond) -1 else -2, 1f))
             }
-            body.addView(columns(left, branding, false))
-            body.addView(space(26))
-            body.addView(columns(card, right))
+            val leftStack = column().apply {
+                addView(left)
+                addView(space(16))
+                addView(card)
+            }
+            val rightStack = column().apply {
+                addView(branding)
+                addView(space(12))
+                addView(right)
+            }
+            body.addView(columns(leftStack, rightStack))
         } else {
             if (!compact) {
                 body.addView(left)
