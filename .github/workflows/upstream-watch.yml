@@ -1,0 +1,65 @@
+name: Watch upstream DiPlay and DiAuto
+# Reports new upstream commits since the baseline in docs/upstream-baseline.json. It only reads
+# and reports: it never changes code, opens pull requests or merges anything.
+on:
+  schedule:
+    - cron: '17 21 * * 0'   # weekly, Monday about 8:17 am in Sydney
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare upstream with the recorded baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess, pathlib
+          base = json.loads(pathlib.Path('docs/upstream-baseline.json').read_text())
+          integrate = pathlib.Path('_integration/integrate.py').read_text()
+          # Files Di-Connect patches by exact text: upstream changes there are the likely conflicts.
+          patched = set(re.findall(r"(?:common|shared|mobile|automotive)/src/[\w/.-]+\.(?:kt|kts|xml)", integrate))
+          patched |= {'common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt',
+                      'common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt', 'mobile/build.gradle.kts'}
+          report, new = [], False
+          for key, info in base.items():
+              repo, since = info['repository'], info['synced_commit']
+              work = pathlib.Path('/tmp') / key
+              subprocess.run(['git', 'clone', '-q', '--filter=blob:none', '--no-checkout',
+                              f'https://github.com/{repo}.git', str(work)], check=True)
+              head = subprocess.check_output(['git', '-C', str(work), 'rev-parse', '--short=8', 'origin/' + info['branch']], text=True).strip()
+              log = subprocess.check_output(['git', '-C', str(work), 'log', '--no-merges', '--format=%h %ad %s', '--date=short',
+                                             f'{since}..origin/{info["branch"]}', '--', '.', ':!site', ':!docs', ':!README*'], text=True).strip()
+              files = subprocess.check_output(['git', '-C', str(work), 'diff', '--name-only', since, 'origin/' + info['branch'],
+                                               '--', '.', ':!site', ':!docs'], text=True).split()
+              tags = subprocess.check_output(['git', '-C', str(work), 'tag', '--sort=-creatordate'], text=True).split()[:1]
+              report.append(f'## {repo}\n\nBaseline `{since}` ({info["synced_version"]}) · upstream `{head}` · newest tag {tags[0] if tags else "none"}\n')
+              if not log:
+                  report.append('No code changes since the baseline.\n'); continue
+              new = True
+              report.append(f'{len(log.splitlines())} code commits since the baseline:\n\n```\n{log}\n```\n')
+              risky = sorted(f for f in files if f in patched or any(f.endswith(p.split('/')[-1]) for p in patched))
+              report.append('Files Di-Connect patches that upstream changed (check `integrate.py` for these):\n\n' +
+                            ('\n'.join(f'- `{f}`' for f in risky) or '- none') + '\n')
+          text = '# Upstream check\n\n' + '\n'.join(report) + '\nNothing has been merged. Review and sync on a `maintenance/` branch.\n'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary: summary.write(text)
+          pathlib.Path('/tmp/upstream.md').write_text(text)
+          pathlib.Path('/tmp/new').write_text('1' if new else '')
+          PY
+      - name: Open an issue when there is something new
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -s /tmp/new ] || { echo "Nothing new upstream."; exit 0; }
+          title="Upstream changes to review ($(date -u +%Y-%m-%d))"
+          if gh issue list --state open --search "Upstream changes to review in:title" --json number --jq '.[0].number' | grep -q .; then
+            n=$(gh issue list --state open --search "Upstream changes to review in:title" --json number --jq '.[0].number')
+            gh issue comment "$n" --body-file /tmp/upstream.md
+          else
+            gh issue create --title "$title" --body-file /tmp/upstream.md
+          fi

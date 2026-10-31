@@ -22,7 +22,7 @@ jobs:
       - name: Fetch pinned source projects
         run: |
           git clone https://github.com/jollyboy95/d-play-gwm-h7.git dplay
-          git -C dplay checkout 3df998919f075bc6e21efb5e8a314347813647a1
+          git -C dplay checkout fcdbce6f9e4a0b90679633e7a589df8f2d31a567
           git clone https://github.com/jollyboy95/DiAuto-GWM.git diauto
           git -C diauto checkout 4febfe1568faab5bf6899575b31e1c708298759f
       - name: Import Android Auto into D-Play
