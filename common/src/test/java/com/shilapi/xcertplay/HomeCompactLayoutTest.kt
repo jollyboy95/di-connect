@@ -47,7 +47,7 @@ class HomeCompactLayoutTest {
         else assertTrue(usbPosition[1] >= connectPosition[1] + connect.height)
         assertTrue(text(R.string.car_home).visibility == View.VISIBLE)
         assertFalse(descendants(root).filterIsInstance<TextView>().any {
-            it.text == activity.getString(R.string.a_familiar_drive) ||
+            it.text == "Your drive. Connected." ||
                 it.text == activity.getString(R.string.plug_your_iphone_into_a_usb_data_port_allow_carplay_when_y)
         })
         controller.pause().stop().destroy()
@@ -72,7 +72,7 @@ class HomeCompactLayoutTest {
         val activity = Robolectric.buildActivity(DiPlayActivity::class.java).setup().get()
         shadowOf(activity).setInMultiWindowMode(multiWindow)
         ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")
-        val hero = activity.getString(R.string.a_familiar_drive)
+        val hero = "Your drive. Connected."
         return descendants(activity.window.decorView).filterIsInstance<TextView>().none { it.text == hero }
     }
 
