@@ -2964,5 +2964,9 @@ edit(ui_host,
 edit(ui_host, ('            body.addView(columns(left, branding, true))', '            body.addView(columns(left, branding, false))'))
 # A category card now holds its tile icon and a chevron.
 edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt',
-    ('            assertEquals(1, descendants(destination).filterIsInstance<ImageView>().count())',
-     '            assertEquals(2, descendants(destination).filterIsInstance<ImageView>().count())'))
+    ('''                it.contentDescription == screen.getString(R.string.settings_open_category, title)
+            }
+            assertEquals(1, descendants(destination).filterIsInstance<ImageView>().count())''',
+     '''                it.contentDescription == screen.getString(R.string.settings_open_category, title)
+            }
+            assertEquals(2, descendants(destination).filterIsInstance<ImageView>().count())'''))

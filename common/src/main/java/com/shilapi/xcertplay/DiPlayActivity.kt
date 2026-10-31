@@ -1348,7 +1348,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val branding = column().apply {
             gravity = Gravity.CENTER
             if (compact) addView(logo, LinearLayout.LayoutParams(dp(96), dp(96)))
-            else addView(VehicleHeroView(this@DiPlayActivity, BG, ACCENT), LinearLayout.LayoutParams(-1, dp(if (wide) 260 else 200)))
+            else addView(VehicleHeroView(this@DiPlayActivity, BG, ACCENT), LinearLayout.LayoutParams(-1, dp(if (wide) 240 else 200)))
         }
         right.addView(homeButton(getString(R.string.connect_with_usb), false) { connect(false) }, matchButton(height = if (compact) 54 else 68))
         if (!compact) right.addView(label(getString(R.string.plug_your_iphone_into_a_usb_data_port_allow_carplay_when_y), 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(dp(8), dp(10), dp(8), dp(24)) })
@@ -1411,7 +1411,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 addView(space(40), LinearLayout.LayoutParams(dp(40), 1))
                 addView(second, LinearLayout.LayoutParams(0, if (stretchSecond) -1 else -2, 1f))
             }
-            body.addView(columns(left, branding, true))
+            body.addView(columns(left, branding, false))
             body.addView(space(26))
             body.addView(columns(card, right))
         } else {
