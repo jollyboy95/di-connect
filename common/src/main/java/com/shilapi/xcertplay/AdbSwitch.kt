@@ -23,6 +23,7 @@ internal object AdbSwitch {
 
     /** Over an approved connection, keeps the ability to switch ADB from now on. */
     fun grantSelf(context: Context, adb: LocalAdb) {
+        persistNetwork(adb)
         if (canSwitch(context)) return
         adb.shell("pm grant ${context.packageName} $PERMISSION", 8_000)
         Log.i(TAG, "self grant: ${canSwitch(context)}")
@@ -47,9 +48,35 @@ internal object AdbSwitch {
         return work()
     }
 
-    /** True when the head unit's adbd answers on its local port and accepts Di-Connect's key. */
-    private fun reachable(app: Context): Boolean =
-        runCatching { LocalAdb(AdbKeys.load(app)).use { it.connect(mayAsk = false) } }.getOrNull() == LocalAdb.Access.READY
+    /**
+     * True when the head unit's adbd answers on its local port and accepts Di-Connect's key. While
+     * it does, ADB over network is also made to survive restarts (see [persistNetwork]).
+     */
+    private fun reachable(app: Context): Boolean = runCatching {
+        LocalAdb(AdbKeys.load(app)).use { adb ->
+            (adb.connect(mayAsk = false) == LocalAdb.Access.READY).also { if (it) persistNetwork(adb) }
+        }
+    }.getOrDefault(false)
+
+    @Volatile private var networkAction = "not tried"
+
+    private fun prop(name: String): String = runCatching {
+        Class.forName("android.os.SystemProperties").getMethod("get", String::class.java).invoke(null, name) as String
+    }.getOrDefault("?").ifEmpty { "-" }
+
+    /**
+     * The H7's "ADB over network" switch is lost at every restart: it sets adbd's port only until
+     * the next boot. adbd also reads persist.adb.tcp.port at start, which survives restarts and
+     * which the ADB shell may set, so once set the car's ADB answers on the network after every
+     * boot without the driver turning the switch on.
+     */
+    fun persistNetwork(adb: LocalAdb) {
+        if (prop("persist.adb.tcp.port") == "5555") { networkAction = "kept on across restarts (persist.adb.tcp.port=5555)"; return }
+        adb.shell("setprop persist.adb.tcp.port 5555", 6_000)
+        val now = adb.shell("getprop persist.adb.tcp.port", 6_000)?.trim().orEmpty()
+        networkAction = if (now == "5555") "set to stay on across restarts" else "the car refused to keep it on (persist.adb.tcp.port='$now')"
+        Log.i(TAG, "ADB over network: $networkAction")
+    }
 
     private fun waitReady(app: Context, ms: Long): Boolean {
         val until = System.currentTimeMillis() + ms
@@ -132,6 +159,12 @@ internal object AdbSwitch {
         val r = context.applicationContext.contentResolver
         val adb = runCatching { Settings.Global.getInt(r, Settings.Global.ADB_ENABLED, 0) }.getOrNull()
         val dev = runCatching { Settings.Global.getInt(r, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) }.getOrNull()
-        return "ADB keep-on: permission=${canSwitch(context)} adb_enabled=$adb developer_options=$dev last=$lastAction"
+        return "ADB keep-on: permission=${canSwitch(context)} adb_enabled=$adb developer_options=$dev last=$lastAction\n" +
+            "ADB over network: $networkAction; service.adb.tcp.port=${prop("service.adb.tcp.port")} " +
+            "persist.adb.tcp.port=${prop("persist.adb.tcp.port")} adbd=${prop("init.svc.adbd")} port 5555 ${when {
+                android.os.Looper.myLooper() == android.os.Looper.getMainLooper() -> "not checked"
+                portOpen() -> "open"
+                else -> "closed"
+            }}"
     }
 }
