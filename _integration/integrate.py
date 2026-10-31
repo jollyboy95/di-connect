@@ -2892,4 +2892,26 @@ for _loc in sorted(UPSTREAM_ONLY_LOCALES):
 # carries Android Auto and its themes too (about 40 MB in Oct 2026), so its cap leaves real room.
 edit(root/'common/src/main/java/com/shilapi/xcertplay/update/UpdateClient.kt',
     ('    internal const val MAXIMUM_DOWNLOAD_BYTES = 64L * 1024 * 1024',
-     '    internal const val MAXIMUM_DOWNLOAD_BYTES = 256L * 1024 * 1024'))
+     '    internal const val MAXIMUM_DOWNLOAD_BYTES = 128L * 1024 * 1024'))
+# Its tests send just past whatever the cap is.
+edit(root/'common/src/test/java/com/shilapi/xcertplay/update/UpdateClientTest.kt',
+    ('assertRefusedAsTooLarge("/big", 70L * 1024 * 1024)', 'assertRefusedAsTooLarge("/big", UpdateClient.MAXIMUM_DOWNLOAD_BYTES + 6L * 1024 * 1024)'),
+    ('repeat(70) { out.write(chunk) }', 'repeat((UpdateClient.MAXIMUM_DOWNLOAD_BYTES / chunk.size).toInt() + 6) { out.write(chunk) }'))
+
+# Upstream 0.2.22 tests, adapted to Di-Connect:
+# - its strings say Di-Connect where DiPlay's said DiPlay;
+# - the report opens with the Android Auto section, so the last problem is found by its label;
+# - "Connect when Di-Connect opens" starts Android Auto unless CarPlay is chosen, so the boot
+#   test that expects CarPlay chooses CarPlay first.
+edit(root/'common/src/test/java/com/shilapi/xcertplay/HomeLastConnectionProblemTest.kt',
+    ('The iPhone chosen in DiPlay is no longer paired', 'The iPhone chosen in Di-Connect is no longer paired'),
+    ('在 DiPlay 選擇的 iPhone', '在 Di-Connect 選擇的 iPhone'),
+    ('        assertTrue(lines[1], lines[1].matches(Regex(',
+     '        val last = lines.first { it.startsWith("Last problem:") }\n        assertTrue(last, last.matches(Regex('),
+    ('''        assertTrue(lines[2], lines[2].startsWith("Android "))''', '''        assertTrue(lines.toString(), lines.any { it.startsWith("Android ") })'''),
+    ('''        assertEquals("Last problem: none recorded", reportLines()[1])''', '''        assertEquals("Last problem: none recorded", reportLines().first { it.startsWith("Last problem:") })'''))
+edit(root/'common/src/test/java/com/shilapi/xcertplay/LauncherIntentTest.kt',
+    ('''        DiPlayPreferences.savePhone(app, "00:11:22:33:44:55", "Test iPhone")
+        AirPlayPersistence.saveWirelessHotspotMode(app, WirelessHotspotMode.WIFI_P2P)''','''        DiPlayPreferences.savePhone(app, "00:11:22:33:44:55", "Test iPhone")
+        com.andrerinas.openheadunit.DiConnectAndroidAuto.saveOpensWithCarPlay(app, true)
+        AirPlayPersistence.saveWirelessHotspotMode(app, WirelessHotspotMode.WIFI_P2P)'''))

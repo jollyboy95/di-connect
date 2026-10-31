@@ -126,6 +126,7 @@ class LauncherIntentTest {
         CarPlayBackgroundSession.clear()
         val app = RuntimeEnvironment.getApplication()
         DiPlayPreferences.savePhone(app, "00:11:22:33:44:55", "Test iPhone")
+        com.andrerinas.openheadunit.DiConnectAndroidAuto.saveOpensWithCarPlay(app, true)
         AirPlayPersistence.saveWirelessHotspotMode(app, WirelessHotspotMode.WIFI_P2P)
         app.getSharedPreferences("diplay", 0).edit().putBoolean("notification_asked", true).commit()
         for (autoConnect in listOf(false, true)) {

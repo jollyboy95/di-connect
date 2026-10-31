@@ -33,7 +33,7 @@ Donor fork: `jollyboy95/d-play-gwm-h7` branch `maintenance/upstream-sync` at `fc
 | AirPlay limits: control header, body, iAP package, bplist depth; data sockets only for the control peer | a83284c5, 411f0b60, aeb1d733 | No | Crash and memory safety on hostile or broken input | Low | Imported |
 | NCM NTB16 parsing bounds | 1759a981 | No | Wired CarPlay cannot loop on a bad frame | Low | Imported |
 | MFi: https for public hosts, no numeric-host tricks | 59622e1f, d898ad48 | No | Safer remote MFi | Low (offline MFi unchanged) | Imported |
-| Update download limits: github.com https only, plain APK names, size cap | 65ab1f36 | No | Safer in-app updates | Medium: the 64 MB cap is sized for DiPlay | Adapted: cap raised to 256 MB (Di-Connect is about 40 MB) |
+| Update download limits: github.com https only, plain APK names, size cap | 65ab1f36 | No | Safer in-app updates | Medium: the 64 MB cap is sized for DiPlay | Adapted: cap raised to 128 MB (Di-Connect is about 40 MB); its tests follow the cap |
 | Backup import key allow-lists; map-embed caps; Bonjour status-line cap | 3e7d94cc, 63aca3bc, 91f6d36d | No | Hardening | Low | Imported |
 | Hotspot name kept out of logcat; UDID redaction in reports | 43d75593, 4fca1756 | No | Privacy in shared reports | Low | Imported |
 | Report: header kept above the cut, tail kept, viewer shows newest 200k characters | 2be80cec, e13f9f52, b090d460, 718a9681 | No | Faster report screen; exported report still complete | Low | Imported |

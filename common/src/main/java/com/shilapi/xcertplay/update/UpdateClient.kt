@@ -14,7 +14,7 @@ internal object UpdateClient {
     private const val CONNECT_TIMEOUT_MILLIS = 10_000
     private const val READ_TIMEOUT_MILLIS = 30_000
     // Far above the release APKs (under 20 MB at v0.2.21). It stops a body that never ends.
-    internal const val MAXIMUM_DOWNLOAD_BYTES = 256L * 1024 * 1024
+    internal const val MAXIMUM_DOWNLOAD_BYTES = 128L * 1024 * 1024
     private const val MAXIMUM_TEXT_BYTES = 4 * 1024 * 1024
     private const val BUFFER_BYTES = 64 * 1024
 

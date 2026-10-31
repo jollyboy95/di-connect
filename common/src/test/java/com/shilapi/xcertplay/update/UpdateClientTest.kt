@@ -111,7 +111,7 @@ class UpdateClientTest {
         val chunk = ByteArray(1024 * 1024)
         server.createContext(path) { exchange ->
             exchange.sendResponseHeaders(200, length)
-            exchange.responseBody.use { out -> repeat(70) { out.write(chunk) } }
+            exchange.responseBody.use { out -> repeat((UpdateClient.MAXIMUM_DOWNLOAD_BYTES / chunk.size).toInt() + 6) { out.write(chunk) } }
         }
         val destination = File(temporaryFolder.root, "update/DiPlay.apk")
         try {
@@ -123,7 +123,7 @@ class UpdateClientTest {
     }
 
     @Test
-    fun downloadRefusesABodyBeyondTheLimitWhenItsLengthIsKnown() = assertRefusedAsTooLarge("/big", 70L * 1024 * 1024)
+    fun downloadRefusesABodyBeyondTheLimitWhenItsLengthIsKnown() = assertRefusedAsTooLarge("/big", UpdateClient.MAXIMUM_DOWNLOAD_BYTES + 6L * 1024 * 1024)
 
     @Test
     fun downloadRefusesABodyBeyondTheLimitWhenItsLengthIsNotKnown() = assertRefusedAsTooLarge("/chunked", 0L)
