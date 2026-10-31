@@ -290,9 +290,9 @@ jobs:
       # Di-Connect's updater reads. Needs the RELEASES_TOKEN secret (a fine-grained token limited to
       # jollyboy95/di-connect-releases, Contents: read and write). Skipped while it is not set.
       - name: Publish update to di-connect-releases
-        # maintenance/* and ui/* branches (work awaiting review) build an Actions artifact only, so an
-        # unreviewed build is never offered as an in-app update.
-        if: ${{ success() && !startsWith(github.head_ref || github.ref_name, 'maintenance/') && !startsWith(github.head_ref || github.ref_name, 'ui/') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        # maintenance/* branches (upstream syncs awaiting review) build an Actions artifact only. ui/*
+        # builds are published, so the driver can try each design stage as an in-app update.
+        if: ${{ success() && !startsWith(github.head_ref || github.ref_name, 'maintenance/') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
