@@ -2958,5 +2958,11 @@ edit(ui_host,
      '''        val branding = column().apply {
             gravity = Gravity.CENTER
             if (compact) addView(logo, LinearLayout.LayoutParams(dp(96), dp(96)))
-            else addView(VehicleHeroView(this@DiPlayActivity, BG, ACCENT), LinearLayout.LayoutParams(-1, dp(if (wide) 260 else 200)))
+            else addView(VehicleHeroView(this@DiPlayActivity, BG, ACCENT), LinearLayout.LayoutParams(-1, dp(if (wide) 240 else 200)))
         }'''))
+# The car picture keeps its own height beside the hero text instead of shrinking to it.
+edit(ui_host, ('            body.addView(columns(left, branding, true))', '            body.addView(columns(left, branding, false))'))
+# A category card now holds its tile icon and a chevron.
+edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt',
+    ('            assertEquals(1, descendants(destination).filterIsInstance<ImageView>().count())',
+     '            assertEquals(2, descendants(destination).filterIsInstance<ImageView>().count())'))
