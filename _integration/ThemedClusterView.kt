@@ -2037,7 +2037,7 @@ internal class ThemedClusterView(
         }
     }
 
-    private fun openMusic(canvas:Canvas,box:RectF,large:Boolean=false,plate:Boolean=true) {
+    private fun openMusic(canvas:Canvas,box:RectF,large:Boolean=false,plate:Boolean=true,scale:Float=1f) {
         if(!(preview || AirPlayPersistence.loadGwmMusicCard(context))) return
         if(music.info.title.isNullOrBlank() && music.artwork==null) return
         if(plate) openPlate(canvas,box,.025f*height)
@@ -2046,9 +2046,9 @@ internal class ThemedClusterView(
         studioAlbum(canvas,RectF(box.left+inset,box.top+inset,box.left+inset+side,box.top+inset+side),.012f*h)
         val x=box.left+side+2*inset;val right=box.right-inset;val available=right-x
         music.info.title?.takeIf{it.isNotBlank()}?.let{studioText(canvas,it,x,box.top+box.height()*.34f,
-            (if(large) .047f else .037f)*h,weight=500,width=available)}
+            (if(large) .047f else .037f)*h*scale,weight=500,width=available)}
         music.info.artist?.takeIf{it.isNotBlank()}?.let{studioText(canvas,it,x,box.top+box.height()*.61f,
-            (if(large) .034f else .027f)*h,theme.secondary,width=available)}
+            (if(large) .034f else .027f)*h*scale,theme.secondary,width=available)}
         progress()?.let { done ->
             wavyProgress(canvas,x,right,box.top+box.height()*.79f+.003f*h,done)
         }
@@ -2058,7 +2058,11 @@ internal class ThemedClusterView(
         drawHeader(canvas,w,h)
         snapshot?.speedKph?.let{drawSpeed(canvas,w,h,it)}
         drawFlow(canvas,w,h,smoothAmps)
-        openMusic(canvas,RectF(.695f*w,.29f*h,.975f*w,.515f*h),large=true)
+        // Aurora: the turn card owns the guidance band above the music plate, so the plate fills
+        // the column left beneath it and its type scales with the plate rather than the small-card size.
+        val musicTop = .29f*h
+        val musicHeight = .28f*h
+        openMusic(canvas,RectF(.695f*w,musicTop,.975f*w,musicTop+musicHeight),large=true,scale=musicHeight/(.225f*h))
         drawOpenFooter(canvas,w,h)
     }
 
