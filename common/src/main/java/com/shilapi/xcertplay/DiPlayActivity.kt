@@ -401,8 +401,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             }
         }, "auth-import").start()
     }
-    // Android 9: storage access puts the report in the visible Downloads/DiPlay folder.
-    // A denial still saves the report, only in DiPlay's own storage.
+    // Android 9: storage access puts the report in the visible Downloads/Di-Connect folder.
+    // A denial still saves the report, only in Di-Connect's own storage.
     private val reportStoragePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
         exportDiagnostics()
     }
@@ -6491,8 +6491,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val running = CarPlayBackgroundSession.hasSession()
         // A USB session shares this card's status and Disconnect, but not its wireless title or Wi-Fi hint (#742).
         val wired = HomeCardTransport.wired(running, AirPlayPersistence.loadWirelessEnabled(this))
-        homeCardTitle?.text = if (running) getString(if (wired) R.string.home_usb_carplay else R.string.wireless_carplay)
-            else getString(R.string.di_connect_home_title)
+        homeCardTitle?.text = when {
+            running -> getString(if (wired) R.string.home_usb_carplay else R.string.wireless_carplay)
+            // Android Auto owns the same start card while it is connected; CarPlay keeps its own.
+            com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this) -> getString(R.string.di_connect_aa_connected)
+            else -> getString(R.string.di_connect_home_title)
+        }
         homeConnectionHint?.visibility = if (wired) View.GONE else View.VISIBLE
         status?.text = when {
             CarPlayBackgroundSession.active -> getString(R.string.carplay_connected)
@@ -6513,6 +6517,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         refreshReconnectBar()
         refreshReadiness()
     }
+
     private fun authorizeClusterRouting() {
         val app = applicationContext
         Thread({
@@ -6531,7 +6536,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }, "adb-cluster-authorize").start()
     }
 
-    private fun reportFileName() = "DiPlay-${SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.US).format(Date())}.txt"
+    private fun reportFileName() = "DiConnect-${SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.US).format(Date())}.txt"
 
     private fun saveReportToDownloads() {
         if (exportInProgress) return
@@ -6573,7 +6578,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                         .setMessage(when {
                             savedReport.savedInApp -> getString(R.string.diagnostic_report_saved_in_app)
                             savedReport.savedPath != null -> getString(R.string.diagnostic_report_saved_to_path, savedReport.savedPath)
-                            uri == null -> "Downloads/DiPlay/$fileName"
+                            uri == null -> "Downloads/Di-Connect/$fileName"
                             else -> getString(R.string.your_report_was_saved_to_the_selected_location)
                         })
                         .setPositiveButton(getString(R.string.view_diagnostic_report)) { _, _ -> showDiagnosticReport(report) }
@@ -6599,7 +6604,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
 
     /** The text of a diagnostic report. It reads the session logs, so call it off the main thread. */
     private fun diagnosticReportText(appContext: Context): String = buildString {
-        appendLine("DiPlay ${version()} · private beta diagnostic report")
+        appendLine("Di-Connect ${version()} · private beta diagnostic report")
         appendLine("--- Android Auto and GWM HUD ---")
         appendLine(runCatching {
             com.andrerinas.openheadunit.utils.DiagnosticReport.build(appContext)
