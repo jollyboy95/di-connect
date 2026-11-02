@@ -2998,3 +2998,20 @@ edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt'
      '''                it.contentDescription == screen.getString(R.string.settings_open_category, title)
             }
             assertEquals(2, descendants(destination).filterIsInstance<ImageView>().count())'''))
+
+# Home copy, Android Auto status on the start card and the Di-Connect name in reports and folders
+# (1-2 Nov 2026, made on the generated files; kept here as one patch so regeneration keeps them).
+import subprocess as _sp
+_sp.run(['git', '-C', str(root), 'apply', '--whitespace=nowarn',
+         str(Path('target/_integration/ui/home-and-naming.patch').resolve())], check=True)
+
+# Fine-tuning (3 Nov 2026): the concept's night-time main button, and a plain CarPlay label beside
+# the Android Auto one.
+edit(ui_host,
+    ('        isAllCaps = false; textSize = 18f; setTextColor(if (primary) ON_ACCENT else TEXT)',
+     '        isAllCaps = false; textSize = 18f; setTextColor(if (primary) (if (appNight) Color.WHITE else ON_ACCENT) else TEXT)'),
+    ('buttonShape(if (primary) ACCENT else BUTTON, if (primary) ACCENT else BORDER', 'buttonShape(if (primary) primaryFill() else BUTTON, if (primary) ACCENT else BORDER', 2),
+    ('    private fun button(title: String, primary: Boolean, click: () -> Unit) = SettingButton(this, MUTED, ACCENT).apply {',
+     '    private fun primaryFill() = if (appNight) DiConnectStyle.PRIMARY_NIGHT else ACCENT\n\n    private fun button(title: String, primary: Boolean, click: () -> Unit) = SettingButton(this, MUTED, ACCENT).apply {'))
+edit(root/'common/src/main/res/values/strings.xml',
+    ('<string name="connect_phone">Connect phone</string>', '<string name="connect_phone">Connect CarPlay</string>'))

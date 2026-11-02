@@ -7268,10 +7268,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         (layoutCornerRadius() / resources.displayMetrics.density).roundToInt(),
     )
 
+    private fun primaryFill() = if (appNight) DiConnectStyle.PRIMARY_NIGHT else ACCENT
+
     private fun button(title: String, primary: Boolean, click: () -> Unit) = SettingButton(this, MUTED, ACCENT).apply {
-        isAllCaps = false; textSize = 18f; setTextColor(if (primary) ON_ACCENT else TEXT)
+        isAllCaps = false; textSize = 18f; setTextColor(if (primary) (if (appNight) Color.WHITE else ON_ACCENT) else TEXT)
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-        background = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(RIPPLE), buttonShape(if (primary) ACCENT else BUTTON, if (primary) ACCENT else BORDER), null)
+        background = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(RIPPLE), buttonShape(if (primary) primaryFill() else BUTTON, if (primary) ACCENT else BORDER), null)
         setPadding(dp(16), 0, dp(16), 0); minHeight = dp(56); stateListAnimator = null
         compoundDrawablePadding = dp(12)
         foreground = buttonFocusRing()
@@ -7279,7 +7281,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         searchIndexSink?.add(title.substringBefore(VALUE_SEPARATOR))
         setOnClickListener { click() }
         doOnLayout {
-            val shape = buttonShape(if (primary) ACCENT else BUTTON, if (primary) ACCENT else BORDER, height)
+            val shape = buttonShape(if (primary) primaryFill() else BUTTON, if (primary) ACCENT else BORDER, height)
             background = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(RIPPLE), shape, null)
             foreground = focusRing((shape.cornerRadius / resources.displayMetrics.density).roundToInt())
         }

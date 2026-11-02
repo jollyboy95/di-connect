@@ -171,7 +171,7 @@
     <string name="close">Close</string>
     <string name="cluster_map_size">Dashboard map size</string>
     <string name="connect">Connect</string>
-    <string name="connect_phone">Connect phone</string>
+    <string name="connect_phone">Connect CarPlay</string>
     <string name="connect_when_diplay_opens">Connect when Di-Connect opens</string>
     <string name="connect_when_iphone_bluetooth_connects">Connect when the selected iPhone reconnects</string>
     <string name="connect_when_iphone_bluetooth_connects_description">After the car wakes, open Di-Connect and start wireless CarPlay when the selected iPhone connects over Bluetooth. Some head units restrict background launches.</string>

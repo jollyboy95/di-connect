@@ -59,6 +59,12 @@ internal object DiConnectStyle {
             setStroke(strokePx, stroke)
         }
 
+    /**
+     * The concept's main button at night: a deep blue fill under a bright blue edge with white text
+     * (white on this blue is 5.6:1). Daytime keeps the palette's accent fill.
+     */
+    val PRIMARY_NIGHT: Int = Color.rgb(28, 98, 220)
+
     fun lighten(color: Int, amount: Float): Int {
         fun mix(c: Int) = (c + (255 - c) * amount).toInt().coerceIn(0, 255)
         return Color.argb(Color.alpha(color), mix(Color.red(color)), mix(Color.green(color)), mix(Color.blue(color)))
@@ -70,9 +76,21 @@ internal object DiConnectStyle {
  * at the bottom, under a thin blue arc like the concept's halo. Decoded once at the panel's size.
  */
 internal class VehicleHeroView(context: Context, private val pageColor: Int, private val accent: Int) : View(context) {
-    private val picture: Bitmap? = runCatching {
-        BitmapFactory.decodeResource(resources, R.drawable.dc_vehicle_hero)
-    }.getOrNull()
+    private companion object {
+        // Home is rebuilt on every page change and theme switch; the picture is decoded once.
+        @Volatile var cached: Bitmap? = null
+        fun load(context: Context): Bitmap? = cached ?: runCatching {
+            BitmapFactory.decodeResource(context.resources, R.drawable.dc_vehicle_hero,
+                BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 })
+        }.getOrNull()?.also { cached = it }
+    }
+    private val picture: Bitmap? = load(context)
+    private val sidePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var pictureLeft = 0f
+    private var pictureRight = 0f
+    private var edge = 0f
+    private var leftEdge: Shader? = null
+    private var rightEdge: Shader? = null
     private val imagePaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val fadePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -80,6 +98,8 @@ internal class VehicleHeroView(context: Context, private val pageColor: Int, pri
     private val clip = Path()
     private val bounds = RectF()
     private val radius = 20f * resources.displayMetrics.density
+    /** The render's studio backdrop, so the sides of the panel continue it. */
+    private val SCENE = picture?.getPixel(4, 4) ?: pageColor
 
     init {
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -90,8 +110,13 @@ internal class VehicleHeroView(context: Context, private val pageColor: Int, pri
         clip.reset()
         clip.addRoundRect(bounds, radius, radius, Path.Direction.CW)
         picture?.let { bitmap ->
-            // Fit the entire SUV rather than centre-cropping its front and wheels.
+            // The whole car fits; the panel's own colour fills either side and fades into the picture.
             val scale = minOf(w / bitmap.width.toFloat(), h / bitmap.height.toFloat())
+            pictureLeft = (w - bitmap.width * scale) / 2f
+            pictureRight = pictureLeft + bitmap.width * scale
+            edge = .06f * w
+            leftEdge = LinearGradient(pictureLeft, 0f, pictureLeft + edge, 0f, SCENE, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            rightEdge = LinearGradient(pictureRight - edge, 0f, pictureRight, 0f, Color.TRANSPARENT, SCENE, Shader.TileMode.CLAMP)
             val matrix = Matrix().apply {
                 setScale(scale, scale)
                 postTranslate((w - bitmap.width * scale) / 2f, (h - bitmap.height * scale) / 2f)
@@ -112,8 +137,15 @@ internal class VehicleHeroView(context: Context, private val pageColor: Int, pri
         val h = height.toFloat()
         canvas.save()
         canvas.clipPath(clip)
-        canvas.drawColor(pageColor)
-        if (picture != null) canvas.drawRect(bounds, imagePaint)
+        canvas.drawColor(SCENE)
+        if (picture != null) {
+            canvas.drawRect(pictureLeft, 0f, pictureRight, h, imagePaint)
+            // Soft edges where the picture meets the panel, so no hard letterbox line shows.
+            sidePaint.shader = leftEdge
+            canvas.drawRect(pictureLeft, 0f, pictureLeft + edge, h, sidePaint)
+            sidePaint.shader = rightEdge
+            canvas.drawRect(pictureRight - edge, 0f, pictureRight, h, sidePaint)
+        }
         canvas.drawRect(0f, h * .5f, w, h, glowPaint)
         canvas.drawRect(0f, h * .6f, w, h, fadePaint)
         canvas.restore()
