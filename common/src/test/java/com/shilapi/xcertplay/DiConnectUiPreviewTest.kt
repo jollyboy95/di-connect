@@ -34,6 +34,16 @@ class DiConnectUiPreviewTest {
         ReflectionHelpers.setField(it, "settingsCategory", SettingsCategory.CONNECTION)
     }
 
+    @Test fun settingsCluster() = capture("settings-cluster") {
+        ReflectionHelpers.setField(it, "page", "settings")
+        ReflectionHelpers.setField(it, "settingsCategory", SettingsCategory.CLUSTER)
+    }
+
+    @Test fun settingsClimate() = capture("settings-climate") {
+        ReflectionHelpers.setField(it, "page", "settings")
+        ReflectionHelpers.setField(it, "settingsCategory", SettingsCategory.CLIMATE)
+    }
+
     private fun capture(name: String, open: (DiPlayActivity) -> Unit) {
         val controller = Robolectric.buildActivity(DiPlayActivity::class.java).setup()
         val activity = controller.get()

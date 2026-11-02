@@ -1037,4 +1037,10 @@
     <string name="settings_gwm_climate_test_description">Comprueba si Di-Connect puede cambiar la climatización: un grado en el lado del conductor, o encender y apagar el A/C, y vuelve a leerlo. Úsalo con el coche aparcado.</string>
     <string name="settings_gwm_climate_seat_vent">Ventilación asiento</string>
     <string name="settings_gwm_climate_ac">A/C sí/no</string>
+    <string name="settings_cluster">Cuadro digital</string>
+    <string name="settings_cluster_summary">Temas, diseño y navegación en el cuadro de instrumentos</string>
+    <string name="settings_climate">Climatización</string>
+    <string name="settings_climate_summary">Aire acondicionado y confort</string>
+    <string name="settings_climate_strip">Barra de climatización bajo Android Auto y CarPlay</string>
+    <string name="settings_climate_strip_description">Una barra fina con la temperatura de ambos asientos, el ventilador, la ventilación de los asientos y el volumen del pasajero. Solo aparecen los controles probados en el coche. Se aplica la próxima vez que se abra Android Auto o CarPlay.</string>
 </resources>

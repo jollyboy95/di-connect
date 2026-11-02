@@ -720,7 +720,6 @@ class AdaptiveSettingsUiTest {
             .performClick()
 
         assertTrue(texts(screen).any { it.text == screen.getString(R.string.settings_advanced_caution_title) })
-        assertTrue(texts(screen).any { it.text == screen.getString(R.string.carplay_map_on_instrument_cluster_experimental) })
         assertTrue(texts(screen).any { it.text == screen.getString(R.string.advanced_vehicle_data) })
         assertFalse(texts(screen).any { it.text == screen.getString(R.string.automatic_connection) })
         assertFalse(texts(screen).any { it.text == screen.getString(R.string.display_and_performance) })
@@ -1049,7 +1048,7 @@ class AdaptiveSettingsUiTest {
                 destination.contentDescription?.endsWith(" settings") == true &&
                 descendants(destination).filterIsInstance<ImageView>().count() == 1
         }.toList()
-        assertEquals(10, destinations.size)
+        assertEquals(12, destinations.size)
         destinations.forEach { destination ->
             assertEquals(1, descendants(destination).filterIsInstance<ImageView>().count())
         }

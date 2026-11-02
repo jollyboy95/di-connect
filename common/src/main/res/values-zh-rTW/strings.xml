@@ -1097,4 +1097,10 @@
     <string name="settings_gwm_climate_test_description">檢查 Di-Connect 能否調整空調：駕駛側溫度調 1 度，或開關 A/C，然後讀回數值。請在停車時使用。</string>
     <string name="settings_gwm_climate_seat_vent">座椅通風</string>
     <string name="settings_gwm_climate_ac">A/C 開/關</string>
+    <string name="settings_cluster">數位儀表</string>
+    <string name="settings_cluster_summary">儀表的主題、版面與導航</string>
+    <string name="settings_climate">空調控制</string>
+    <string name="settings_climate_summary">空調與舒適設定</string>
+    <string name="settings_climate_strip">Android Auto 和 CarPlay 下方的空調列</string>
+    <string name="settings_climate_strip_description">細長的列，顯示兩個座位的溫度、風量、座椅通風和副駕駛音量。只顯示已在車上驗證的控制項。下次開啟 Android Auto 或 CarPlay 時生效。</string>
 </resources>

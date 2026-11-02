@@ -3015,3 +3015,75 @@ edit(ui_host,
      '    private fun primaryFill() = if (appNight) DiConnectStyle.PRIMARY_NIGHT else ACCENT\n\n    private fun button(title: String, primary: Boolean, click: () -> Unit) = SettingButton(this, MUTED, ACCENT).apply {'))
 edit(root/'common/src/main/res/values/strings.xml',
     ('<string name="connect_phone">Connect phone</string>', '<string name="connect_phone">Connect CarPlay</string>'))
+
+# ---- UI modernisation, stage 2 (3 Nov 2026): the concept's Home and its settings groups ----
+shutil.copy(Path('target/_integration/ui/ic_dc_fan.xml'), root/'common/src/main/res/drawable/ic_dc_fan.xml')
+STAGE2_TEXT={
+ 'settings_cluster':['Digital Cluster','العدادات الرقمية','Cuadro digital','Quadro strumenti digitale','デジタルメーター','Цифровая панель приборов','Цифрова панель приладів','数字仪表','數位儀表'],
+ 'settings_cluster_summary':['Themes, layout and navigation on the instrument cluster','السمات والتخطيط والملاحة على لوحة العدادات','Temas, diseño y navegación en el cuadro de instrumentos','Temi, layout e navigazione sul quadro strumenti','メーターのテーマ、レイアウト、ナビ表示','Темы, макет и навигация на приборной панели','Теми, макет і навігація на панелі приладів','仪表的主题、布局和导航','儀表的主題、版面與導航'],
+ 'settings_climate':['Climate Control','التحكم بالمناخ','Climatización','Climatizzazione','エアコン','Климат-контроль','Клімат-контроль','空调控制','空調控制'],
+ 'settings_climate_summary':['Air conditioning and comfort settings','إعدادات التكييف والراحة','Aire acondicionado y confort','Aria condizionata e comfort','エアコンと快適装備','Кондиционер и комфорт','Кондиціонер і комфорт','空调和舒适设置','空調與舒適設定'],
+ 'settings_climate_strip':['Climate strip under Android Auto and CarPlay','شريط المناخ أسفل Android Auto وCarPlay','Barra de climatización bajo Android Auto y CarPlay','Barra clima sotto Android Auto e CarPlay','Android Auto と CarPlay の下のエアコンバー','Полоса климата под Android Auto и CarPlay','Смуга клімату під Android Auto і CarPlay','Android Auto 和 CarPlay 下方的空调栏','Android Auto 和 CarPlay 下方的空調列'],
+ 'settings_climate_strip_description':['A slim bar with both seats’ temperature, fan speed, seat ventilation and passenger volume. Only controls proven on the car are shown. Applies the next time Android Auto or CarPlay opens.','شريط رفيع لحرارة المقعدين وسرعة المروحة وتهوية المقاعد ومستوى صوت الراكب. تظهر فقط عناصر التحكم التي ثبت عملها في السيارة. يُطبَّق عند فتح Android Auto أو CarPlay في المرة القادمة.','Una barra fina con la temperatura de ambos asientos, el ventilador, la ventilación de los asientos y el volumen del pasajero. Solo aparecen los controles probados en el coche. Se aplica la próxima vez que se abra Android Auto o CarPlay.','Una barra sottile con la temperatura dei due sedili, la ventola, la ventilazione dei sedili e il volume del passeggero. Compaiono solo i comandi provati sull’auto. Si applica alla prossima apertura di Android Auto o CarPlay.','両席の温度、風量、シートベンチレーション、助手席の音量を表示する細いバー。車で動作を確認した操作だけを表示します。次に Android Auto または CarPlay を開いたときに反映されます。','Тонкая полоса с температурой обоих сидений, вентилятором, вентиляцией сидений и громкостью пассажира. Показаны только проверенные на машине органы. Применится при следующем открытии Android Auto или CarPlay.','Тонка смуга з температурою обох сидінь, вентилятором, вентиляцією сидінь і гучністю пасажира. Показано лише перевірені на авто елементи. Застосується під час наступного відкриття Android Auto або CarPlay.','细长的栏，显示两个座位的温度、风量、座椅通风和副驾驶音量。只显示已在车上验证的控制项。下次打开 Android Auto 或 CarPlay 时生效。','細長的列，顯示兩個座位的溫度、風量、座椅通風和副駕駛音量。只顯示已在車上驗證的控制項。下次開啟 Android Auto 或 CarPlay 時生效。'],
+}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in STAGE2_TEXT.items())+'</resources>'))
+# The concept's names for the existing groups (English; other languages keep their current words).
+edit(root/'common/src/main/res/values/strings.xml',
+    ('<string name="connection">Connection</string>', '<string name="connection">Connections</string>'),
+    ('<string name="settings_display">Display</string>', '<string name="settings_display">Projection</string>'),
+    ('<string name="settings_vehicle">Vehicle</string>', '<string name="settings_vehicle">Vehicle Integration</string>'))
+
+edit(ui_host,
+    ('    OVERVIEW, CONNECTION, DISPLAY, AUDIO, NAVIGATION, VEHICLE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,',
+     '    OVERVIEW, CONNECTION, DISPLAY, AUDIO, CLUSTER, NAVIGATION, CLIMATE, VEHICLE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,'),
+    ('    GWM_CLUSTER,\n', '    GWM_CLUSTER,\n    CLIMATE_STRIP,\n'),
+    ('''        SettingsCategory.ADVANCED to setOf(
+            SettingsSection.CLUSTER_MAP,
+            SettingsSection.GWM_CLUSTER,
+            SettingsSection.LAUNCHER_BUBBLE,''','''        SettingsCategory.CLUSTER to setOf(SettingsSection.GWM_CLUSTER, SettingsSection.CLUSTER_MAP),
+        SettingsCategory.CLIMATE to setOf(SettingsSection.CLIMATE_STRIP),
+        SettingsCategory.ADVANCED to setOf(
+            SettingsSection.LAUNCHER_BUBBLE,'''),
+    ('        SettingsCategory.AUDIO -> R.drawable.ic_dp_audio',
+     '        SettingsCategory.AUDIO -> R.drawable.ic_dp_audio\n        SettingsCategory.CLUSTER -> R.drawable.ic_dp_dashboard\n        SettingsCategory.CLIMATE -> R.drawable.ic_dc_fan'),
+    ('        SettingsCategory.AUDIO -> R.string.audio',
+     '        SettingsCategory.AUDIO -> R.string.audio\n        SettingsCategory.CLUSTER -> R.string.settings_cluster\n        SettingsCategory.CLIMATE -> R.string.settings_climate'),
+    ('            SettingsCategory.AUDIO -> audioSettings(content)', '''            SettingsCategory.AUDIO -> audioSettings(content)
+            SettingsCategory.CLUSTER -> {
+                settingsPageTitle(content, getString(R.string.settings_cluster), getString(R.string.settings_cluster_summary))
+                content.addView(button(getString(R.string.di_connect_themes), true) { page = "themes"; render() },
+                    LinearLayout.LayoutParams(-1, dp(56)).apply { bottomMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+                renderSections(content, SettingsInformationArchitecture.sectionsByCategory.getValue(SettingsCategory.CLUSTER))
+            }
+            SettingsCategory.CLIMATE -> {
+                settingsPageTitle(content, getString(R.string.settings_climate), getString(R.string.settings_climate_summary))
+                renderSections(content, SettingsInformationArchitecture.sectionsByCategory.getValue(SettingsCategory.CLIMATE))
+            }'''),
+    ('            SettingsCategory.AUDIO to R.string.settings_audio_summary,',
+     '            SettingsCategory.AUDIO to R.string.settings_audio_summary,\n            SettingsCategory.CLUSTER to R.string.settings_cluster_summary,\n            SettingsCategory.CLIMATE to R.string.settings_climate_summary,'),
+    ('        filteredSection(content, SettingsSection.GWM_CLUSTER,', '''        filteredSection(content, SettingsSection.CLIMATE_STRIP,
+            getString(R.string.settings_climate), R.drawable.ic_dc_fan) { card ->
+            toggle(card, getString(R.string.settings_climate_strip), getString(R.string.settings_climate_strip_description),
+                com.andrerinas.openheadunit.gwm.GwmClimateBar.enabled(this)) {
+                com.andrerinas.openheadunit.gwm.GwmClimateBar.setEnabled(this, it)
+            }
+        }
+        filteredSection(content, SettingsSection.GWM_CLUSTER,'''),
+    # Home: the concept layout on full-size screens; compact windows keep the previous Home.
+    ('    private var homeConnectionHint: TextView? = null', '    private var homeConnectionHint: TextView? = null\n    private var homeStatusDot: View? = null'),
+    ('    private fun home(content: LinearLayout) {\n        val compact = isCompactLayout\n',
+     Path('target/_integration/ui/home-concept.kt').read_text() +
+     '    private fun home(content: LinearLayout) {\n        if (!isCompactLayout && resources.configuration.screenWidthDp >= 850) { homeConcept(content); return }\n        val compact = isCompactLayout\n'),
+    ('        homeConnectionHint?.visibility = if (wired) View.GONE else View.VISIBLE\n', '''        homeConnectionHint?.visibility = if (wired) View.GONE else View.VISIBLE
+        homeStatusDot?.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(if (CarPlayBackgroundSession.active || com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this@DiPlayActivity)) READY
+                else ACCENT)
+        }
+'''))
+edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt',
+    ('        assertEquals(10, destinations.size)', '        assertEquals(12, destinations.size)'),
+    # The CarPlay cluster map card now lives in Digital Cluster, not Advanced.
+    ('        assertTrue(texts(screen).any { it.text == screen.getString(R.string.carplay_map_on_instrument_cluster_experimental) })\n', ''))

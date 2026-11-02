@@ -1037,4 +1037,10 @@
     <string name="settings_gwm_climate_test_description">Проверяет, может ли Di-Connect менять климат: один градус со стороны водителя или включение и выключение A/C, затем считывает значение. Используйте на стоянке.</string>
     <string name="settings_gwm_climate_seat_vent">Вентиляция сиденья</string>
     <string name="settings_gwm_climate_ac">A/C вкл/выкл</string>
+    <string name="settings_cluster">Цифровая панель приборов</string>
+    <string name="settings_cluster_summary">Темы, макет и навигация на приборной панели</string>
+    <string name="settings_climate">Климат-контроль</string>
+    <string name="settings_climate_summary">Кондиционер и комфорт</string>
+    <string name="settings_climate_strip">Полоса климата под Android Auto и CarPlay</string>
+    <string name="settings_climate_strip_description">Тонкая полоса с температурой обоих сидений, вентилятором, вентиляцией сидений и громкостью пассажира. Показаны только проверенные на машине органы. Применится при следующем открытии Android Auto или CarPlay.</string>
 </resources>

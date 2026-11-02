@@ -1139,4 +1139,10 @@
     <string name="settings_gwm_climate_test_description">Di-Connect がエアコンを変更できるか確認します。運転席側の温度を 1 度、または A/C のオン/オフを変え、値を読み直します。停車中に使ってください。</string>
     <string name="settings_gwm_climate_seat_vent">シート送風</string>
     <string name="settings_gwm_climate_ac">A/C オン/オフ</string>
+    <string name="settings_cluster">デジタルメーター</string>
+    <string name="settings_cluster_summary">メーターのテーマ、レイアウト、ナビ表示</string>
+    <string name="settings_climate">エアコン</string>
+    <string name="settings_climate_summary">エアコンと快適装備</string>
+    <string name="settings_climate_strip">Android Auto と CarPlay の下のエアコンバー</string>
+    <string name="settings_climate_strip_description">両席の温度、風量、シートベンチレーション、助手席の音量を表示する細いバー。車で動作を確認した操作だけを表示します。次に Android Auto または CarPlay を開いたときに反映されます。</string>
 </resources>

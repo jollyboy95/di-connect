@@ -180,7 +180,7 @@
     <string name="connecting_bluetooth">Connecting Bluetooth</string>
     <string name="connecting_iap2_control">Connecting iAP2 control</string>
     <string name="connecting_to_your_iphone">Connecting to your iPhone…</string>
-    <string name="connection">Connection</string>
+    <string name="connection">Connections</string>
     <string name="connection_interrupted_retrying">Connection interrupted. Retrying…</string>
     <string name="connection_setup">Connection setup</string>
     <string name="copied_to_the_car_clipboard_run_the_command_on_your_comput">Copied to the car clipboard. Run the command on your computer.</string>
@@ -372,9 +372,9 @@
     <string name="settings_overview_subtitle">The essentials for a comfortable, reliable drive.</string>
     <string name="settings_your_setup">Your setup</string>
     <string name="settings_quick_settings">Quick settings</string>
-    <string name="settings_display">Display</string>
+    <string name="settings_display">Projection</string>
     <string name="settings_navigation">Navigation</string>
-    <string name="settings_vehicle">Vehicle</string>
+    <string name="settings_vehicle">Vehicle Integration</string>
     <string name="settings_advanced">Advanced</string>
     <string name="settings_more">More</string>
     <string name="settings_swipe_advanced">Advanced (experimental)</string>
@@ -1140,4 +1140,10 @@
     <string name="settings_gwm_climate_test_description">Checks whether Di-Connect can change the car’s climate: one degree on the driver’s side, or A/C on and off, then reads it back. Use while parked.</string>
     <string name="settings_gwm_climate_seat_vent">Seat vent</string>
     <string name="settings_gwm_climate_ac">A/C on/off</string>
+    <string name="settings_cluster">Digital Cluster</string>
+    <string name="settings_cluster_summary">Themes, layout and navigation on the instrument cluster</string>
+    <string name="settings_climate">Climate Control</string>
+    <string name="settings_climate_summary">Air conditioning and comfort settings</string>
+    <string name="settings_climate_strip">Climate strip under Android Auto and CarPlay</string>
+    <string name="settings_climate_strip_description">A slim bar with both seats’ temperature, fan speed, seat ventilation and passenger volume. Only controls proven on the car are shown. Applies the next time Android Auto or CarPlay opens.</string>
 </resources>
