@@ -2149,7 +2149,13 @@ internal class ThemedClusterView(
         journeyLine(next)?.let{journey ->
             if(vertical) journey.split("  ·  ").forEachIndexed{i,part ->
                 studioText(canvas,part,box.centerX(),box.bottom-(.105f-i*.039f)*h,.027f*h,theme.secondary,width=box.width()-.04f*h,align=Paint.Align.CENTER)
-            } else studioText(canvas,journey,box.left+.025f*h,box.bottom-.023f*h,.027f*h,theme.secondary,width=box.width()-.05f*h)
+            } else {
+                // A hairline and a little more air separate the journey row from the turn, so the
+                // guidance card reads as one hierarchy instead of three loose lines.
+                line.color=withAlpha(theme.text,42);line.strokeWidth=maxOf(1f,.0014f*h)
+                canvas.drawLine(box.left+.025f*h,box.bottom-.058f*h,box.right-.025f*h,box.bottom-.058f*h,line)
+                studioText(canvas,journey,box.left+.025f*h,box.bottom-.020f*h,.027f*h,theme.secondary,width=box.width()-.05f*h)
+            }
         }
     }
 
@@ -3561,8 +3567,24 @@ internal class ThemedClusterView(
         return parts
     }
 
+    /**
+     * Moves the turn card by the driver's saved offset, clamped so the whole card stays on the
+     * panel. Only the guidance moves: the music plate, speed, flow and footer keep their places.
+     */
+    private fun placeTurnCard(box: RectF, w: Float, h: Float) {
+        val (xPercent, yPercent) = ClusterThemeStore.guidanceOffset(context, theme.id)
+        if (xPercent == 0 && yPercent == 0) return
+        box.offset(xPercent / 100f * w, yPercent / 100f * h)
+        val marginX = .005f * w
+        val marginY = .005f * h
+        val maxLeft = (w - box.width() - marginX).coerceAtLeast(marginX)
+        val maxTop = (h - box.height() - marginY).coerceAtLeast(marginY)
+        box.offsetTo(box.left.coerceIn(marginX, maxLeft), box.top.coerceIn(marginY, maxTop))
+    }
+
     private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance,
                          box: RectF = RectF(CARD_LEFT * w, CARD_TOP * h, CARD_RIGHT * w, CARD_BOTTOM * h)) {
+        placeTurnCard(box, w, h)
         val s = h / 720f
         if (isOpenLayout()) {
             drawOpenDirections(canvas,w,h,next,box)

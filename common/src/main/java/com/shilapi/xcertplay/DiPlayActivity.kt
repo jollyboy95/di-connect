@@ -6223,6 +6223,35 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     android.widget.Toast.LENGTH_LONG).show()
             }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+        val selected = ClusterThemeStore.selected(this, connection)
+        // The turn card moves on its own: the music plate, speed and footer keep their places.
+        // Each theme keeps its own offset, and the store clamps it so the card stays on-panel.
+        if (selected.native == null) {
+            val (offsetX, offsetY) = ClusterThemeStore.guidanceOffset(this, selected.id)
+            content.addView(label("${getString(R.string.settings_gwm_card_position)} · $offsetX%, $offsetY%", 15, MUTED).apply {
+                setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, dp(6))
+            })
+            content.addView(row().apply {
+                fun nudge(text: String, dx: Int, dy: Int) = addView(button(text, false) {
+                    ClusterThemeStore.moveGuidanceCard(this@DiPlayActivity, selected.id, dx, dy)
+                    ClusterThemePreview.forget(selected.id)
+                    render()
+                }, LinearLayout.LayoutParams(0, dp(if (compact) 44 else 52), 1f))
+                nudge("←", -1, 0)
+                addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                nudge("↑", 0, -1)
+                addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                nudge("↓", 0, 1)
+                addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                nudge("→", 1, 0)
+                addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                addView(button(getString(R.string.reset), false) {
+                    ClusterThemeStore.resetGuidanceCard(this@DiPlayActivity, selected.id)
+                    ClusterThemePreview.forget(selected.id)
+                    render()
+                }, LinearLayout.LayoutParams(0, dp(if (compact) 44 else 52), 2f))
+            }, LinearLayout.LayoutParams(-1, -2))
+        }
         content.addView(row().apply {
             addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() },
                 LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
@@ -6230,7 +6259,6 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             addView(button(getString(R.string.di_connect_themes_import), false) { themeFilePicker.launch("*/*") },
                 LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
-        val selected = ClusterThemeStore.selected(this, connection)
         // Two across at most: three made each preview too small to tell the themes apart.
         val columns = if (compact) 1 else 2
         // One category at a time, picked from a row of buttons, so the gallery is not one long scroll.

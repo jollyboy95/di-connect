@@ -198,6 +198,9 @@ internal object ClusterThemeStore {
     private const val KEY_HUD = "cluster_theme_hud_follows"
     private const val KEY_PACKS = "cluster_theme_packs_changed"
     private const val KEY_DIRECTIONS = "cluster_theme_directions_card"
+    private const val KEY_CARD_PREFIX = "cluster_theme_guidance_card_"
+    private const val CARD_STEP_PERCENT = 2
+    private const val CARD_LIMIT_PERCENT = 20
     private const val CO_PILOT_FILE = "co_pilot_photo.png"
     private const val CO_PILOT_SIZE = 384
 
@@ -241,6 +244,37 @@ internal object ClusterThemeStore {
         prefs(context).edit().putBoolean(KEY_DIRECTIONS, on).apply()
     }
 
+    /**
+     * Where this theme's turn card sits, as a percentage offset from the layout's own position.
+     * The music card, speed and footer keep their places, so the guidance can be moved clear of
+     * an instrument without reworking the whole layout. Stored per theme, so a change made for
+     * Aurora never moves another theme's card.
+     */
+    fun guidanceOffset(context: Context, themeId: String): Pair<Int, Int> {
+        val prefs = prefs(context)
+        return prefs.getInt("$KEY_CARD_PREFIX${themeId}_x", 0) to
+            prefs.getInt("$KEY_CARD_PREFIX${themeId}_y", 0)
+    }
+
+    /** Nudges the turn card one step and returns the clamped offset. */
+    fun moveGuidanceCard(context: Context, themeId: String, dx: Int, dy: Int): Pair<Int, Int> {
+        val (x, y) = guidanceOffset(context, themeId)
+        val nextX = (x + dx * CARD_STEP_PERCENT).coerceIn(-CARD_LIMIT_PERCENT, CARD_LIMIT_PERCENT)
+        val nextY = (y + dy * CARD_STEP_PERCENT).coerceIn(-CARD_LIMIT_PERCENT, CARD_LIMIT_PERCENT)
+        prefs(context).edit()
+            .putInt("$KEY_CARD_PREFIX${themeId}_x", nextX)
+            .putInt("$KEY_CARD_PREFIX${themeId}_y", nextY)
+            .apply()
+        return nextX to nextY
+    }
+
+    fun resetGuidanceCard(context: Context, themeId: String) {
+        prefs(context).edit()
+            .remove("$KEY_CARD_PREFIX${themeId}_x")
+            .remove("$KEY_CARD_PREFIX${themeId}_y")
+            .apply()
+    }
+
     /** Wakes every open cluster and gallery after themes were downloaded or imported. */
     fun packsChanged(context: Context) {
         prefs(context).edit().putLong(KEY_PACKS, System.currentTimeMillis()).apply()
@@ -257,7 +291,9 @@ internal object ClusterThemeStore {
     fun observe(context: Context, changed: () -> Unit): () -> Unit {
         val prefs = prefs(context)
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == KEY_ANDROID_AUTO || key == KEY_CARPLAY || key == KEY_SAME || key == KEY_HUD || key == KEY_PACKS || key == KEY_DIRECTIONS || key == CO_PILOT_FILE) changed()
+            if (key == KEY_ANDROID_AUTO || key == KEY_CARPLAY || key == KEY_SAME || key == KEY_HUD ||
+                key == KEY_PACKS || key == KEY_DIRECTIONS || key == CO_PILOT_FILE ||
+                key?.startsWith(KEY_CARD_PREFIX) == true) changed()
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
         return { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
