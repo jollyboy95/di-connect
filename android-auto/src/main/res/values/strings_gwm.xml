@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GWM/Haval H7 port. English only, by choice: these screens are vehicle-specific diagnostics. -->
+<resources>
+    <string name="aa_gwm_settings_entry" translatable="false">GWM / Haval cluster, HUD and vehicle data (experimental)</string>
+    <string name="aa_gwm_settings_title" translatable="false">GWM / Haval H7</string>
+
+    <string name="aa_gwm_unit_kmh" translatable="false">km/h</string>
+    <string name="aa_gwm_data_unavailable" translatable="false">no data</string>
+    <string name="aa_gwm_data_stale" translatable="false">data paused</string>
+    <string name="aa_gwm_hud_arrival" translatable="false">Arrive</string>
+
+    <string name="aa_gwm_section_vehicle" translatable="false">Vehicle</string>
+    <string name="aa_gwm_detected" translatable="false">GWM/Haval head unit detected from the build identity.</string>
+    <string name="aa_gwm_not_detected" translatable="false">This head unit does not identify as GWM, Haval or B11.</string>
+    <string name="aa_gwm_force" translatable="false">Use the GWM route on this head unit</string>
+    <string name="aa_gwm_force_description" translatable="false">For GWM firmware that does not name GWM, Haval or B11. Leave off on any other car.</string>
+    <string name="aa_gwm_needs_android_o" translatable="false">GWM outputs need Android 8.0 or newer.</string>
+    <string name="aa_gwm_overlay_granted" translatable="false">Display over other apps: allowed.</string>
+    <string name="aa_gwm_overlay_missing" translatable="false">Display over other apps: not allowed. The cluster and HUD windows need it.</string>
+    <string name="aa_gwm_overlay_allow" translatable="false">Allow display over other apps</string>
+    <string name="aa_gwm_traffic_left" translatable="false">Traffic keeps left</string>
+    <string name="aa_gwm_traffic_left_description" translatable="false">Roundabout direction for phones that only send the older turn events. On for Australia.</string>
+
+    <string name="aa_gwm_section_cluster" translatable="false">Instrument cluster</string>
+    <string name="aa_gwm_cluster_enabled" translatable="false">Android Auto map on the cluster</string>
+    <string name="aa_gwm_cluster_enabled_description" translatable="false">Shows the navigation app\'s cluster map (Google Maps, Waze) on the selected display. The main Android Auto screen stays on the centre display. Applies on the next connection.</string>
+    <string name="aa_gwm_cluster_display" translatable="false">Cluster display</string>
+    <string name="aa_gwm_cluster_layer" translatable="false">Custom cluster layer</string>
+    <string name="aa_gwm_cluster_layer_description" translatable="false">Navigation card, music card and instrument strip over the map. Off shows the map alone.</string>
+    <string name="aa_gwm_nav_card" translatable="false">DiAuto turn card (top centre). Google Maps always adds its own card, so this is off by default</string>
+    <string name="aa_gwm_music_card" translatable="false">Music card (top right)</string>
+    <string name="aa_gwm_vehicle_strip" translatable="false">Instrument strip: fuel and range, speed, odometer</string>
+    <string name="aa_gwm_map_detail" translatable="false">Map labels and car marker size</string>
+    <string name="aa_gwm_map_detail_note" translatable="false">Applies on the next connection.</string>
+    <string name="aa_gwm_cluster_note" translatable="false">Google Maps draws its own small cards into the cluster video, so they cannot be moved or removed. DiAuto keeps the car marker in the band between the navigation card and the instrument strip; the custom navigation card is drawn from Android Auto\'s navigation data and can sit anywhere.</string>
+
+    <string name="aa_gwm_section_hud" translatable="false">Head-up display</string>
+    <string name="aa_gwm_hud_enabled" translatable="false">Turn arrow in the HUD arrow area</string>
+    <string name="aa_gwm_hud_enabled_description" translatable="false">Arrow, distance and arrival time while a route is active. The car keeps showing speed and its own readouts.</string>
+    <string name="aa_gwm_hud_display" translatable="false">HUD display</string>
+    <string name="aa_gwm_hud_position" translatable="false">Position in the arrow area</string>
+    <string name="aa_gwm_hud_grid_show" translatable="false">Show HUD grid (parked)</string>
+    <string name="aa_gwm_hud_grid_hide" translatable="false">Hide HUD grid</string>
+    <string name="aa_gwm_hud_area_note" translatable="false">The windscreen only shows the HUD\'s small arrow window. With the grid on, note which lettered cells you can read (columns A to J are a tenth of the width each, rows 1 to 5 a fifth of the height each), then set the arrow area below to cover them. The orange box shows the current area.</string>
+    <string name="aa_gwm_hud_area_left" translatable="false">Arrow area left</string>
+    <string name="aa_gwm_hud_area_top" translatable="false">Arrow area top</string>
+    <string name="aa_gwm_hud_area_width" translatable="false">Arrow area width</string>
+    <string name="aa_gwm_hud_area_height" translatable="false">Arrow area height</string>
+
+    <string name="aa_gwm_section_status" translatable="false">Status</string>
+    <string name="aa_gwm_section_diagnostics" translatable="false">Diagnostics (parked only)</string>
+    <string name="aa_gwm_scan" translatable="false">Scan displays and vehicle data</string>
+    <string name="aa_gwm_scanning" translatable="false">Scanning…</string>
+    <string name="aa_gwm_test_show" translatable="false">Show test pattern on the cluster display</string>
+    <string name="aa_gwm_test_hide" translatable="false">Hide test pattern</string>
+    <string name="aa_gwm_steering_start" translatable="false">Show steering-wheel key codes</string>
+    <string name="aa_gwm_steering_stop" translatable="false">Stop showing key codes</string>
+    <string name="aa_gwm_steering_idle" translatable="false">Press a steering-wheel button. Each shows the car\'s code here. To use one in Android Auto, assign it in Settings → Keymap while Android Auto is connected; unassigned codes are ignored.</string>
+    <string name="aa_gwm_display_missing" translatable="false">Display %1$d (not present now)</string>
+    <string name="aa_gwm_no_displays" translatable="false">No display other than the centre screen is visible to DiAuto.</string>
+</resources>

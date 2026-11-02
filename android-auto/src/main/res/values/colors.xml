@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="aa_material_grey_500">#9E9E9E</color>
+    <color name="aa_material_grey_700">#616161</color>
+    <color name="aa_material_grey_900">#212121</color>
+
+    <color name="aa_primary_dark">@color/aa_material_grey_900</color>
+    <color name="aa_primary_light">#fffbff</color>
+    <color name="aa_material_orange_700">#f57c00</color>
+    <color name="aa_material_green_700">#388e3c</color>
+
+    <color name="aa_text_primary">#f7f7f7</color>
+    <color name="aa_text_second">#bdbebd</color>
+    <color name="aa_text_dark">#b5babd</color>
+    <color name="aa_black_overlay">#66000000</color>
+    
+    <color name="aa_setting_background_color">#F0F0F0</color>
+    <color name="aa_brand_teal">#009688</color>
+    <color name="aa_divider_color">#1F000000</color>
+    <color name="aa_adaptive_text_color">#DE000000</color>
+
+    <color name="aa_text_shadow">@android:color/transparent</color>
+    <color name="aa_extreme_dark_background">#000000</color>
+    <color name="aa_splash_text_white">#FFFFFF</color>
+    <color name="aa_splash_text_revived">#214876</color>
+
+    <!-- Custom Menu Colors -->
+    <color name="aa_color_projection_blue">#3198ef</color>
+    <color name="aa_color_usb_orange">#f57c00</color>
+    <color name="aa_color_wifi_purple">#8e44ad</color>
+    <color name="aa_color_settings_darkblue">#2c3e50</color>
+
+    <!-- Segmented Button Colors -->
+    <color name="aa_segmented_button_stroke">#808080</color>
+
+</resources>
