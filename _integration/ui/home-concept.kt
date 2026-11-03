@@ -83,7 +83,7 @@
             addView(tile(connectButton!!, R.drawable.ic_dp_display, false), LinearLayout.LayoutParams(0, dp(132), 1f))
             addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
             addView(tile(vehicle, R.drawable.ic_dp_car, false), LinearLayout.LayoutParams(0, dp(132), 1f))
-        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(16) })
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
         setupError?.let { stage.addView(label(it, 16, WARNING).apply { setPadding(0, dp(16), 0, 0) }) }
 
         // Right: phone, automatic connection, USB and the rest, in one glass panel.

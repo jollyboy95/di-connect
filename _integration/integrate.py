@@ -3091,3 +3091,7 @@ edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt'
 for _t in ('DiLink3ClusterRouteSettingsTest','ClusterSpeedometerSettingsTest','ClusterSettingsConsentTest'):
     edit(root/f'common/src/test/java/com/shilapi/xcertplay/{_t}.kt',
         ('"settingsCategory", SettingsCategory.ADVANCED)', '"settingsCategory", SettingsCategory.CLUSTER)'))
+# Say what Di-Connect actually does on opening, now that it opens with Android Auto or CarPlay.
+edit(root/'common/src/main/res/values/strings_default_connection.xml',
+    ('Use the default connection mode and selected iPhone when DiPlay opens. Manual connection buttons use the mode you choose.',
+     'When Di-Connect opens, it connects Android Auto, or CarPlay if you chose to open with CarPlay. The buttons on Home still connect either one.'))
