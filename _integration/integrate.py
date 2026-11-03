@@ -3095,3 +3095,136 @@ for _t in ('DiLink3ClusterRouteSettingsTest','ClusterSpeedometerSettingsTest','C
 edit(root/'common/src/main/res/values/strings_default_connection.xml',
     ('Use the default connection mode and selected iPhone when DiPlay opens. Manual connection buttons use the mode you choose.',
      'When Di-Connect opens, it connects Android Auto, or CarPlay if you chose to open with CarPlay. The buttons on Home still connect either one.'))
+
+# ---- UI modernisation, stage 3 (3 Nov 2026): climate page, Appearance, a lighter themes gallery ----
+STAGE3_TEXT={
+ 'settings_climate_live':['Live climate','المناخ المباشر','Climatización en directo','Clima in tempo reale','ライブ空調','Климат сейчас','Клімат зараз','实时空调','即時空調'],
+ 'settings_climate_live_description':['Changes go straight to the car. Only the controls your car answers for are shown.','تُرسل التغييرات إلى السيارة مباشرة. تظهر فقط عناصر التحكم التي تستجيب لها سيارتك.','Los cambios van directos al coche. Solo aparecen los controles a los que responde tu coche.','Le modifiche arrivano subito all’auto. Compaiono solo i comandi a cui l’auto risponde.','変更はすぐに車へ送られます。車が応答する操作だけを表示します。','Изменения сразу уходят в машину. Показаны только органы, на которые отвечает ваша машина.','Зміни одразу йдуть в авто. Показано лише елементи, на які відповідає ваше авто.','更改会直接发送到车辆。只显示车辆有响应的控制项。','變更會直接傳送到車輛。只顯示車輛有回應的控制項。'],
+ 'settings_climate_reading':['Reading the car’s climate…','جارٍ قراءة مناخ السيارة…','Leyendo la climatización del coche…','Lettura del clima dell’auto…','車の空調を読み取り中…','Читаем климат машины…','Зчитуємо клімат авто…','正在读取车辆空调…','正在讀取車輛空調…'],
+ 'settings_climate_unavailable':['Climate controls appear on a GWM car whose climate service answers.','تظهر عناصر التحكم بالمناخ في سيارة GWM تستجيب خدمة المناخ فيها.','Los controles de climatización aparecen en un coche GWM cuyo servicio de clima responde.','I comandi del clima compaiono su un’auto GWM il cui servizio clima risponde.','空調サービスが応答する GWM 車で空調操作が表示されます。','Органы климата появляются на машине GWM, чья служба климата отвечает.','Елементи клімату з’являються на авто GWM, служба клімату якого відповідає.','空调服务有响应的 GWM 车辆会显示空调控制。','空調服務有回應的 GWM 車輛會顯示空調控制。'],
+ 'settings_climate_retry':['Try again','حاول مجددًا','Reintentar','Riprova','再試行','Повторить','Повторити','重试','重試'],
+ 'settings_climate_driver':['Driver','السائق','Conductor','Conducente','運転席','Водитель','Водій','驾驶员','駕駛'],
+ 'settings_climate_passenger':['Passenger','الراكب','Pasajero','Passeggero','助手席','Пассажир','Пасажир','副驾驶','副駕駛'],
+ 'settings_climate_auto':['AUTO','تلقائي','AUTO','AUTO','オート','АВТО','АВТО','自动','自動'],
+ 'settings_climate_ac':['A/C','التكييف','A/C','A/C','A/C','Конд.','Конд.','空调','冷氣'],
+ 'settings_climate_max_ac':['Max A/C','أقصى تكييف','A/C máx.','A/C max','A/C 最大','Макс. конд.','Макс. конд.','最大制冷','最大冷氣'],
+ 'settings_climate_sync':['Sync','مزامنة','Sincronizar','Sincronizza','同期','Синхр.','Синхр.','同步','同步'],
+ 'settings_climate_sync_note':['Sync is on: the car copies the driver’s temperature to the passenger.','المزامنة مفعّلة: تنسخ السيارة حرارة السائق إلى الراكب.','Sincronizar activado: el coche copia la temperatura del conductor al pasajero.','Sincronizza attivo: l’auto copia la temperatura del conducente al passeggero.','同期オン: 車が運転席の温度を助手席にコピーします。','Синхронизация включена: машина копирует температуру водителя пассажиру.','Синхронізацію ввімкнено: авто копіює температуру водія пасажирові.','同步已开启：车辆会把驾驶员温度复制给副驾驶。','同步已開啟：車輛會把駕駛溫度複製給副駕駛。'],
+ 'settings_climate_front_demist':['Front demist','إزالة ضباب أمامي','Desempañar del.','Disappannamento ant.','フロントデフ','Обдув стекла','Обдув скла','前除雾','前除霧'],
+ 'settings_climate_rear_demist':['Rear demist','إزالة ضباب خلفي','Desempañar tras.','Lunotto termico','リアデフ','Обогрев заднего','Обігрів заднього','后除雾','後除霧'],
+ 'settings_climate_eco':['ECO','اقتصادي','ECO','ECO','ECO','ECO','ECO','节能','節能'],
+ 'settings_climate_ioniser':['Ioniser','المؤيِّن','Ionizador','Ionizzatore','イオナイザー','Ионизатор','Іонізатор','负离子','負離子'],
+ 'settings_climate_fan':['Fan speed','سرعة المروحة','Ventilador','Ventola','風量','Вентилятор','Вентилятор','风量','風量'],
+ 'settings_climate_seat_driver':['Driver seat','مقعد السائق','Asiento conductor','Sedile conducente','運転席シート','Сиденье водителя','Сидіння водія','驾驶座通风','駕駛座通風'],
+ 'settings_climate_seat_passenger':['Passenger seat','مقعد الراكب','Asiento pasajero','Sedile passeggero','助手席シート','Сиденье пассажира','Сидіння пасажира','副驾驶座通风','副駕駛座通風'],
+ 'settings_climate_off':['Off','إيقاف','Apagado','Spento','オフ','Выкл.','Вимк.','关','關'],
+ 'settings_appearance':['Appearance','المظهر','Apariencia','Aspetto','外観','Оформление','Вигляд','外观','外觀'],
+ 'settings_appearance_summary':['Theme, accent colour and language','السمة ولون التمييز واللغة','Tema, color de acento e idioma','Tema, colore d’accento e lingua','テーマ、アクセントカラー、言語','Тема, акцентный цвет и язык','Тема, акцентний колір і мова','主题、强调色和语言','主題、強調色和語言'],
+ 'settings_accent':['Accent colour','لون التمييز','Color de acento','Colore d’accento','アクセントカラー','Акцентный цвет','Акцентний колір','强调色','強調色'],
+ 'settings_accent_description':['Colours the buttons, switches and highlights in the night look. The day look keeps its own blue.','يلوّن الأزرار والمفاتيح والتمييزات في المظهر الليلي. يحتفظ المظهر النهاري بلونه الأزرق.','Colorea botones, interruptores y resaltados en el aspecto nocturno. El diurno conserva su azul.','Colora pulsanti, interruttori ed evidenziazioni nell’aspetto notturno. Quello diurno mantiene il suo blu.','夜間表示のボタン、スイッチ、強調色を変えます。昼間表示は独自の青のままです。','Меняет цвет кнопок, переключателей и выделений в ночном виде. Дневной вид остаётся синим.','Змінює колір кнопок, перемикачів і виділень у нічному вигляді. Денний лишається синім.','更改夜间外观中按钮、开关和高亮的颜色。日间外观保留自己的蓝色。','變更夜間外觀中按鈕、開關和強調的顏色。日間外觀保留自己的藍色。'],
+}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in STAGE3_TEXT.items())+'</resources>'))
+
+edit(ui_host,
+    # Appearance: its own group with the app theme (moved from Projection) and the accent colour.
+    ('    OVERVIEW, CONNECTION, DISPLAY, AUDIO, CLUSTER, NAVIGATION, CLIMATE, VEHICLE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,',
+     '    OVERVIEW, CONNECTION, DISPLAY, AUDIO, CLUSTER, NAVIGATION, CLIMATE, VEHICLE, APPEARANCE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,'),
+    ('    CLIMATE_STRIP,\n', '    CLIMATE_LIVE,\n    CLIMATE_STRIP,\n    APPEARANCE,\n'),
+    ('        SettingsCategory.CLIMATE to setOf(SettingsSection.CLIMATE_STRIP),',
+     '        SettingsCategory.CLIMATE to setOf(SettingsSection.CLIMATE_LIVE, SettingsSection.CLIMATE_STRIP),\n        SettingsCategory.APPEARANCE to setOf(SettingsSection.APPEARANCE),'),
+    ('        SettingsCategory.LANGUAGE -> R.drawable.ic_dp_language', '        SettingsCategory.APPEARANCE -> R.drawable.ic_dp_night\n        SettingsCategory.LANGUAGE -> R.drawable.ic_dp_language'),
+    ('        SettingsCategory.LANGUAGE -> R.string.language_section_title', '        SettingsCategory.APPEARANCE -> R.string.settings_appearance\n        SettingsCategory.LANGUAGE -> R.string.language_section_title'),
+    ('            SettingsCategory.LANGUAGE -> {\n', '''            SettingsCategory.APPEARANCE -> {
+                settingsPageTitle(content, getString(R.string.settings_appearance), getString(R.string.settings_appearance_summary))
+                renderSections(content, SettingsInformationArchitecture.sectionsByCategory.getValue(SettingsCategory.APPEARANCE))
+            }
+            SettingsCategory.LANGUAGE -> {
+'''),
+    ('            SettingsCategory.LANGUAGE to R.string.settings_language_summary,',
+     '            SettingsCategory.APPEARANCE to R.string.settings_appearance_summary,\n            SettingsCategory.LANGUAGE to R.string.settings_language_summary,'),
+    ('''            val appearances = AppAppearance.entries
+            choice(
+                card,
+                getString(R.string.settings_app_appearance),
+                listOf(
+                    getString(R.string.settings_app_appearance_dark),
+                    getString(R.string.settings_app_appearance_light),
+                    getString(R.string.settings_app_appearance_auto),
+                ),
+                appearances.indexOf(AirPlayPersistence.loadAppAppearance(this)),
+                reconnects = false,
+            ) { index ->
+                AirPlayPersistence.saveAppAppearance(this, appearances[index])
+                rememberLaunchAppearance()
+                handler.post { checkForAppearanceChange() }
+            }
+            card.addView(label(getString(R.string.settings_app_appearance_description), 14, MUTED))
+''', ''),
+    ('        filteredSection(content, SettingsSection.CLIMATE_STRIP,', '''        filteredSection(content, SettingsSection.CLIMATE_LIVE,
+            getString(R.string.settings_climate_live), R.drawable.ic_dc_fan) { card -> climateLive(card) }
+        filteredSection(content, SettingsSection.APPEARANCE,
+            getString(R.string.settings_appearance), R.drawable.ic_dp_night) { card ->
+            val appearances = AppAppearance.entries
+            choice(
+                card,
+                getString(R.string.settings_app_appearance),
+                listOf(
+                    getString(R.string.settings_app_appearance_dark),
+                    getString(R.string.settings_app_appearance_light),
+                    getString(R.string.settings_app_appearance_auto),
+                ),
+                appearances.indexOf(AirPlayPersistence.loadAppAppearance(this)),
+                reconnects = false,
+            ) { index ->
+                AirPlayPersistence.saveAppAppearance(this, appearances[index])
+                rememberLaunchAppearance()
+                handler.post { checkForAppearanceChange() }
+            }
+            card.addView(label(getString(R.string.settings_app_appearance_description), 14, MUTED))
+            accentPicker(card)
+        }
+        filteredSection(content, SettingsSection.CLIMATE_STRIP,'''),
+    ('    private fun homeConcept(content: LinearLayout) {', Path('target/_integration/ui/climate-page.kt').read_text() + '    private fun homeConcept(content: LinearLayout) {'),
+    # The accent colour feeds the night palette and the main button.
+    ('''        if (resolved == appNight && palette === DiPlayPalette.of(resolved)) return false
+        appNight = resolved
+        palette = DiPlayPalette.of(resolved)''', '''        val chosen = DiConnectAccent.palette(this, resolved)
+        if (resolved == appNight && palette === chosen) return false
+        appNight = resolved
+        palette = chosen'''),
+    ('    private fun primaryFill() = if (appNight) DiConnectStyle.PRIMARY_NIGHT else ACCENT',
+     '    private fun primaryFill() = if (appNight) DiConnectAccent.fill(this) else ACCENT'),
+    # Themes gallery: options in one row and actions in another, the test theme out of the gallery,
+    # and pictures drawn after the page shows instead of all before it.
+    (Path('target/_integration/ui/themes-old-top.txt').read_text(), Path('target/_integration/ui/themes-new-top.txt').read_text()),
+    (Path('target/_integration/ui/themes-old-more.txt').read_text(), ''),
+    ('        val families = ClusterThemes.availableFor(connection)\n',
+     '        val families = ClusterThemes.availableFor(connection).filter { it.id != "split-test" }\n'),
+    ('''        card.addView(ImageView(this).apply {
+            setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection))
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(-1, -2))''', '''        card.addView(ImageView(this).apply {
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: android.graphics.Outline) =
+                    outline.setRoundRect(0, 0, view.width, view.height, dp(12).toFloat())
+            }
+            clipToOutline = true
+            val ready = ClusterThemePreview.cached(theme, connection)
+            if (ready != null) setImageBitmap(ready) else {
+                // An 8:3 frame holds the place; each picture is drawn in its own turn after the page shows.
+                setImageDrawable(GradientDrawable().apply { setColor(BUTTON); setSize(720, 270) })
+                handler.post { setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection)) }
+            }
+        }, LinearLayout.LayoutParams(-1, -2))'''))
+edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt',
+    ('        assertEquals(12, destinations.size)', '        assertEquals(13, destinations.size)'),
+    # The app theme moved from Projection to Appearance.
+    ('        assertTrue(display.any { it.startsWith(text(R.string.settings_app_appearance)) })',
+     '        assertFalse(display.any { it.startsWith(text(R.string.settings_app_appearance)) })'))

@@ -128,6 +128,15 @@ object GwmClimateBar {
         } finally { reply.recycle() }
     }.getOrElse { emptyMap() }
 
+    /** Reads any climate keys, for the climate page; a key the car does not answer is left out. */
+    fun readKeys(context: Context, keys: Array<String>): Map<String, Float> = runCatching {
+        val reply = call(1, context.packageName, keys, null)
+        try {
+            val values = reply.createStringArray() ?: emptyArray()
+            keys.indices.mapNotNull { i -> values.getOrNull(i)?.toFloatOrNull()?.takeIf { it > -1000f }?.let { keys[i] to it } }.toMap()
+        } finally { reply.recycle() }
+    }.getOrElse { emptyMap() }
+
     fun write(key: String, value: String) {
         runCatching { call(2, CALLER, arrayOf(key), arrayOf(value)).recycle() }
             .onFailure { AppLog.w("ClimateBar: write $key failed: ${it.message}") }

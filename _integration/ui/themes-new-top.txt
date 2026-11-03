@@ -1,0 +1,33 @@
+        // Options in one row, then the actions in another, so the gallery starts higher on the screen.
+        val same = ClusterThemeStore.sameForBoth(this)
+        val hudFollows = ClusterThemeStore.hudFollowsTheme(this)
+        val directions = ClusterThemeStore.directionsCard(this)
+        val rowHeight = dp(if (compact) 48 else 56)
+        fun gap() = space(CONTROL_GAP_DP).also { it.layoutParams = LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1) }
+        fun onOff(on: Boolean) = getString(if (on) R.string.di_connect_on else R.string.di_connect_off)
+        content.addView(row().apply {
+            isBaselineAligned = false
+            addView(button("${getString(R.string.di_connect_themes_same)} · ${onOff(same)}", false) {
+                ClusterThemeStore.setSameForBoth(this@DiPlayActivity, !same); render()
+            }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+            addView(gap())
+            addView(button("${getString(R.string.di_connect_theme_hud)} · ${onOff(hudFollows)}", false) {
+                ClusterThemeStore.setHudFollowsTheme(this@DiPlayActivity, !hudFollows); render()
+            }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+            addView(gap())
+            addView(button("${getString(R.string.di_connect_theme_directions)} · ${onOff(directions)}", false) {
+                ClusterThemeStore.setDirectionsCard(this@DiPlayActivity, !directions); render()
+            }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+        content.addView(row().apply {
+            isBaselineAligned = false
+            addView(button(getString(R.string.di_connect_theme_directions_preview), false) {
+                NavDemo.start()
+                android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_directions_preview_running),
+                    android.widget.Toast.LENGTH_LONG).show()
+            }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+            addView(gap())
+            addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+            addView(gap())
+            addView(button(getString(R.string.di_connect_themes_import), false) { themeFilePicker.launch("*/*") }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })

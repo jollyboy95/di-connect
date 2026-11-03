@@ -13,6 +13,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.util.ReflectionHelpers
+import org.robolectric.Shadows.shadowOf
+import android.os.Looper
 
 /**
  * Pictures of the redesigned screens at the head unit's size, for review before anyone installs a
@@ -44,12 +46,21 @@ class DiConnectUiPreviewTest {
         ReflectionHelpers.setField(it, "settingsCategory", SettingsCategory.CLIMATE)
     }
 
+    @Test fun settingsAppearance() = capture("settings-appearance") {
+        ReflectionHelpers.setField(it, "page", "settings")
+        ReflectionHelpers.setField(it, "settingsCategory", SettingsCategory.APPEARANCE)
+    }
+
+    @Test fun themes() = capture("themes") { ReflectionHelpers.setField(it, "page", "themes") }
+
     private fun capture(name: String, open: (DiPlayActivity) -> Unit) {
         val controller = Robolectric.buildActivity(DiPlayActivity::class.java).setup()
         val activity = controller.get()
         try {
             open(activity)
             ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")
+            // Let deferred work (gallery pictures, the climate read) land before the picture is taken.
+            shadowOf(Looper.getMainLooper()).idle()
             val root = activity.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
             val metrics = activity.resources.displayMetrics
             val width = (activity.resources.configuration.screenWidthDp * metrics.density).toInt()

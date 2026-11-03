@@ -779,7 +779,7 @@ class AdaptiveSettingsUiTest {
         assertFalse(text(R.string.settings_ambient_title) in vehicle)
         assertFalse(text(R.string.settings_ambient_title) in display)
         assertTrue(text(R.string.side_panel) in advanced)
-        assertTrue(display.any { it.startsWith(text(R.string.settings_app_appearance)) })
+        assertFalse(display.any { it.startsWith(text(R.string.settings_app_appearance)) })
         assertFalse(audio.any { it.startsWith(text(R.string.settings_app_appearance)) })
         assertFalse(vehicle.any { it.startsWith(text(R.string.settings_app_appearance)) })
         assertFalse(advanced.any { it.startsWith(text(R.string.settings_app_appearance)) })
@@ -1048,7 +1048,7 @@ class AdaptiveSettingsUiTest {
                 destination.contentDescription?.endsWith(" settings") == true &&
                 descendants(destination).filterIsInstance<ImageView>().count() == 1
         }.toList()
-        assertEquals(12, destinations.size)
+        assertEquals(13, destinations.size)
         destinations.forEach { destination ->
             assertEquals(1, descendants(destination).filterIsInstance<ImageView>().count())
         }

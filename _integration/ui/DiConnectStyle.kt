@@ -37,6 +37,7 @@ internal object DiConnectStyle {
         SettingsCategory.NAVIGATION -> Color.rgb(30, 92, 214)
         SettingsCategory.CLIMATE -> Color.rgb(30, 92, 214)
         SettingsCategory.VEHICLE -> Color.rgb(96, 62, 40)
+        SettingsCategory.APPEARANCE -> Color.rgb(46, 125, 79)
         SettingsCategory.LANGUAGE -> Color.rgb(46, 125, 79)
         SettingsCategory.DIAGNOSTICS -> Color.rgb(44, 54, 72)
         SettingsCategory.ADVANCED -> Color.rgb(78, 60, 124)
@@ -155,4 +156,50 @@ internal class VehicleHeroView(context: Context, private val pageColor: Int, pri
         val y = h - arcPaint.strokeWidth
         canvas.drawLine(w * .08f, y, w * .92f, y, arcPaint)
     }
+}
+
+/**
+ * The driver's accent colour for the night look (Settings > Appearance). Each choice keeps text on
+ * the dark page above 4.5:1 and white text on its button fill above 4.5:1. Daytime keeps the light
+ * palette's own blue. Palettes are cached so the same choice is always the same instance.
+ */
+internal object DiConnectAccent {
+    class Choice(val accent: Int, val track: Int, val fill: Int)
+
+    val CHOICES = listOf(
+        Choice(Color.rgb(92, 164, 255), Color.rgb(47, 128, 255), Color.rgb(28, 98, 220)),    // blue
+        Choice(Color.rgb(167, 139, 250), Color.rgb(124, 92, 240), Color.rgb(98, 64, 200)),    // violet
+        Choice(Color.rgb(244, 114, 182), Color.rgb(219, 72, 150), Color.rgb(176, 46, 120)),   // pink
+        Choice(Color.rgb(248, 113, 113), Color.rgb(220, 60, 60), Color.rgb(170, 40, 40)),     // red
+        Choice(Color.rgb(251, 146, 60), Color.rgb(234, 110, 20), Color.rgb(170, 76, 8)),      // orange
+        Choice(Color.rgb(251, 191, 36), Color.rgb(217, 150, 6), Color.rgb(140, 92, 0)),       // amber
+        Choice(Color.rgb(74, 222, 128), Color.rgb(34, 170, 90), Color.rgb(20, 120, 60)),      // green
+        Choice(Color.rgb(45, 212, 191), Color.rgb(20, 160, 145), Color.rgb(10, 110, 100)),    // teal
+    )
+    private const val PREFS = "di_connect_appearance"
+    private const val KEY = "accent"
+    private val cache = HashMap<Int, DiPlayPalette>()
+
+    fun index(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY, 0).coerceIn(0, CHOICES.lastIndex)
+
+    fun save(context: Context, index: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY, index.coerceIn(0, CHOICES.lastIndex)).apply()
+    }
+
+    fun palette(context: Context, night: Boolean): DiPlayPalette {
+        if (!night) return DiPlayPalette.LIGHT
+        val i = index(context)
+        if (i == 0) return DiPlayPalette.DARK
+        return synchronized(cache) {
+            cache.getOrPut(i) {
+                val c = CHOICES[i]
+                DiPlayPalette.DARK.copy(accent = c.accent, accentTrack = c.track, focusRing = c.accent,
+                    railSelectedOutline = c.track, ripple = (c.accent and 0x00FFFFFF) or 0x33000000)
+            }
+        }
+    }
+
+    /** The main button's fill at night. */
+    fun fill(context: Context): Int = CHOICES[index(context)].fill
 }

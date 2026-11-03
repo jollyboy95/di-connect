@@ -107,7 +107,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 internal enum class SettingsCategory {
-    OVERVIEW, CONNECTION, DISPLAY, AUDIO, CLUSTER, NAVIGATION, CLIMATE, VEHICLE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,
+    OVERVIEW, CONNECTION, DISPLAY, AUDIO, CLUSTER, NAVIGATION, CLIMATE, VEHICLE, APPEARANCE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,
 }
 
 /** A settings card. Every entry needs one category in [SettingsInformationArchitecture]; see AGENTS.md. */
@@ -130,7 +130,9 @@ internal enum class SettingsSection {
     LOCATION,
     CLUSTER_MAP,
     GWM_CLUSTER,
+    CLIMATE_LIVE,
     CLIMATE_STRIP,
+    APPEARANCE,
     LAUNCHER_BUBBLE,
     BYD_NAVIGATION,
     PERMISSIONS_AND_HELP,
@@ -160,7 +162,8 @@ internal object SettingsInformationArchitecture {
         ),
         SettingsCategory.DIAGNOSTICS to setOf(SettingsSection.DIAGNOSTICS),
         SettingsCategory.CLUSTER to setOf(SettingsSection.GWM_CLUSTER, SettingsSection.CLUSTER_MAP),
-        SettingsCategory.CLIMATE to setOf(SettingsSection.CLIMATE_STRIP),
+        SettingsCategory.CLIMATE to setOf(SettingsSection.CLIMATE_LIVE, SettingsSection.CLIMATE_STRIP),
+        SettingsCategory.APPEARANCE to setOf(SettingsSection.APPEARANCE),
         SettingsCategory.ADVANCED to setOf(
             SettingsSection.LAUNCHER_BUBBLE,
             SettingsSection.EXPERIMENTAL_DISPLAY,
@@ -1288,6 +1291,199 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
      * Every control keeps the action, text and field it had on the previous Home, so status
      * updates, tests and saved settings work unchanged; compact windows keep the previous Home.
      */
+    // ---- Climate Control page (Nov 2026) ---------------------------------------------------------
+    // Live controls read from and written to the car's gwm_adapter service, as the climate strip
+    // does. The page shows only the controls the car answers for, so a key this car lacks never
+    // appears. Keys beyond the strip's come from a GWM voice-control app that drives the H7.
+    private val climateAuto = "car.hvac.auto_enable"
+    private val climateMaxAc = "car.hvac.acmax_enable"
+    private val climateFrontDemist = "car.hvac.front_defrost_enable"
+    private val climateRearDemist = "car.hvac.rear_defrost_enable"
+    private val climateSync = "car.hvac.sync_enable"
+    private val climateEco = "car.hvac.eco_enable"
+    private val climateIoniser = "car.hvac.anion_enable"
+    private val climateKeys get() = arrayOf(
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.DRIVER_TEMP, com.andrerinas.openheadunit.gwm.GwmClimateBar.PASS_TEMP,
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.DRIVER_VENT, com.andrerinas.openheadunit.gwm.GwmClimateBar.PASS_VENT,
+        com.andrerinas.openheadunit.gwm.GwmClimateBar.FAN, com.andrerinas.openheadunit.gwm.GwmClimateBar.AC,
+        climateAuto, climateMaxAc, climateFrontDemist, climateRearDemist, climateSync, climateEco, climateIoniser)
+    private var climateValues: Map<String, Float>? = null
+    private var climateReading = false
+    private var climateReadAt = 0L
+
+    private fun climatePageShown() = page == "settings" && settingsCategory == SettingsCategory.CLIMATE && !isFinishing && !isDestroyed
+
+    private fun readClimate(delayMs: Long = 0) {
+        if (climateReading) return
+        climateReading = true
+        val app = applicationContext
+        Thread({
+            if (delayMs > 0) runCatching { Thread.sleep(delayMs) }
+            val values = com.andrerinas.openheadunit.gwm.GwmClimateBar.readKeys(app, climateKeys)
+            runOnUiThread {
+                climateReading = false
+                climateReadAt = android.os.SystemClock.elapsedRealtime()
+                val changed = values != climateValues
+                climateValues = values
+                if (changed && climatePageShown()) render()
+            }
+        }, "climate-page-read").start()
+    }
+
+    /** Shows the new value at once, sends it, and reads the car back a moment later. */
+    private fun writeClimate(vararg changes: Pair<String, Float>) {
+        val current = climateValues ?: return
+        climateValues = current + changes
+        render()
+        Thread({
+            changes.forEach { (key, value) ->
+                val wire = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.US, "%.1f", value)
+                com.andrerinas.openheadunit.gwm.GwmClimateBar.write(key, wire)
+            }
+            runOnUiThread { readClimate(delayMs = 1200) }
+        }, "climate-page-write").start()
+    }
+
+    private fun climateLive(card: LinearLayout) {
+        if (!GwmMode.active(this)) {
+            card.addView(label(getString(R.string.settings_climate_unavailable), 15, MUTED))
+            return
+        }
+        val values = climateValues
+        if (values == null) {
+            card.addView(label(getString(R.string.settings_climate_reading), 15, MUTED))
+            readClimate()
+            return
+        }
+        if (values.isEmpty()) {
+            card.addView(label(getString(R.string.settings_climate_unavailable), 15, MUTED))
+            card.addView(button(getString(R.string.settings_climate_retry), false) { climateValues = null; render() }, matchButton(CONTROL_GAP_DP, 52))
+            return
+        }
+        // Re-read when the page is shown again, so changes made on the car's own buttons show up.
+        if (android.os.SystemClock.elapsedRealtime() - climateReadAt > 4000) readClimate()
+        card.addView(label(getString(R.string.settings_climate_live_description), 14, MUTED).apply { setPadding(0, 0, 0, dp(12)) })
+        val bar = com.andrerinas.openheadunit.gwm.GwmClimateBar
+        val syncOn = values[climateSync]?.toInt() == 1
+
+        // Temperatures: passenger on the left and driver on the right, as the seats sit in a
+        // right-hand-drive car and on the climate strip.
+        card.addView(row().apply {
+            isBaselineAligned = false
+            listOf(bar.PASS_TEMP to R.string.settings_climate_passenger, bar.DRIVER_TEMP to R.string.settings_climate_driver)
+                .forEachIndexed { index, (key, title) ->
+                    val temp = values[key] ?: return@forEachIndexed
+                    if (index > 0 && childCount > 0) addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                    addView(column().apply {
+                        background = rounded(BUTTON, BORDER)
+                        gravity = Gravity.CENTER_HORIZONTAL
+                        setPadding(dp(16), dp(14), dp(16), dp(14))
+                        addView(label(getString(title), 15, MUTED, true).apply { gravity = Gravity.CENTER })
+                        addView(label(String.format(Locale.US, "%.1f°C", temp), 40, TEXT, true).apply {
+                            gravity = Gravity.CENTER; setPadding(0, dp(4), 0, dp(10))
+                        })
+                        addView(row().apply {
+                            fun step(text: String, delta: Float) = addView(button(text, false) {
+                                val target = ((climateValues?.get(key) ?: temp) + delta).coerceIn(16f, 32f)
+                                // With Sync on, the car copies the driver's temperature to the passenger itself.
+                                writeClimate(key to target)
+                            }, LinearLayout.LayoutParams(0, dp(60), 1f))
+                            step("−", -.5f)
+                            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                            step("+", .5f)
+                        })
+                    }, LinearLayout.LayoutParams(0, -2, 1f))
+                }
+        })
+
+        // On/off controls the car answers for, four to a row.
+        val switches = listOf(
+            climateAuto to R.string.settings_climate_auto, bar.AC to R.string.settings_climate_ac,
+            climateMaxAc to R.string.settings_climate_max_ac, climateSync to R.string.settings_climate_sync,
+            climateFrontDemist to R.string.settings_climate_front_demist, climateRearDemist to R.string.settings_climate_rear_demist,
+            climateEco to R.string.settings_climate_eco, climateIoniser to R.string.settings_climate_ioniser,
+        ).filter { values.containsKey(it.first) }
+        switches.chunked(4).forEach { group ->
+            card.addView(row().apply {
+                isBaselineAligned = false
+                group.forEachIndexed { i, (key, title) ->
+                    if (i > 0) addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                    val on = values[key]?.toInt() == 1
+                    addView(button(getString(title), on) { writeClimate(key to if (on) 0f else 1f) }.apply {
+                        contentDescription = "${getString(title)} · ${getString(if (on) R.string.di_connect_on else R.string.di_connect_off)}"
+                    }, LinearLayout.LayoutParams(0, dp(64), 1f))
+                }
+                for (i in group.size until 4) {
+                    addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                    addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(0, dp(64), 1f))
+                }
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+        }
+        if (syncOn) card.addView(label(getString(R.string.settings_climate_sync_note), 13, MUTED).apply { setPadding(0, dp(8), 0, 0) })
+
+        // Fan speed, 1 to 7 on the H7.
+        values[bar.FAN]?.let { fan ->
+            val level = fan.toInt()
+            card.addView(row().apply {
+                isBaselineAligned = false
+                gravity = Gravity.CENTER_VERTICAL
+                addView(label("${getString(R.string.settings_climate_fan)} · $level", 18, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
+                addView(button("−", false) { writeClimate(bar.FAN to (level - 1).coerceIn(1, 7).toFloat()) }, LinearLayout.LayoutParams(dp(96), dp(56)))
+                addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                addView(button("+", false) { writeClimate(bar.FAN to (level + 1).coerceIn(1, 7).toFloat()) }, LinearLayout.LayoutParams(dp(96), dp(56)))
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+            card.addView(android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 7; progress = level
+                progressTintList = ColorStateList.valueOf(ACCENT)
+                progressBackgroundTintList = ColorStateList.valueOf(BUTTON)
+            }, LinearLayout.LayoutParams(-1, dp(10)).apply { topMargin = dp(8) })
+        }
+
+        // Seat ventilation: off, 1, 2, 3 for each front seat.
+        val vents = listOf(bar.PASS_VENT to R.string.settings_climate_seat_passenger, bar.DRIVER_VENT to R.string.settings_climate_seat_driver)
+            .filter { values.containsKey(it.first) }
+        if (vents.isNotEmpty()) card.addView(row().apply {
+            isBaselineAligned = false
+            vents.forEachIndexed { i, (key, title) ->
+                if (i > 0) addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                val level = values[key]?.toInt() ?: 0
+                val shown = if (level <= 0) getString(R.string.settings_climate_off) else level.toString()
+                addView(button("${getString(title)} · $shown", level > 0) {
+                    writeClimate(key to (if (level >= 3 || level < 0) 0 else level + 1).toFloat())
+                }, LinearLayout.LayoutParams(0, dp(60), 1f))
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+    }
+
+    // ---- Appearance page (Nov 2026) ----------------------------------------------------------------
+    private fun accentPicker(card: LinearLayout) {
+        card.addView(label(getString(R.string.settings_accent), 17, TEXT, true).apply { setPadding(0, dp(14), 0, dp(4)) })
+        card.addView(label(getString(R.string.settings_accent_description), 14, MUTED).apply { setPadding(0, 0, 0, dp(10)) })
+        val current = DiConnectAccent.index(this)
+        card.addView(row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            DiConnectAccent.CHOICES.forEachIndexed { i, choice ->
+                if (i > 0) addView(space(12), LinearLayout.LayoutParams(dp(12), 1))
+                addView(View(this@DiPlayActivity).apply {
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(choice.accent)
+                        setStroke(dp(if (i == current) 4 else 1), if (i == current) TEXT else BORDER)
+                    }
+                    isClickable = true
+                    isFocusable = true
+                    foreground = focusRing(26)
+                    contentDescription = "${getString(R.string.settings_accent)} ${i + 1}"
+                    setOnClickListener {
+                        DiConnectAccent.save(this@DiPlayActivity, i)
+                        checkForAppearanceChange()
+                        render()
+                    }
+                }, LinearLayout.LayoutParams(dp(52), dp(52)))
+            }
+        })
+    }
+
     private fun homeConcept(content: LinearLayout) {
         fun homeButton(title: String, primary: Boolean, click: () -> Unit) = button(title, primary, click)
         // A tile is a glass panel holding an icon and the action's own button, so the button keeps
@@ -1694,6 +1890,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         SettingsCategory.VEHICLE -> R.drawable.ic_dp_car
         SettingsCategory.DIAGNOSTICS -> R.drawable.ic_dp_diagnostics
         SettingsCategory.ADVANCED -> R.drawable.ic_dp_advanced
+        SettingsCategory.APPEARANCE -> R.drawable.ic_dp_night
         SettingsCategory.LANGUAGE -> R.drawable.ic_dp_language
         SettingsCategory.ABOUT -> R.drawable.ic_dp_about
     }
@@ -1709,6 +1906,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         SettingsCategory.VEHICLE -> R.string.settings_vehicle
         SettingsCategory.DIAGNOSTICS -> R.string.diagnostics
         SettingsCategory.ADVANCED -> R.string.settings_advanced
+        SettingsCategory.APPEARANCE -> R.string.settings_appearance
         SettingsCategory.LANGUAGE -> R.string.language_section_title
         SettingsCategory.ABOUT -> R.string.about
     })
@@ -1733,6 +1931,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             SettingsCategory.VEHICLE -> vehicleSettings(content)
             SettingsCategory.DIAGNOSTICS -> diagnosticsSettings(content)
             SettingsCategory.ADVANCED -> advancedSettings(content)
+            SettingsCategory.APPEARANCE -> {
+                settingsPageTitle(content, getString(R.string.settings_appearance), getString(R.string.settings_appearance_summary))
+                renderSections(content, SettingsInformationArchitecture.sectionsByCategory.getValue(SettingsCategory.APPEARANCE))
+            }
             SettingsCategory.LANGUAGE -> {
                 settingsPageTitle(content, getString(R.string.language_section_title), getString(R.string.settings_language_summary))
                 renderSections(content, SettingsInformationArchitecture.sectionsByCategory.getValue(SettingsCategory.LANGUAGE))
@@ -1764,6 +1966,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             SettingsCategory.CLIMATE to R.string.settings_climate_summary,
             SettingsCategory.NAVIGATION to R.string.settings_navigation_summary,
             SettingsCategory.VEHICLE to R.string.settings_vehicle_summary,
+            SettingsCategory.APPEARANCE to R.string.settings_appearance_summary,
             SettingsCategory.LANGUAGE to R.string.settings_language_summary,
             SettingsCategory.ABOUT to R.string.about_diplay,
             SettingsCategory.DIAGNOSTICS to R.string.settings_diagnostics_summary,
@@ -2444,23 +2647,6 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         if (settingsSectionFilter?.contains(SettingsSection.BYD_ADB) != false) bydAdbSettings(content)
         filteredSection(content, SettingsSection.DISPLAY_AND_PERFORMANCE,
             getString(R.string.display_and_performance), R.drawable.ic_dp_display) { card ->
-            val appearances = AppAppearance.entries
-            choice(
-                card,
-                getString(R.string.settings_app_appearance),
-                listOf(
-                    getString(R.string.settings_app_appearance_dark),
-                    getString(R.string.settings_app_appearance_light),
-                    getString(R.string.settings_app_appearance_auto),
-                ),
-                appearances.indexOf(AirPlayPersistence.loadAppAppearance(this)),
-                reconnects = false,
-            ) { index ->
-                AirPlayPersistence.saveAppAppearance(this, appearances[index])
-                rememberLaunchAppearance()
-                handler.post { checkForAppearanceChange() }
-            }
-            card.addView(label(getString(R.string.settings_app_appearance_description), 14, MUTED))
             val nightModes = CarPlayNightMode.entries
             val nightMode = AirPlayPersistence.loadCarPlayNightMode(this)
             val ambientControls = column().apply {
@@ -2736,6 +2922,29 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 card.addView(label(if (overlay) getString(R.string.center_map_overlay_allowed)
                     else getString(R.string.center_map_overlay_missing, packageName), 14, if (overlay) MUTED else WARNING))
             }
+        }
+        filteredSection(content, SettingsSection.CLIMATE_LIVE,
+            getString(R.string.settings_climate_live), R.drawable.ic_dc_fan) { card -> climateLive(card) }
+        filteredSection(content, SettingsSection.APPEARANCE,
+            getString(R.string.settings_appearance), R.drawable.ic_dp_night) { card ->
+            val appearances = AppAppearance.entries
+            choice(
+                card,
+                getString(R.string.settings_app_appearance),
+                listOf(
+                    getString(R.string.settings_app_appearance_dark),
+                    getString(R.string.settings_app_appearance_light),
+                    getString(R.string.settings_app_appearance_auto),
+                ),
+                appearances.indexOf(AirPlayPersistence.loadAppAppearance(this)),
+                reconnects = false,
+            ) { index ->
+                AirPlayPersistence.saveAppAppearance(this, appearances[index])
+                rememberLaunchAppearance()
+                handler.post { checkForAppearanceChange() }
+            }
+            card.addView(label(getString(R.string.settings_app_appearance_description), 14, MUTED))
+            accentPicker(card)
         }
         filteredSection(content, SettingsSection.CLIMATE_STRIP,
             getString(R.string.settings_climate), R.drawable.ic_dc_fan) { card ->
@@ -6394,30 +6603,38 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
             }
         })
-        content.addView(button("${getString(R.string.di_connect_themes_same)} · " +
-            getString(if (same) R.string.di_connect_on else R.string.di_connect_off), false) {
-            ClusterThemeStore.setSameForBoth(this, !same)
-            render()
-        }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
+        // Options in one row, then the actions in another, so the gallery starts higher on the screen.
+        val same = ClusterThemeStore.sameForBoth(this)
         val hudFollows = ClusterThemeStore.hudFollowsTheme(this)
-        content.addView(button("${getString(R.string.di_connect_theme_hud)} · " +
-            getString(if (hudFollows) R.string.di_connect_on else R.string.di_connect_off), false) {
-            ClusterThemeStore.setHudFollowsTheme(this, !hudFollows)
-            render()
-        }, matchButton(CONTROL_GAP_DP, if (compact) 48 else 56))
         val directions = ClusterThemeStore.directionsCard(this)
+        val rowHeight = dp(if (compact) 48 else 56)
+        fun gap() = space(CONTROL_GAP_DP).also { it.layoutParams = LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1) }
+        fun onOff(on: Boolean) = getString(if (on) R.string.di_connect_on else R.string.di_connect_off)
         content.addView(row().apply {
-            addView(button("${getString(R.string.di_connect_theme_directions)} · " +
-                getString(if (directions) R.string.di_connect_on else R.string.di_connect_off), false) {
-                ClusterThemeStore.setDirectionsCard(this@DiPlayActivity, !directions)
-                render()
-            }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
-            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            isBaselineAligned = false
+            addView(button("${getString(R.string.di_connect_themes_same)} · ${onOff(same)}", false) {
+                ClusterThemeStore.setSameForBoth(this@DiPlayActivity, !same); render()
+            }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+            addView(gap())
+            addView(button("${getString(R.string.di_connect_theme_hud)} · ${onOff(hudFollows)}", false) {
+                ClusterThemeStore.setHudFollowsTheme(this@DiPlayActivity, !hudFollows); render()
+            }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+            addView(gap())
+            addView(button("${getString(R.string.di_connect_theme_directions)} · ${onOff(directions)}", false) {
+                ClusterThemeStore.setDirectionsCard(this@DiPlayActivity, !directions); render()
+            }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+        content.addView(row().apply {
+            isBaselineAligned = false
             addView(button(getString(R.string.di_connect_theme_directions_preview), false) {
                 NavDemo.start()
                 android.widget.Toast.makeText(this@DiPlayActivity, getString(R.string.di_connect_theme_directions_preview_running),
                     android.widget.Toast.LENGTH_LONG).show()
-            }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+            addView(gap())
+            addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() }, LinearLayout.LayoutParams(0, rowHeight, 1f))
+            addView(gap())
+            addView(button(getString(R.string.di_connect_themes_import), false) { themeFilePicker.launch("*/*") }, LinearLayout.LayoutParams(0, rowHeight, 1f))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         val selected = ClusterThemeStore.selected(this, connection)
         // The turn card moves on its own: the music plate, speed and footer keep their places.
@@ -6448,19 +6665,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 }, LinearLayout.LayoutParams(0, dp(if (compact) 44 else 52), 2f))
             }, LinearLayout.LayoutParams(-1, -2))
         }
-        content.addView(row().apply {
-            addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() },
-                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
-            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
-            addView(button(getString(R.string.di_connect_themes_import), false) { themeFilePicker.launch("*/*") },
-                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
-        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
         // Two across at most: three made each preview too small to tell the themes apart.
         val columns = if (compact) 1 else 2
         // One category at a time, picked from a row of buttons, so the gallery is not one long scroll.
         // Themes that share a design (layout, speed style, map window) and differ only in colour
         // show as one tile with numbered colour dots; the family sits in its first theme's category.
-        val families = ClusterThemes.availableFor(connection)
+        val families = ClusterThemes.availableFor(connection).filter { it.id != "split-test" }
             .groupBy { listOf(it.layout, it.speed, it.mapWindow, it.native) }.values.toList()
         val categories = ThemeCategory.entries.filter { c -> families.any { it.first().category == c } }
         val shown = themesCategory?.takeIf { it in categories } ?: selected.category.takeIf { it in categories } ?: categories.firstOrNull()
@@ -6528,10 +6738,20 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             setOnClickListener { chooseTheme(theme, connection) }
         }
         card.addView(ImageView(this).apply {
-            setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection))
             adjustViewBounds = true
             scaleType = ImageView.ScaleType.FIT_CENTER
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: android.graphics.Outline) =
+                    outline.setRoundRect(0, 0, view.width, view.height, dp(12).toFloat())
+            }
+            clipToOutline = true
+            val ready = ClusterThemePreview.cached(theme, connection)
+            if (ready != null) setImageBitmap(ready) else {
+                // An 8:3 frame holds the place; each picture is drawn in its own turn after the page shows.
+                setImageDrawable(GradientDrawable().apply { setColor(BUTTON); setSize(720, 270) })
+                handler.post { setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection)) }
+            }
         }, LinearLayout.LayoutParams(-1, -2))
         card.addView(row().apply {
             gravity = Gravity.CENTER_VERTICAL
@@ -7469,7 +7689,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         (layoutCornerRadius() / resources.displayMetrics.density).roundToInt(),
     )
 
-    private fun primaryFill() = if (appNight) DiConnectStyle.PRIMARY_NIGHT else ACCENT
+    private fun primaryFill() = if (appNight) DiConnectAccent.fill(this) else ACCENT
 
     private fun button(title: String, primary: Boolean, click: () -> Unit) = SettingButton(this, MUTED, ACCENT).apply {
         isAllCaps = false; textSize = 18f; setTextColor(if (primary) (if (appNight) Color.WHITE else ON_ACCENT) else TEXT)
@@ -7709,9 +7929,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
 
     private fun refreshAppearance(): Boolean {
         val resolved = resolveAppNightNow()
-        if (resolved == appNight && palette === DiPlayPalette.of(resolved)) return false
+        val chosen = DiConnectAccent.palette(this, resolved)
+        if (resolved == appNight && palette === chosen) return false
         appNight = resolved
-        palette = DiPlayPalette.of(resolved)
+        palette = chosen
         return true
     }
 
