@@ -6604,7 +6604,6 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             }
         })
         // Options in one row, then the actions in another, so the gallery starts higher on the screen.
-        val same = ClusterThemeStore.sameForBoth(this)
         val hudFollows = ClusterThemeStore.hudFollowsTheme(this)
         val directions = ClusterThemeStore.directionsCard(this)
         val rowHeight = dp(if (compact) 48 else 56)
@@ -6715,6 +6714,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         ThemeCategory.SPORT -> R.string.di_connect_theme_category_sport
         ThemeCategory.NIGHT -> R.string.di_connect_theme_category_night
         ThemeCategory.PETS -> R.string.di_connect_theme_category_pets
+        ThemeCategory.SIGNATURE -> R.string.di_connect_theme_category_signature
         ThemeCategory.CONCEPT -> R.string.di_connect_theme_category_concept
     }
 

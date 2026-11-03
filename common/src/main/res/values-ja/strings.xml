@@ -1129,6 +1129,7 @@
     <string name="di_connect_theme_category_luxury">高級車風</string>
     <string name="di_connect_theme_category_sport">スポーツ</string>
     <string name="di_connect_theme_category_night">ナイト</string>
+    <string name="di_connect_theme_category_signature">シグネチャー</string>
     <string name="di_connect_theme_category_concept">コンセプト</string>
     <string name="di_connect_theme_category_pets">ペット</string>
     <string name="di_connect_update_wrong_signer">このダウンロードはあなたの鍵で署名された Di-Connect ではないため、インストールしませんでした。</string>
