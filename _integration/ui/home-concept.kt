@@ -7,17 +7,31 @@
      */
     private fun homeConcept(content: LinearLayout) {
         fun homeButton(title: String, primary: Boolean, click: () -> Unit) = button(title, primary, click)
-        fun tile(target: Button, icon: Int, primary: Boolean): Button = target.apply {
-            val size = dp(34)
-            val glyph = getDrawable(icon)?.mutate()?.apply {
-                setTint(if (primary && appNight) Color.WHITE else ACCENT)
-                setBounds(0, 0, size, size)
-            }
-            setCompoundDrawablesRelative(null, glyph, null, null)
-            compoundDrawablePadding = dp(10)
-            textSize = 17f
+        // A tile is a glass panel holding an icon and the action's own button, so the button keeps
+        // the text the status updates give it while the icon stays put.
+        fun tile(target: Button, icon: Int, primary: Boolean): View = column().apply {
             gravity = Gravity.CENTER
-            setPadding(dp(10), dp(16), dp(10), dp(14))
+            background = if (primary) rounded(primaryFill(), ACCENT) else rounded(BUTTON, BORDER)
+            isClickable = true
+            isFocusable = true
+            foreground = focusRing(20)
+            setPadding(dp(10), dp(14), dp(10), dp(10))
+            addView(ImageView(this@DiPlayActivity).apply {
+                setImageResource(icon)
+                imageTintList = ColorStateList.valueOf(if (primary && appNight) Color.WHITE else ACCENT)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(34), dp(34)).apply { gravity = Gravity.CENTER_HORIZONTAL })
+            target.background = null
+            target.foreground = null
+            // button() gives itself a shaped background after its first layout; the tile is the shape here.
+            target.doOnLayout { target.background = null; target.foreground = null }
+            target.minHeight = 0
+            target.minimumHeight = 0
+            target.textSize = 17f
+            target.gravity = Gravity.CENTER
+            target.setPadding(dp(4), dp(6), dp(4), dp(2))
+            addView(target, LinearLayout.LayoutParams(-1, -2))
+            setOnClickListener { target.performClick() }
         }
 
         val body = row().apply { gravity = Gravity.TOP }
@@ -63,6 +77,7 @@
             openSettingsCategory(SettingsCategory.VEHICLE)
         }
         stage.addView(row().apply {
+            isBaselineAligned = false
             addView(tile(androidAutoButton!!, R.drawable.ic_dp_navigation, true), LinearLayout.LayoutParams(0, dp(132), 1f))
             addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
             addView(tile(connectButton!!, R.drawable.ic_dp_display, false), LinearLayout.LayoutParams(0, dp(132), 1f))

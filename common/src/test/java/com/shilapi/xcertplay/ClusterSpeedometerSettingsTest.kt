@@ -88,7 +88,7 @@ class ClusterSpeedometerSettingsTest {
         val controller = Robolectric.buildActivity(DiPlayActivity::class.java,
             Intent(context, DiPlayActivity::class.java).putExtra("page", "settings")).setup()
         val activity = controller.get()
-        ReflectionHelpers.setField(activity, "settingsCategory", SettingsCategory.ADVANCED)
+        ReflectionHelpers.setField(activity, "settingsCategory", SettingsCategory.CLUSTER)
         fun hasToggle(id: Int = com.shilapi.xcertplay.host.R.string.settings_cluster_speedometer): Boolean {
             fun texts(view: View): List<String> = if (view is android.view.ViewGroup)
                 (0 until view.childCount).flatMap { texts(view.getChildAt(it)) }

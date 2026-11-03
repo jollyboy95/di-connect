@@ -3087,3 +3087,7 @@ edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt'
     ('        assertEquals(10, destinations.size)', '        assertEquals(12, destinations.size)'),
     # The CarPlay cluster map card now lives in Digital Cluster, not Advanced.
     ('        assertTrue(texts(screen).any { it.text == screen.getString(R.string.carplay_map_on_instrument_cluster_experimental) })\n', ''))
+# The cluster-map tests open the cluster cards where they now live.
+for _t in ('DiLink3ClusterRouteSettingsTest','ClusterSpeedometerSettingsTest','ClusterSettingsConsentTest'):
+    edit(root/f'common/src/test/java/com/shilapi/xcertplay/{_t}.kt',
+        ('"settingsCategory", SettingsCategory.ADVANCED)', '"settingsCategory", SettingsCategory.CLUSTER)'))
