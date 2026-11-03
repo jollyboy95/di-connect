@@ -2645,7 +2645,7 @@ edit(D,
      '''        // Themes that share a design (layout, speed style, map window) and differ only in colour
         // show as one tile with numbered colour dots; the family sits in its first theme's category.
         val families = ClusterThemes.availableFor(connection)
-            .groupBy { listOf(it.layout, it.speed, it.mapWindow, it.native) }.values.toList()
+            .groupBy { ClusterThemeFamilies.key(it) }.values.toList()
         val categories = ThemeCategory.entries.filter { c -> families.any { it.first().category == c } }'''),
     ('''            val themes = ClusterThemes.availableFor(connection).filter { it.category == category }''',
      '''            val themes = families.filter { it.first().category == category }'''),

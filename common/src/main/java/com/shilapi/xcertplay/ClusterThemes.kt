@@ -334,3 +334,34 @@ internal object ClusterThemeStore {
     }.getOrDefault(false)
 }
 
+/**
+ * Themes that look alike share one gallery tile, with a numbered dot for each look, so the
+ * gallery offers distinct designs rather than near-copies. Every theme stays selectable and a
+ * saved choice is unchanged. A theme not listed groups with others of the same design only.
+ */
+internal object ClusterThemeFamilies {
+    private val families = mapOf(
+        "orbit" to listOf("orbit", "halo", "sunset-orbit"),
+        "ribbon" to listOf("ribbon", "neon-ribbon", "silver-ribbon", "studio-vaporwave"),
+        "deck" to listOf("horizon", "coastline", "candy-deck", "studio-pop-play"),
+        "sidebar" to listOf("tower", "command", "forest", "studio-album-studio"),
+        "twin" to listOf("twin-turbo", "grand-tourer", "midnight-dials", "racing-green"),
+        "gauge" to listOf("redline", "circuit", "lava"),
+        "lcd" to listOf("retro-lcd", "vapour", "amber-lcd", "studio-retro-lcd"),
+        "arcs" to listOf("vector", "solar", "glacier", "studio-orbital"),
+        "card" to listOf("soft-card", "widget", "studio-porcelain"),
+        "pup" to listOf("co-pilot", "bubblegum-pup"),
+        "ring" to listOf("concept-aurora-plus", "concept-vertical", "concept-eclipse"),
+        "square" to listOf("concept-zen", "concept-float"),
+        "base" to listOf("concept-horizon", "concept-stealth", "concept-split"),
+        "sig-aurora" to listOf("sig-aurora-evo", "map-aurora-evolution"),
+        "map" to listOf("map-focus", "map-panoramic", "sig-metro"),
+        "facet" to listOf("sig-crystal", "sig-facet"),
+        "scenic" to listOf("sig-horizon-dusk", "sig-flow", "sig-vision", "sig-open-road", "sig-serenity"),
+        "lines" to listOf("sig-nexus", "sig-aero"),
+        "halo-sig" to listOf("sig-onyx", "sig-luxe", "sig-nebula")
+    )
+    private val byId: Map<String, String> = families.flatMap { (family, ids) -> ids.map { it to family } }.toMap()
+
+    fun key(theme: ClusterTheme): Any = byId[theme.id] ?: listOf(theme.layout, theme.speed, theme.mapWindow, theme.native)
+}

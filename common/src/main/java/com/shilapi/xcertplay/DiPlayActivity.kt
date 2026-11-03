@@ -6670,7 +6670,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         // Themes that share a design (layout, speed style, map window) and differ only in colour
         // show as one tile with numbered colour dots; the family sits in its first theme's category.
         val families = ClusterThemes.availableFor(connection).filter { it.id != "split-test" }
-            .groupBy { listOf(it.layout, it.speed, it.mapWindow, it.native) }.values.toList()
+            .groupBy { ClusterThemeFamilies.key(it) }.values.toList()
         val categories = ThemeCategory.entries.filter { c -> families.any { it.first().category == c } }
         val shown = themesCategory?.takeIf { it in categories } ?: selected.category.takeIf { it in categories } ?: categories.firstOrNull()
         content.addView(android.widget.HorizontalScrollView(this).apply {
