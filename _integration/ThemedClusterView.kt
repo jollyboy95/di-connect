@@ -3152,7 +3152,8 @@ internal class ThemedClusterView(
         val light = theme.layout == ClusterTheme.Layout.SIG_SERENITY
         // Base: a dark (or misty) wash the art sits on.
         p.shader = LinearGradient(0f, 0f, 0f, h,
-            if (light) intArrayOf(Color.argb(235, 214, 226, 240), Color.argb(225, 236, 242, 250), Color.argb(235, 210, 222, 238))
+            // Serenity: a misty mid-blue, light enough to feel calm and dark enough for white text and glass cards.
+            if (light) intArrayOf(Color.argb(225, 70, 90, 118), Color.argb(210, 98, 120, 148), Color.argb(230, 58, 76, 102))
             else intArrayOf(Color.argb(235, 4, 7, 15), Color.argb(215, 6, 10, 20), Color.argb(240, 3, 5, 11)),
             null, Shader.TileMode.CLAMP)
         c.drawRect(0f, 0f, w, h, p); p.shader = null
@@ -3254,7 +3255,8 @@ internal class ThemedClusterView(
                 ribbons(colours, true, 9); ribbons(colours, false, 9)
             }
             ClusterTheme.Layout.SIG_HORIZON -> mountains(dusk = true)
-            ClusterTheme.Layout.SIG_SERENITY -> mountains(dusk = false)
+            ClusterTheme.Layout.SIG_SERENITY -> mountains(dusk = false,
+                sky = intArrayOf(Color.argb(215, 120, 146, 180), Color.argb(200, 160, 182, 208), Color.argb(190, 196, 212, 230)), ridge = Color.rgb(110, 134, 168))
             ClusterTheme.Layout.SIG_FLOW -> mountains(dusk = true,
                 sky = intArrayOf(Color.argb(230, 20, 16, 60), Color.argb(220, 110, 70, 170), Color.argb(210, 230, 140, 190)), ridge = Color.rgb(40, 30, 80))
             ClusterTheme.Layout.SIG_OPEN_ROAD -> { mountains(dusk = true,

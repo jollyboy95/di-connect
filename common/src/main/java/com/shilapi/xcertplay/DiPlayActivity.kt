@@ -1964,9 +1964,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             SettingsCategory.AUDIO to R.string.settings_audio_summary,
             SettingsCategory.CLUSTER to R.string.settings_cluster_summary,
             SettingsCategory.CLIMATE to R.string.settings_climate_summary,
+            SettingsCategory.APPEARANCE to R.string.settings_appearance_summary,
             SettingsCategory.NAVIGATION to R.string.settings_navigation_summary,
             SettingsCategory.VEHICLE to R.string.settings_vehicle_summary,
-            SettingsCategory.APPEARANCE to R.string.settings_appearance_summary,
             SettingsCategory.LANGUAGE to R.string.settings_language_summary,
             SettingsCategory.ABOUT to R.string.about_diplay,
             SettingsCategory.DIAGNOSTICS to R.string.settings_diagnostics_summary,
@@ -6750,7 +6750,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             if (ready != null) setImageBitmap(ready) else {
                 // An 8:3 frame holds the place; each picture is drawn in its own turn after the page shows.
                 setImageDrawable(GradientDrawable().apply { setColor(BUTTON); setSize(720, 270) })
-                handler.post { setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection)) }
+                this@DiPlayActivity.handler.post { setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection)) }
             }
         }, LinearLayout.LayoutParams(-1, -2))
         card.addView(row().apply {

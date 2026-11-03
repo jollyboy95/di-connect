@@ -1002,12 +1002,12 @@
       "speed": "plain",
       "flow": "bar",
       "face": "sans",
-      "text": "#1B2A3D",
-      "secondary": "#4E627A",
-      "accent": "#2F6FD6",
-      "charge": "#2F80FF",
-      "surface": "#D9F4F8FC",
-      "edge": "#662F6FD6"
+      "text": "#FFFFFF",
+      "secondary": "#DCE6F2",
+      "accent": "#9CC8FF",
+      "charge": "#7FB8FF",
+      "surface": "#D9203048",
+      "edge": "#669CC8FF"
     },
     {
       "id": "sig-nebula",

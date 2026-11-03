@@ -3144,8 +3144,9 @@ edit(ui_host,
             }
             SettingsCategory.LANGUAGE -> {
 '''),
-    ('            SettingsCategory.LANGUAGE to R.string.settings_language_summary,',
-     '            SettingsCategory.APPEARANCE to R.string.settings_appearance_summary,\n            SettingsCategory.LANGUAGE to R.string.settings_language_summary,'),
+    # Overview keeps Vehicle, Language and About together; Appearance follows Climate Control.
+    ('            SettingsCategory.CLIMATE to R.string.settings_climate_summary,',
+     '            SettingsCategory.CLIMATE to R.string.settings_climate_summary,\n            SettingsCategory.APPEARANCE to R.string.settings_appearance_summary,'),
     ('''            val appearances = AppAppearance.entries
             choice(
                 card,
@@ -3222,7 +3223,7 @@ edit(ui_host,
             if (ready != null) setImageBitmap(ready) else {
                 // An 8:3 frame holds the place; each picture is drawn in its own turn after the page shows.
                 setImageDrawable(GradientDrawable().apply { setColor(BUTTON); setSize(720, 270) })
-                handler.post { setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection)) }
+                this@DiPlayActivity.handler.post { setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection)) }
             }
         }, LinearLayout.LayoutParams(-1, -2))'''))
 edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt',
