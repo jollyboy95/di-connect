@@ -1177,4 +1177,7 @@
     <string name="settings_gwm_wifi_off_during_aa_description">The car’s Wi-Fi shares one radio with its hotspot, and running both makes Android Auto stutter. It turns back on when Android Auto ends. The hotspot stays on.</string>
     <string name="settings_gwm_bt_music_off_during_aa">Bluetooth music off during Android Auto</string>
     <string name="settings_gwm_bt_music_off_during_aa_description">Stops the car’s Bluetooth player competing with Android Auto. Calls stay on Bluetooth. Allowed again when Android Auto ends.</string>
+    <string name="settings_start_app">Open an app at start</string>
+    <string name="settings_start_app_none">None</string>
+    <string name="settings_start_app_description">Opens the chosen app in the background each time Di-Connect starts, for example an audio tuning app, then returns to Di-Connect.</string>
 </resources>

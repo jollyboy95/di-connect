@@ -126,6 +126,7 @@ internal enum class SettingsSection {
     AMBIENT_LIGHTING,
     CAR_BUTTON,
     AUDIO_ROUTING,
+    START_APP,
     NAVIGATION_WHEEL,
     LOCATION,
     CLUSTER_MAP,
@@ -155,7 +156,7 @@ internal object SettingsInformationArchitecture {
             SettingsSection.PERMISSIONS_AND_HELP,
         ),
         SettingsCategory.DISPLAY to setOf(SettingsSection.DISPLAY_AND_PERFORMANCE),
-        SettingsCategory.AUDIO to setOf(SettingsSection.AUDIO_ROUTING),
+        SettingsCategory.AUDIO to setOf(SettingsSection.AUDIO_ROUTING, SettingsSection.START_APP),
         SettingsCategory.NAVIGATION to setOf(SettingsSection.LOCATION, SettingsSection.BYD_NAVIGATION),
         SettingsCategory.VEHICLE to setOf(
             SettingsSection.CARPLAY_CONTROLS,
@@ -446,6 +447,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         scheduleBackgroundUpdateChecks()
         HotspotBandGuard.checkOnStart(applicationContext)
         Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()
+        handler.postDelayed({ if (!isFinishing && !isDestroyed) DiConnectStartApp.onStart(this) }, 1500)
         val volumeApp = applicationContext
         com.andrerinas.openheadunit.gwm.GwmClimateBar.volumeKey = { up ->
             AdbSwitch.withAdb(volumeApp) {
@@ -2943,6 +2945,17 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         filteredSection(content, SettingsSection.GWM_HOTSPOT,
             getString(R.string.settings_gwm_hotspot_5ghz_now), R.drawable.ic_dp_connection) { card -> gwmHotspotControls(card) }
+        filteredSection(content, SettingsSection.START_APP,
+            getString(R.string.settings_start_app), R.drawable.ic_dp_audio) { card ->
+            val apps = DiConnectStartApp.choices(this)
+            val current = DiConnectStartApp.packageName(this)
+            choice(card, getString(R.string.settings_start_app),
+                listOf(getString(R.string.settings_start_app_none)) + apps.map { it.first },
+                apps.indexOfFirst { it.second == current } + 1, reconnects = false) { index ->
+                DiConnectStartApp.save(this, if (index == 0) null else apps[index - 1].second)
+            }
+            card.addView(label(getString(R.string.settings_start_app_description), 14, MUTED))
+        }
         filteredSection(content, SettingsSection.CLIMATE_LIVE,
             getString(R.string.settings_climate_live), R.drawable.ic_dc_fan) { card -> climateLive(card) }
         filteredSection(content, SettingsSection.APPEARANCE,
@@ -7150,6 +7163,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         appendLine(HotspotBandProbe.report())
         appendLine(HotspotBandGuard.report())
         appendLine(DiConnectPhoneWake.report())
+        appendLine("App opened at start: ${DiConnectStartApp.last}")
         appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")
         appendLine("Car Wi-Fi during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmCarWifi.last}")
         appendLine(AdbSwitch.report(appContext))

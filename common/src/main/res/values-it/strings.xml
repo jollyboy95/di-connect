@@ -1164,4 +1164,7 @@
     <string name="settings_gwm_wifi_off_during_aa_description">Il Wi-Fi dell’auto condivide la radio con l’hotspot e usarli insieme fa scattare Android Auto. Si riaccende alla fine di Android Auto. L’hotspot resta acceso.</string>
     <string name="settings_gwm_bt_music_off_during_aa">Musica Bluetooth spenta durante Android Auto</string>
     <string name="settings_gwm_bt_music_off_during_aa_description">Evita che il lettore Bluetooth dell’auto competa con Android Auto. Le chiamate restano su Bluetooth. Torna alla fine di Android Auto.</string>
+    <string name="settings_start_app">Apri un’app all’avvio</string>
+    <string name="settings_start_app_none">Nessuna</string>
+    <string name="settings_start_app_description">Apre l’app scelta in background a ogni avvio di Di-Connect, ad esempio un’app di regolazione audio, poi torna a Di-Connect.</string>
 </resources>

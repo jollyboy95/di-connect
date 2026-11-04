@@ -1074,4 +1074,7 @@
     <string name="settings_gwm_wifi_off_during_aa_description">Wi-Fi машины делит радиомодуль с точкой доступа, и вместе они вызывают заикания Android Auto. Включится после Android Auto. Точка доступа остаётся.</string>
     <string name="settings_gwm_bt_music_off_during_aa">Музыка Bluetooth выкл. во время Android Auto</string>
     <string name="settings_gwm_bt_music_off_during_aa_description">Не даёт Bluetooth-плееру машины мешать Android Auto. Звонки остаются на Bluetooth. Вернётся после Android Auto.</string>
+    <string name="settings_start_app">Открывать приложение при запуске</string>
+    <string name="settings_start_app_none">Нет</string>
+    <string name="settings_start_app_description">Открывает выбранное приложение в фоне при каждом запуске Di-Connect, например настройку звука, и возвращается в Di-Connect.</string>
 </resources>

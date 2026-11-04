@@ -1134,4 +1134,7 @@
     <string name="settings_gwm_wifi_off_during_aa_description">車機 Wi-Fi 與熱點共用一個無線模組，同時使用會讓 Android Auto 卡頓。Android Auto 結束後恢復。熱點保持開啟。</string>
     <string name="settings_gwm_bt_music_off_during_aa">Android Auto 期間關閉藍牙音樂</string>
     <string name="settings_gwm_bt_music_off_during_aa_description">防止車機藍牙播放器與 Android Auto 衝突。通話仍走藍牙。Android Auto 結束後恢復。</string>
+    <string name="settings_start_app">啟動時開啟應用程式</string>
+    <string name="settings_start_app_none">無</string>
+    <string name="settings_start_app_description">每次 Di-Connect 啟動時在背景開啟所選應用程式（例如音效調整應用程式），然後返回 Di-Connect。</string>
 </resources>

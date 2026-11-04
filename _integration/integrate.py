@@ -3313,3 +3313,32 @@ _txt={'settings_gwm_wifi_off_during_aa':['Car Wi-Fi off during Android Auto','إ
 for p in STRINGS:
     i=LOCALE_ORDER.index(p.parent.name)
     edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
+
+# An app of the driver's choice (for example an audio tuning app) opened in the background at start.
+(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectStartApp.kt').write_text(Path('target/_integration/ui/DiConnectStartApp.kt').read_text())
+edit(root/'shared/src/main/AndroidManifest.xml',
+    ('<uses-permission android:name="android.permission.INTERNET" />', '<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REORDER_TASKS" />'))
+edit(ui_host,
+    ('        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()\n',
+     '        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()\n        handler.postDelayed({ if (!isFinishing && !isDestroyed) DiConnectStartApp.onStart(this) }, 1500)\n'),
+    ('        appendLine(DiConnectPhoneWake.report())\n', '        appendLine(DiConnectPhoneWake.report())\n        appendLine("App opened at start: ${DiConnectStartApp.last}")\n'),
+    ('        SettingsCategory.AUDIO to setOf(SettingsSection.AUDIO_ROUTING),', '        SettingsCategory.AUDIO to setOf(SettingsSection.AUDIO_ROUTING, SettingsSection.START_APP),'),
+    ('    AUDIO_ROUTING,\n', '    AUDIO_ROUTING,\n    START_APP,\n'),
+    ('        filteredSection(content, SettingsSection.CLIMATE_LIVE,', '''        filteredSection(content, SettingsSection.START_APP,
+            getString(R.string.settings_start_app), R.drawable.ic_dp_audio) { card ->
+            val apps = DiConnectStartApp.choices(this)
+            val current = DiConnectStartApp.packageName(this)
+            choice(card, getString(R.string.settings_start_app),
+                listOf(getString(R.string.settings_start_app_none)) + apps.map { it.first },
+                apps.indexOfFirst { it.second == current } + 1, reconnects = false) { index ->
+                DiConnectStartApp.save(this, if (index == 0) null else apps[index - 1].second)
+            }
+            card.addView(label(getString(R.string.settings_start_app_description), 14, MUTED))
+        }
+        filteredSection(content, SettingsSection.CLIMATE_LIVE,'''))
+_txt={'settings_start_app':['Open an app at start','فتح تطبيق عند البدء','Abrir una app al iniciar','Apri un’app all’avvio','起動時にアプリを開く','Открывать приложение при запуске','Відкривати застосунок під час запуску','启动时打开应用','啟動時開啟應用程式'],
+ 'settings_start_app_none':['None','لا شيء','Ninguna','Nessuna','なし','Нет','Немає','无','無'],
+ 'settings_start_app_description':['Opens the chosen app in the background each time Di-Connect starts, for example an audio tuning app, then returns to Di-Connect.','يفتح التطبيق المختار في الخلفية عند كل بدء لـ Di-Connect، مثل تطبيق ضبط الصوت، ثم يعود إلى Di-Connect.','Abre la app elegida en segundo plano cada vez que se inicia Di-Connect, por ejemplo una app de ajuste de audio, y vuelve a Di-Connect.','Apre l’app scelta in background a ogni avvio di Di-Connect, ad esempio un’app di regolazione audio, poi torna a Di-Connect.','Di-Connect の起動ごとに選んだアプリ（音響調整アプリなど）をバックグラウンドで開き、Di-Connect に戻ります。','Открывает выбранное приложение в фоне при каждом запуске Di-Connect, например настройку звука, и возвращается в Di-Connect.','Відкриває вибраний застосунок у фоні під час кожного запуску Di-Connect, наприклад налаштування звуку, і повертається в Di-Connect.','每次 Di-Connect 启动时在后台打开所选应用（例如音效调节应用），然后返回 Di-Connect。','每次 Di-Connect 啟動時在背景開啟所選應用程式（例如音效調整應用程式），然後返回 Di-Connect。']}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))

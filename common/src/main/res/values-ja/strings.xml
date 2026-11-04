@@ -1176,4 +1176,7 @@
     <string name="settings_gwm_wifi_off_during_aa_description">車の Wi-Fi はホットスポットと同じ無線を使うため、両方使うと Android Auto が途切れます。Android Auto 終了時に戻ります。ホットスポットはオンのままです。</string>
     <string name="settings_gwm_bt_music_off_during_aa">Android Auto 中は Bluetooth 音楽をオフ</string>
     <string name="settings_gwm_bt_music_off_during_aa_description">車の Bluetooth プレーヤーが Android Auto と競合しないようにします。通話は Bluetooth のままです。Android Auto 終了時に戻ります。</string>
+    <string name="settings_start_app">起動時にアプリを開く</string>
+    <string name="settings_start_app_none">なし</string>
+    <string name="settings_start_app_description">Di-Connect の起動ごとに選んだアプリ（音響調整アプリなど）をバックグラウンドで開き、Di-Connect に戻ります。</string>
 </resources>

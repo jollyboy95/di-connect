@@ -1134,4 +1134,7 @@
     <string name="settings_gwm_wifi_off_during_aa_description">车机 Wi-Fi 与热点共用一个无线模块，同时使用会让 Android Auto 卡顿。Android Auto 结束后恢复。热点保持开启。</string>
     <string name="settings_gwm_bt_music_off_during_aa">Android Auto 期间关闭蓝牙音乐</string>
     <string name="settings_gwm_bt_music_off_during_aa_description">防止车机蓝牙播放器与 Android Auto 冲突。通话仍走蓝牙。Android Auto 结束后恢复。</string>
+    <string name="settings_start_app">启动时打开应用</string>
+    <string name="settings_start_app_none">无</string>
+    <string name="settings_start_app_description">每次 Di-Connect 启动时在后台打开所选应用（例如音效调节应用），然后返回 Di-Connect。</string>
 </resources>
