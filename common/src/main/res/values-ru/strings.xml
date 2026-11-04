@@ -1070,4 +1070,8 @@
     <string name="settings_accent_description">Меняет цвет кнопок, переключателей и выделений в ночном виде. Дневной вид остаётся синим.</string>
     <string name="settings_gwm_hotspot_5ghz_working">Переключаем точку доступа на 5 ГГц… до 30 секунд.</string>
     <string name="settings_gwm_hotspot_5ghz_home">Не удалось автоматически переключить точку доступа на 5 ГГц. Включите ADB по сети в параметрах разработчика машины и нажмите ниже.</string>
+    <string name="settings_gwm_wifi_off_during_aa">Wi-Fi машины выкл. во время Android Auto</string>
+    <string name="settings_gwm_wifi_off_during_aa_description">Wi-Fi машины делит радиомодуль с точкой доступа, и вместе они вызывают заикания Android Auto. Включится после Android Auto. Точка доступа остаётся.</string>
+    <string name="settings_gwm_bt_music_off_during_aa">Музыка Bluetooth выкл. во время Android Auto</string>
+    <string name="settings_gwm_bt_music_off_during_aa_description">Не даёт Bluetooth-плееру машины мешать Android Auto. Звонки остаются на Bluetooth. Вернётся после Android Auto.</string>
 </resources>

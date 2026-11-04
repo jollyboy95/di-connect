@@ -1172,4 +1172,8 @@
     <string name="settings_accent_description">夜間表示のボタン、スイッチ、強調色を変えます。昼間表示は独自の青のままです。</string>
     <string name="settings_gwm_hotspot_5ghz_working">ホットスポットを 5 GHz に設定中…最大 30 秒かかります。</string>
     <string name="settings_gwm_hotspot_5ghz_home">ホットスポットを自動で 5 GHz にできませんでした。車の開発者オプションでネットワーク経由の ADB をオンにしてから、下を押してください。</string>
+    <string name="settings_gwm_wifi_off_during_aa">Android Auto 中は車の Wi-Fi をオフ</string>
+    <string name="settings_gwm_wifi_off_during_aa_description">車の Wi-Fi はホットスポットと同じ無線を使うため、両方使うと Android Auto が途切れます。Android Auto 終了時に戻ります。ホットスポットはオンのままです。</string>
+    <string name="settings_gwm_bt_music_off_during_aa">Android Auto 中は Bluetooth 音楽をオフ</string>
+    <string name="settings_gwm_bt_music_off_during_aa_description">車の Bluetooth プレーヤーが Android Auto と競合しないようにします。通話は Bluetooth のままです。Android Auto 終了時に戻ります。</string>
 </resources>

@@ -1173,4 +1173,8 @@
     <string name="settings_accent_description">Colours the buttons, switches and highlights in the night look. The day look keeps its own blue.</string>
     <string name="settings_gwm_hotspot_5ghz_working">Setting the hotspot to 5 GHz… this takes up to 30 seconds.</string>
     <string name="settings_gwm_hotspot_5ghz_home">The hotspot could not be set to 5 GHz automatically. Turn ADB over network on in the car’s developer options, then press below.</string>
+    <string name="settings_gwm_wifi_off_during_aa">Car Wi-Fi off during Android Auto</string>
+    <string name="settings_gwm_wifi_off_during_aa_description">The car’s Wi-Fi shares one radio with its hotspot, and running both makes Android Auto stutter. It turns back on when Android Auto ends. The hotspot stays on.</string>
+    <string name="settings_gwm_bt_music_off_during_aa">Bluetooth music off during Android Auto</string>
+    <string name="settings_gwm_bt_music_off_during_aa_description">Stops the car’s Bluetooth player competing with Android Auto. Calls stay on Bluetooth. Allowed again when Android Auto ends.</string>
 </resources>

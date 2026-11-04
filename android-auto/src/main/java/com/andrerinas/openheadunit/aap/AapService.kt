@@ -1011,6 +1011,7 @@ class AapService : Service(), UsbReceiver.Listener {
     private fun onConnected() {
         com.andrerinas.openheadunit.hud.BydNavigationOutputs.start(this)
         com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionStarted(this)
+        com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionStarted(this)
         isSwitchingToAccessory.set(false)
         updateNotification()
         acquireWifiLock()
@@ -1174,6 +1175,7 @@ class AapService : Service(), UsbReceiver.Listener {
     private fun onDisconnected(state: CommManager.ConnectionState.Disconnected) {
         com.andrerinas.openheadunit.hud.BydNavigationOutputs.stop()
         com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionEnded(this)
+        com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionEnded(this)
         isSwitchingToAccessory.set(false)
         releaseWifiLock()
 

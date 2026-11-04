@@ -1130,4 +1130,8 @@
     <string name="settings_accent_description">變更夜間外觀中按鈕、開關和強調的顏色。日間外觀保留自己的藍色。</string>
     <string name="settings_gwm_hotspot_5ghz_working">正在把熱點設為 5 GHz…最多需要 30 秒。</string>
     <string name="settings_gwm_hotspot_5ghz_home">無法自動把熱點設為 5 GHz。請在車機開發者選項中開啟網路 ADB，然後按下方按鈕。</string>
+    <string name="settings_gwm_wifi_off_during_aa">Android Auto 期間關閉車機 Wi-Fi</string>
+    <string name="settings_gwm_wifi_off_during_aa_description">車機 Wi-Fi 與熱點共用一個無線模組，同時使用會讓 Android Auto 卡頓。Android Auto 結束後恢復。熱點保持開啟。</string>
+    <string name="settings_gwm_bt_music_off_during_aa">Android Auto 期間關閉藍牙音樂</string>
+    <string name="settings_gwm_bt_music_off_during_aa_description">防止車機藍牙播放器與 Android Auto 衝突。通話仍走藍牙。Android Auto 結束後恢復。</string>
 </resources>

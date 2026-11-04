@@ -1481,6 +1481,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
             HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
         card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
+        toggle(card, getString(R.string.settings_gwm_wifi_off_during_aa), getString(R.string.settings_gwm_wifi_off_during_aa_description),
+            com.andrerinas.openheadunit.gwm.GwmCarWifi.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmCarWifi.setEnabled(this, it) }
+        toggle(card, getString(R.string.settings_gwm_bt_music_off_during_aa), getString(R.string.settings_gwm_bt_music_off_during_aa_description),
+            com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.setEnabled(this, it) }
         gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true); setPadding(0, dp(8), 0, 0) }) }
     }
 
@@ -7147,6 +7151,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         appendLine(HotspotBandGuard.report())
         appendLine(DiConnectPhoneWake.report())
         appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")
+        appendLine("Car Wi-Fi during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmCarWifi.last}")
         appendLine(AdbSwitch.report(appContext))
         appendLine(WheelKeyService.report(appContext))
         WheelKeyLog.report(WheelKeyService.connected()).forEach { appendLine(it) }

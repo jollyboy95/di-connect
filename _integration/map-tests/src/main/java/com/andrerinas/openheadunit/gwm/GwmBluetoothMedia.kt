@@ -104,3 +104,52 @@ object GwmBluetoothMedia {
         AppLog.i("GwmBluetoothMedia: $what")
     }
 }
+
+/**
+ * While Android Auto runs on a GWM head unit, the car's own Wi-Fi (its connection to another
+ * network on wlan0) is switched off, and switched back on when Android Auto ends.
+ *
+ * The H7 drives its hotspot (wlan1) and its Wi-Fi connection (wlan0) from one radio. When both run
+ * on different channels the radio takes turns between them, and the phone's link stalls for one to
+ * two seconds at a time: the stutter seen in reports 13 to 16, all with wlan0 connected on
+ * 5 GHz hotspot drives. The hotspot itself stays on.
+ */
+object GwmCarWifi {
+    private const val PREFS = "gwm_car_wifi"
+
+    @Volatile var last: String = "not used yet"
+        private set
+
+    fun enabled(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("enabled", true)
+
+    fun setEnabled(context: Context, on: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("enabled", on).apply()
+        if (!on) sessionEnded(context)
+    }
+
+    @Suppress("DEPRECATION")
+    fun sessionStarted(context: Context) {
+        if (!GwmMode.active(context) || !enabled(context)) return
+        val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager ?: return
+        if (!runCatching { wifi.isWifiEnabled }.getOrDefault(false)) { note("car Wi-Fi already off"); return }
+        val ok = runCatching { wifi.setWifiEnabled(false) }.getOrDefault(false)
+        if (ok) context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("turned_off", true).apply()
+        note(if (ok) "car Wi-Fi off while Android Auto runs (hotspot stays on)" else "car Wi-Fi could not be switched off")
+    }
+
+    @Suppress("DEPRECATION")
+    fun sessionEnded(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("turned_off", false)) return
+        val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager ?: return
+        val ok = runCatching { wifi.setWifiEnabled(true) }.getOrDefault(false)
+        prefs.edit().putBoolean("turned_off", false).apply()
+        note(if (ok) "car Wi-Fi back on" else "car Wi-Fi could not be switched back on")
+    }
+
+    private fun note(what: String) {
+        last = "${java.text.SimpleDateFormat("h:mm:ss a", java.util.Locale.US).format(java.util.Date())} $what"
+        AppLog.i("GwmCarWifi: $what")
+    }
+}

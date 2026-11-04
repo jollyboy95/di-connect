@@ -1130,4 +1130,8 @@
     <string name="settings_accent_description">更改夜间外观中按钮、开关和高亮的颜色。日间外观保留自己的蓝色。</string>
     <string name="settings_gwm_hotspot_5ghz_working">正在把热点设为 5 GHz…最多需要 30 秒。</string>
     <string name="settings_gwm_hotspot_5ghz_home">无法自动把热点设为 5 GHz。请在车机开发者选项中开启网络 ADB，然后按下方按钮。</string>
+    <string name="settings_gwm_wifi_off_during_aa">Android Auto 期间关闭车机 Wi-Fi</string>
+    <string name="settings_gwm_wifi_off_during_aa_description">车机 Wi-Fi 与热点共用一个无线模块，同时使用会让 Android Auto 卡顿。Android Auto 结束后恢复。热点保持开启。</string>
+    <string name="settings_gwm_bt_music_off_during_aa">Android Auto 期间关闭蓝牙音乐</string>
+    <string name="settings_gwm_bt_music_off_during_aa_description">防止车机蓝牙播放器与 Android Auto 冲突。通话仍走蓝牙。Android Auto 结束后恢复。</string>
 </resources>

@@ -1070,4 +1070,8 @@
     <string name="settings_accent_description">Colorea botones, interruptores y resaltados en el aspecto nocturno. El diurno conserva su azul.</string>
     <string name="settings_gwm_hotspot_5ghz_working">Poniendo el punto de acceso en 5 GHz… tarda hasta 30 segundos.</string>
     <string name="settings_gwm_hotspot_5ghz_home">No se pudo poner el punto de acceso en 5 GHz automáticamente. Activa ADB por red en las opciones de desarrollador del coche y pulsa abajo.</string>
+    <string name="settings_gwm_wifi_off_during_aa">Wi-Fi del coche apagado durante Android Auto</string>
+    <string name="settings_gwm_wifi_off_during_aa_description">El Wi-Fi del coche comparte radio con su punto de acceso y usar ambos hace que Android Auto se entrecorte. Vuelve al terminar Android Auto. El punto de acceso sigue activo.</string>
+    <string name="settings_gwm_bt_music_off_during_aa">Música Bluetooth apagada durante Android Auto</string>
+    <string name="settings_gwm_bt_music_off_during_aa_description">Evita que el reproductor Bluetooth del coche compita con Android Auto. Las llamadas siguen por Bluetooth. Vuelve al terminar Android Auto.</string>
 </resources>

@@ -1119,4 +1119,8 @@
     <string name="settings_accent_description">يلوّن الأزرار والمفاتيح والتمييزات في المظهر الليلي. يحتفظ المظهر النهاري بلونه الأزرق.</string>
     <string name="settings_gwm_hotspot_5ghz_working">جارٍ ضبط نقطة الاتصال على 5 GHz… قد يستغرق ذلك حتى 30 ثانية.</string>
     <string name="settings_gwm_hotspot_5ghz_home">تعذّر ضبط نقطة الاتصال على 5 GHz تلقائيًا. فعّل ADB عبر الشبكة في خيارات المطوّر بالسيارة، ثم اضغط أدناه.</string>
+    <string name="settings_gwm_wifi_off_during_aa">إيقاف Wi-Fi السيارة أثناء Android Auto</string>
+    <string name="settings_gwm_wifi_off_during_aa_description">يتشارك Wi-Fi السيارة راديو واحدًا مع نقطة الاتصال، وتشغيلهما معًا يسبب تقطّع Android Auto. يعود عند انتهاء Android Auto. تبقى نقطة الاتصال قيد التشغيل.</string>
+    <string name="settings_gwm_bt_music_off_during_aa">إيقاف موسيقى البلوتوث أثناء Android Auto</string>
+    <string name="settings_gwm_bt_music_off_during_aa_description">يمنع مشغّل البلوتوث في السيارة من منافسة Android Auto. تبقى المكالمات عبر البلوتوث. يُسمح به مجددًا عند انتهاء Android Auto.</string>
 </resources>

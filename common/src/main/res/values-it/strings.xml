@@ -1160,4 +1160,8 @@
     <string name="settings_accent_description">Colora pulsanti, interruttori ed evidenziazioni nell’aspetto notturno. Quello diurno mantiene il suo blu.</string>
     <string name="settings_gwm_hotspot_5ghz_working">Imposto l’hotspot su 5 GHz… richiede fino a 30 secondi.</string>
     <string name="settings_gwm_hotspot_5ghz_home">Non è stato possibile impostare l’hotspot su 5 GHz automaticamente. Attiva ADB in rete nelle opzioni sviluppatore dell’auto, poi premi sotto.</string>
+    <string name="settings_gwm_wifi_off_during_aa">Wi-Fi dell’auto spento durante Android Auto</string>
+    <string name="settings_gwm_wifi_off_during_aa_description">Il Wi-Fi dell’auto condivide la radio con l’hotspot e usarli insieme fa scattare Android Auto. Si riaccende alla fine di Android Auto. L’hotspot resta acceso.</string>
+    <string name="settings_gwm_bt_music_off_during_aa">Musica Bluetooth spenta durante Android Auto</string>
+    <string name="settings_gwm_bt_music_off_during_aa_description">Evita che il lettore Bluetooth dell’auto competa con Android Auto. Le chiamate restano su Bluetooth. Torna alla fine di Android Auto.</string>
 </resources>
