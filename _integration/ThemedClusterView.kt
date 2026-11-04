@@ -120,6 +120,9 @@ internal class ThemedClusterView(
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
+        // Music cards drawn last frame and this one, so directions can keep clear of them
+        // whichever is drawn first.
+        musicLast.clear(); musicLast.addAll(musicNow); musicNow.clear()
         advanceSmoothing()
         if (theme.dim > 0) canvas.drawColor(Color.argb(theme.dim, 0, 0, 0))
         val showMusic = preview || AirPlayPersistence.loadGwmMusicCard(context)
@@ -744,6 +747,7 @@ internal class ThemedClusterView(
         val title = music.info.title?.takeIf { it.isNotBlank() } ?: return
         rect.set(MUSIC_LEFT * w, MUSIC_TOP * h, MUSIC_RIGHT * w, MUSIC_BOTTOM * h)
         val box = RectF(rect)
+        noteMusic(box)
         if (theme.panel == ClusterTheme.Panel.BONE) {
             fill.shader = null; fill.color = theme.surface; canvas.drawRoundRect(box, 26f * s, 26f * s, fill)
             line.color = theme.edge; line.strokeWidth = 2f * s; canvas.drawRoundRect(box, 26f * s, 26f * s, line)
@@ -1707,6 +1711,7 @@ internal class ThemedClusterView(
     }
 
     private fun studioMusic(canvas: Canvas, box: RectF, large: Boolean) {
+        noteMusic(box)
         val h = height.toFloat()
         val side = minOf(box.height(), box.width() * (if (large) .48f else .25f))
         studioAlbum(canvas, RectF(box.left, box.top, box.left + side, box.top + side), .014f * h)
@@ -2039,6 +2044,7 @@ internal class ThemedClusterView(
     }
 
     private fun openMusic(canvas:Canvas,box:RectF,large:Boolean=false,plate:Boolean=true,scale:Float=1f) {
+        noteMusic(box)
         if(!(preview || AirPlayPersistence.loadGwmMusicCard(context))) return
         if(music.info.title.isNullOrBlank() && music.artwork==null) return
         if(plate) openPlate(canvas,box,.025f*height)
@@ -2210,6 +2216,7 @@ internal class ThemedClusterView(
     }
 
     private fun atelierMusic(canvas:Canvas,box:RectF) {
+        noteMusic(box)
         if (!(preview || AirPlayPersistence.loadGwmMusicCard(context))) return
         if (music.info.title.isNullOrBlank() && music.artwork == null) return
         studioMusic(canvas,box,false)
@@ -2535,6 +2542,7 @@ internal class ThemedClusterView(
 
     /** Album art on top, title, artist and controls centred below. */
     private fun nineMusicTall(canvas: Canvas, box: RectF, edge: Int = withAlpha(theme.accent, 120), glow: Boolean = false) {
+        noteMusic(box)
         val h = height.toFloat()
         nineCard(canvas, box, edge, glow)
         val pad = box.width() * .12f
@@ -2552,6 +2560,7 @@ internal class ThemedClusterView(
 
     /** Album art on the left, title and artist beside it, controls under the text. */
     private fun nineMusicWide(canvas: Canvas, box: RectF, edge: Int = withAlpha(theme.accent, 120), glow: Boolean = false, inline: Boolean = false) {
+        noteMusic(box)
         val h = height.toFloat()
         nineCard(canvas, box, edge, glow)
         val pad = box.height() * .14f
@@ -2634,8 +2643,32 @@ internal class ThemedClusterView(
         }
     }
 
+    // ---- directions never cover the music card ---------------------------------------------
+    private val musicNow = ArrayList<RectF>(2)
+    private val musicLast = ArrayList<RectF>(2)
+
+    private fun noteMusic(box: RectF) { musicNow += RectF(box) }
+
+    /**
+     * Moves a directions card that would land on a music card: below it if there is room, else
+     * above it, else beside it on the side with more space. The card keeps its size.
+     */
+    private fun clearOfMusic(box: RectF) {
+        val h = height.toFloat(); val w = width.toFloat()
+        val gap = .02f * h
+        val music = (musicNow + musicLast).firstOrNull { RectF.intersects(it, box) } ?: return
+        val bh = box.height(); val bw = box.width()
+        when {
+            music.bottom + gap + bh <= .87f * h -> box.offsetTo(box.left, music.bottom + gap)
+            music.top - gap - bh >= .09f * h -> box.offsetTo(box.left, music.top - gap - bh)
+            music.left > w - music.right -> box.offsetTo((music.left - gap - bw).coerceAtLeast(.02f * w), box.top)
+            else -> box.offsetTo((music.right + gap).coerceAtMost(.98f * w - bw), box.top)
+        }
+    }
+
     private fun nineTurnCard(canvas: Canvas, box: RectF, next: ClusterTurnGuidance, journey: NineJourney = NineJourney.NONE,
                              edge: Int = withAlpha(theme.accent, 120), glow: Boolean = false) {
+        clearOfMusic(box)
         nineCard(canvas, box, edge, glow)
         nineTurnContent(canvas, box, next, journey, .03f * height)
     }
@@ -2917,6 +2950,7 @@ internal class ThemedClusterView(
     /** Arrow, distance, road (with its route number as a yellow badge), progress, then the journey. */
     private fun glassNav(canvas: Canvas, box: RectF, next: ClusterTurnGuidance, path: Path? = null,
                          tint: Int = Color.argb(222, Color.red(theme.accent) / 6, Color.green(theme.accent) / 6, Color.blue(theme.accent) / 5)) {
+        if (path == null) clearOfMusic(box)
         val h = height.toFloat()
         val s = h / 720f
         if (path != null) nineGlass(canvas, path, box.top, box.bottom, withAlpha(theme.accent, 140))
@@ -2982,6 +3016,7 @@ internal class ThemedClusterView(
 
     /** Art and text on top, a progress line (wavy, or a waveform), controls underneath. */
     private fun glassMusic(canvas: Canvas, box: RectF, waveform: Boolean = false, path: Path? = null) {
+        noteMusic(box)
         val h = height.toFloat()
         if (path != null) nineGlass(canvas, path, box.top, box.bottom, withAlpha(theme.text, 60)) else nineCard(canvas, box, withAlpha(theme.text, 60))
         val pad = .03f * h
@@ -4121,6 +4156,7 @@ internal class ThemedClusterView(
     private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance,
                          box: RectF = RectF(CARD_LEFT * w, CARD_TOP * h, CARD_RIGHT * w, CARD_BOTTOM * h)) {
         placeTurnCard(box, w, h)
+        clearOfMusic(box)
         val s = h / 720f
         if (isOpenLayout()) {
             drawOpenDirections(canvas,w,h,next,box)

@@ -3231,3 +3231,13 @@ edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt'
     # The app theme moved from Projection to Appearance.
     ('        assertTrue(display.any { it.startsWith(text(R.string.settings_app_appearance)) })',
      '        assertFalse(display.any { it.startsWith(text(R.string.settings_app_appearance)) })'))
+
+# GWM: switch the phone's Bluetooth music link off while Android Auto runs (it competes with the
+# projected audio and stutters), and allow it again when Android Auto ends. Calls are untouched.
+edit(aa_java/'aap/AapService.kt',
+    ('    private fun onConnected() {\n        com.andrerinas.openheadunit.hud.BydNavigationOutputs.start(this)\n',
+     '    private fun onConnected() {\n        com.andrerinas.openheadunit.hud.BydNavigationOutputs.start(this)\n        com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionStarted(this)\n'),
+    ('    private fun onDisconnected(state: CommManager.ConnectionState.Disconnected) {\n        com.andrerinas.openheadunit.hud.BydNavigationOutputs.stop()\n',
+     '    private fun onDisconnected(state: CommManager.ConnectionState.Disconnected) {\n        com.andrerinas.openheadunit.hud.BydNavigationOutputs.stop()\n        com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionEnded(this)\n'))
+edit(D, ('        appendLine(DiConnectPhoneWake.report())\n',
+         '        appendLine(DiConnectPhoneWake.report())\n        appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")\n'))

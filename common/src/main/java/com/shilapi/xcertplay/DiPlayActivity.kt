@@ -7130,6 +7130,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         appendLine(HotspotBandProbe.report())
         appendLine(HotspotBandGuard.report())
         appendLine(DiConnectPhoneWake.report())
+        appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")
         appendLine(AdbSwitch.report(appContext))
         appendLine(WheelKeyService.report(appContext))
         WheelKeyLog.report(WheelKeyService.connected()).forEach { appendLine(it) }
