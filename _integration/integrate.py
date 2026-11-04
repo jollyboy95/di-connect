@@ -1857,6 +1857,35 @@ edit(D,
                     android.widget.Toast.LENGTH_LONG).show()
             }, LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
+        val selected = ClusterThemeStore.selected(this, connection)
+        // The turn card moves on its own: the music plate, speed and footer keep their places.
+        // Each theme keeps its own offset, and the store clamps it so the card stays on-panel.
+        if (selected.native == null) {
+            val (offsetX, offsetY) = ClusterThemeStore.guidanceOffset(this, selected.id)
+            content.addView(label("${getString(R.string.settings_gwm_card_position)} · $offsetX%, $offsetY%", 15, MUTED).apply {
+                setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, dp(6))
+            })
+            content.addView(row().apply {
+                fun nudge(text: String, dx: Int, dy: Int) = addView(button(text, false) {
+                    ClusterThemeStore.moveGuidanceCard(this@DiPlayActivity, selected.id, dx, dy)
+                    ClusterThemePreview.forget(selected.id)
+                    render()
+                }, LinearLayout.LayoutParams(0, dp(if (compact) 44 else 52), 1f))
+                nudge("←", -1, 0)
+                addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                nudge("↑", 0, -1)
+                addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                nudge("↓", 0, 1)
+                addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                nudge("→", 1, 0)
+                addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+                addView(button(getString(R.string.reset), false) {
+                    ClusterThemeStore.resetGuidanceCard(this@DiPlayActivity, selected.id)
+                    ClusterThemePreview.forget(selected.id)
+                    render()
+                }, LinearLayout.LayoutParams(0, dp(if (compact) 44 else 52), 2f))
+            }, LinearLayout.LayoutParams(-1, -2))
+        }
         content.addView(row().apply {
             addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() },
                 LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
@@ -1864,7 +1893,6 @@ edit(D,
             addView(button(getString(R.string.di_connect_themes_import), false) { themeFilePicker.launch("*/*") },
                 LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
-        val selected = ClusterThemeStore.selected(this, connection)
         // Two across at most: three made each preview too small to tell the themes apart.
         val columns = if (compact) 1 else 2
         // One category at a time, picked from a row of buttons, so the gallery is not one long scroll.
@@ -1910,6 +1938,7 @@ edit(D,
         ThemeCategory.SPORT -> R.string.di_connect_theme_category_sport
         ThemeCategory.NIGHT -> R.string.di_connect_theme_category_night
         ThemeCategory.PETS -> R.string.di_connect_theme_category_pets
+        ThemeCategory.SIGNATURE -> R.string.di_connect_theme_category_signature
         ThemeCategory.CONCEPT -> R.string.di_connect_theme_category_concept
     }
 
@@ -1997,6 +2026,7 @@ CONTROL_STRINGS={
  'di_connect_theme_category_luxury':['Luxury car-inspired', 'مستوحى من السيارات الفاخرة', 'Inspirado en coches de lujo', 'Ispirato alle auto di lusso', '高級車風', 'В стиле премиум-авто', 'У стилі преміум-авто', '豪华车风', '豪華車風'],
  'di_connect_theme_category_sport':['Sport and motorsport', 'رياضي', 'Deportivo', 'Sportivo', 'スポーツ', 'Спорт', 'Спорт', '运动', '運動'],
  'di_connect_theme_category_night':['Night', 'ليلي', 'Noche', 'Notte', 'ナイト', 'Ночь', 'Ніч', '夜间', '夜間'],
+ 'di_connect_theme_category_signature':['Signature', 'مميزة', 'Firma', 'Firma', 'シグネチャー', 'Фирменные', 'Фірмові', '精选', '精選'],
  'di_connect_theme_category_concept':['Concepts', 'مفاهيم', 'Conceptos', 'Concept', 'コンセプト', 'Концепты', 'Концепти', '概念', '概念'],
  'di_connect_theme_category_pets':['Pets', 'الحيوانات الأليفة', 'Mascotas', 'Animali', 'ペット', 'Питомцы', 'Улюбленці', '宠物', '寵物'],
 }
@@ -2615,7 +2645,7 @@ edit(D,
      '''        // Themes that share a design (layout, speed style, map window) and differ only in colour
         // show as one tile with numbered colour dots; the family sits in its first theme's category.
         val families = ClusterThemes.availableFor(connection)
-            .groupBy { listOf(it.layout, it.speed, it.mapWindow, it.native) }.values.toList()
+            .groupBy { ClusterThemeFamilies.key(it) }.values.toList()
         val categories = ThemeCategory.entries.filter { c -> families.any { it.first().category == c } }'''),
     ('''            val themes = ClusterThemes.availableFor(connection).filter { it.category == category }''',
      '''            val themes = families.filter { it.first().category == category }'''),
@@ -2862,3 +2892,453 @@ edit(host_cp,
                     }
                 },
                 activityWidthPixels = size.width,'''))
+
+# ---- UI modernisation, stage 1 (Oct 2026 concept): colours, glass cards, category tiles, car picture ----
+# The concept's palette: deeper navy, a brighter blue accent and switch track, the concept's green.
+edit(root/'common/src/main/java/com/shilapi/xcertplay/DiPlayPalette.kt',
+    ('''            background = Color.rgb(12, 17, 27),
+            surface = Color.rgb(21, 30, 44),
+            button = Color.rgb(31, 43, 61),
+            outline = Color.rgb(42, 56, 75),
+            railSelected = Color.rgb(24, 54, 92),
+            railSelectedOutline = Color.rgb(42, 82, 130),
+            primaryText = Color.rgb(241, 245, 252),
+            secondaryText = Color.rgb(168, 182, 202),
+            accent = Color.rgb(166, 200, 255),
+            onAccent = Color.rgb(12, 17, 27),
+            accentTrack = Color.rgb(50, 88, 140),
+            trackOff = Color.rgb(42, 56, 75),
+            warning = Color.rgb(255, 196, 128),
+            success = Color.rgb(127, 205, 154),
+            danger = Color.rgb(190, 45, 45),
+            ripple = 0x336F9FD9,
+            focusRing = Color.rgb(166, 200, 255),
+            systemBar = Color.rgb(12, 17, 27),''','''            background = Color.rgb(9, 14, 23),
+            surface = Color.rgb(17, 25, 38),
+            button = Color.rgb(26, 37, 54),
+            outline = Color.rgb(37, 50, 72),
+            railSelected = Color.rgb(18, 52, 104),
+            railSelectedOutline = Color.rgb(47, 111, 214),
+            primaryText = Color.rgb(241, 245, 252),
+            secondaryText = Color.rgb(168, 182, 202),
+            accent = Color.rgb(92, 164, 255),
+            onAccent = Color.rgb(9, 14, 23),
+            accentTrack = Color.rgb(47, 128, 255),
+            trackOff = Color.rgb(44, 58, 80),
+            warning = Color.rgb(255, 196, 128),
+            success = Color.rgb(61, 220, 132),
+            danger = Color.rgb(190, 45, 45),
+            ripple = 0x335CA4FF,
+            focusRing = Color.rgb(92, 164, 255),
+            systemBar = Color.rgb(9, 14, 23),'''))
+edit(root/'common/src/test/java/com/shilapi/xcertplay/DiPlayPaletteTest.kt',
+    ('assertEquals(Color.rgb(12, 17, 27), palette.background)', 'assertEquals(Color.rgb(9, 14, 23), palette.background)'),
+    ('assertEquals(Color.rgb(21, 30, 44), palette.surface)', 'assertEquals(Color.rgb(17, 25, 38), palette.surface)'),
+    ('assertEquals(Color.rgb(31, 43, 61), palette.button)', 'assertEquals(Color.rgb(26, 37, 54), palette.button)'),
+    ('assertEquals(Color.rgb(42, 56, 75), palette.outline)', 'assertEquals(Color.rgb(37, 50, 72), palette.outline)'),
+    ('assertEquals(Color.rgb(24, 54, 92), palette.railSelected)', 'assertEquals(Color.rgb(18, 52, 104), palette.railSelected)'),
+    ('assertEquals(Color.rgb(42, 82, 130), palette.railSelectedOutline)', 'assertEquals(Color.rgb(47, 111, 214), palette.railSelectedOutline)'),
+    ('assertEquals(Color.rgb(166, 200, 255), palette.accent)', 'assertEquals(Color.rgb(92, 164, 255), palette.accent)'),
+    ('assertEquals(Color.rgb(127, 205, 154), palette.success)', 'assertEquals(Color.rgb(61, 220, 132), palette.success)'),
+    ('assertEquals(0x336F9FD9, palette.ripple)', 'assertEquals(0x335CA4FF, palette.ripple)'),
+    ('WaitingScreenColors(Color.rgb(12, 17, 27), Color.rgb(241, 245, 252)', 'WaitingScreenColors(Color.rgb(9, 14, 23), Color.rgb(241, 245, 252)'))
+edit(root/'common/src/main/res/values/themes.xml',
+    ('#A6C8FF', '#5CA4FF', 2), ('#0C111B', '#090E17', 3))
+edit(root/'common/src/main/res/values/colors.xml',
+    ('<color name="window_background_dark">#0C111B</color>', '<color name="window_background_dark">#090E17</color>'),
+    ('<color name="dialog_background_dark">#151E2C</color>', '<color name="dialog_background_dark">#111926</color>'))
+
+(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectStyle.kt').write_text(Path('target/_integration/ui/DiConnectStyle.kt').read_text())
+(root/'common/src/test/java/com/shilapi/xcertplay/DiConnectUiPreviewTest.kt').write_text(Path('target/_integration/ui/DiConnectUiPreviewTest.kt').read_text())
+(root/'common/src/main/res/drawable-nodpi').mkdir(parents=True, exist_ok=True)
+shutil.copy(Path('target/_integration/ui/dc_vehicle_hero.webp'), root/'common/src/main/res/drawable-nodpi/dc_vehicle_hero.webp')
+
+ui_host = D
+edit(ui_host,
+    # Glass cards everywhere a card or panel is drawn.
+    ('    private fun rounded(color: Int, stroke: Int) = GradientDrawable().apply { setColor(color); cornerRadius = layoutCornerRadius() * 1.35f; setStroke(dp(1), stroke) }',
+     '    private fun rounded(color: Int, stroke: Int) = DiConnectStyle.glass(color, stroke, layoutCornerRadius() * 1.35f, dp(1))'),
+    # Settings categories: the concept's coloured icon tiles and a chevron.
+    ('''            addView(ImageView(this@DiPlayActivity).apply {
+                setImageResource(settingsCategoryIcon(category))
+                imageTintList = ColorStateList.valueOf(if (warning) WARNING else ACCENT)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginEnd = dp(20) })''',
+     '''            addView(DiConnectStyle.iconTile(this@DiPlayActivity, settingsCategoryIcon(category),
+                DiConnectStyle.categoryTint(category), dp(46)), LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(18) })'''),
+    ('''                addView(label(summary, 13, MUTED).apply { setPadding(0, dp(3), 0, 0) })
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+        })
+        setOnClickListener { openSettingsCategory(category) }''',
+     '''                addView(label(summary, 13, MUTED).apply { setPadding(0, dp(3), 0, 0) })
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(ImageView(this@DiPlayActivity).apply {
+                setImageResource(R.drawable.ic_dp_chevron)
+                imageTintList = ColorStateList.valueOf(MUTED)
+                if (resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) scaleX = -1f
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginStart = dp(12) })
+        })
+        setOnClickListener { openSettingsCategory(category) }'''),
+    # Home: the car picture in place of the badge on the full layout.
+    ('''        val branding = column().apply {
+            gravity = Gravity.CENTER
+            addView(logo, LinearLayout.LayoutParams(dp(96), dp(96)))
+        }''',
+     '''        val branding = column().apply {
+            gravity = Gravity.CENTER
+            if (compact) addView(logo, LinearLayout.LayoutParams(dp(96), dp(96)))
+            else addView(VehicleHeroView(this@DiPlayActivity, BG, ACCENT), LinearLayout.LayoutParams(-1, dp(if (wide) 240 else 200)))
+        }'''))
+# The car picture keeps its own height beside the hero text instead of shrinking to it.
+edit(ui_host, ('            body.addView(columns(left, branding, true))', '            body.addView(columns(left, branding, false))'))
+# A category card now holds its tile icon and a chevron.
+edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt',
+    ('''                it.contentDescription == screen.getString(R.string.settings_open_category, title)
+            }
+            assertEquals(1, descendants(destination).filterIsInstance<ImageView>().count())''',
+     '''                it.contentDescription == screen.getString(R.string.settings_open_category, title)
+            }
+            assertEquals(2, descendants(destination).filterIsInstance<ImageView>().count())'''))
+
+# Home copy, Android Auto status on the start card and the Di-Connect name in reports and folders
+# (1-2 Nov 2026, made on the generated files; kept here as one patch so regeneration keeps them).
+import subprocess as _sp
+_sp.run(['git', '-C', str(root), 'apply', '--whitespace=nowarn',
+         str(Path('target/_integration/ui/home-and-naming.patch').resolve())], check=True)
+
+# Fine-tuning (3 Nov 2026): the concept's night-time main button, and a plain CarPlay label beside
+# the Android Auto one.
+edit(ui_host,
+    ('        isAllCaps = false; textSize = 18f; setTextColor(if (primary) ON_ACCENT else TEXT)',
+     '        isAllCaps = false; textSize = 18f; setTextColor(if (primary) (if (appNight) Color.WHITE else ON_ACCENT) else TEXT)'),
+    ('buttonShape(if (primary) ACCENT else BUTTON, if (primary) ACCENT else BORDER', 'buttonShape(if (primary) primaryFill() else BUTTON, if (primary) ACCENT else BORDER', 2),
+    ('    private fun button(title: String, primary: Boolean, click: () -> Unit) = SettingButton(this, MUTED, ACCENT).apply {',
+     '    private fun primaryFill() = if (appNight) DiConnectStyle.PRIMARY_NIGHT else ACCENT\n\n    private fun button(title: String, primary: Boolean, click: () -> Unit) = SettingButton(this, MUTED, ACCENT).apply {'))
+edit(root/'common/src/main/res/values/strings.xml',
+    ('<string name="connect_phone">Connect phone</string>', '<string name="connect_phone">Connect CarPlay</string>'))
+
+# ---- UI modernisation, stage 2 (3 Nov 2026): the concept's Home and its settings groups ----
+shutil.copy(Path('target/_integration/ui/ic_dc_fan.xml'), root/'common/src/main/res/drawable/ic_dc_fan.xml')
+STAGE2_TEXT={
+ 'settings_cluster':['Digital Cluster','العدادات الرقمية','Cuadro digital','Quadro strumenti digitale','デジタルメーター','Цифровая панель приборов','Цифрова панель приладів','数字仪表','數位儀表'],
+ 'settings_cluster_summary':['Themes, layout and navigation on the instrument cluster','السمات والتخطيط والملاحة على لوحة العدادات','Temas, diseño y navegación en el cuadro de instrumentos','Temi, layout e navigazione sul quadro strumenti','メーターのテーマ、レイアウト、ナビ表示','Темы, макет и навигация на приборной панели','Теми, макет і навігація на панелі приладів','仪表的主题、布局和导航','儀表的主題、版面與導航'],
+ 'settings_climate':['Climate Control','التحكم بالمناخ','Climatización','Climatizzazione','エアコン','Климат-контроль','Клімат-контроль','空调控制','空調控制'],
+ 'settings_climate_summary':['Air conditioning and comfort settings','إعدادات التكييف والراحة','Aire acondicionado y confort','Aria condizionata e comfort','エアコンと快適装備','Кондиционер и комфорт','Кондиціонер і комфорт','空调和舒适设置','空調與舒適設定'],
+ 'settings_climate_strip':['Climate strip under Android Auto and CarPlay','شريط المناخ أسفل Android Auto وCarPlay','Barra de climatización bajo Android Auto y CarPlay','Barra clima sotto Android Auto e CarPlay','Android Auto と CarPlay の下のエアコンバー','Полоса климата под Android Auto и CarPlay','Смуга клімату під Android Auto і CarPlay','Android Auto 和 CarPlay 下方的空调栏','Android Auto 和 CarPlay 下方的空調列'],
+ 'settings_climate_strip_description':['A slim bar with both seats’ temperature, fan speed, seat ventilation and passenger volume. Only controls proven on the car are shown. Applies the next time Android Auto or CarPlay opens.','شريط رفيع لحرارة المقعدين وسرعة المروحة وتهوية المقاعد ومستوى صوت الراكب. تظهر فقط عناصر التحكم التي ثبت عملها في السيارة. يُطبَّق عند فتح Android Auto أو CarPlay في المرة القادمة.','Una barra fina con la temperatura de ambos asientos, el ventilador, la ventilación de los asientos y el volumen del pasajero. Solo aparecen los controles probados en el coche. Se aplica la próxima vez que se abra Android Auto o CarPlay.','Una barra sottile con la temperatura dei due sedili, la ventola, la ventilazione dei sedili e il volume del passeggero. Compaiono solo i comandi provati sull’auto. Si applica alla prossima apertura di Android Auto o CarPlay.','両席の温度、風量、シートベンチレーション、助手席の音量を表示する細いバー。車で動作を確認した操作だけを表示します。次に Android Auto または CarPlay を開いたときに反映されます。','Тонкая полоса с температурой обоих сидений, вентилятором, вентиляцией сидений и громкостью пассажира. Показаны только проверенные на машине органы. Применится при следующем открытии Android Auto или CarPlay.','Тонка смуга з температурою обох сидінь, вентилятором, вентиляцією сидінь і гучністю пасажира. Показано лише перевірені на авто елементи. Застосується під час наступного відкриття Android Auto або CarPlay.','细长的栏，显示两个座位的温度、风量、座椅通风和副驾驶音量。只显示已在车上验证的控制项。下次打开 Android Auto 或 CarPlay 时生效。','細長的列，顯示兩個座位的溫度、風量、座椅通風和副駕駛音量。只顯示已在車上驗證的控制項。下次開啟 Android Auto 或 CarPlay 時生效。'],
+}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in STAGE2_TEXT.items())+'</resources>'))
+# The concept's names for the existing groups (English; other languages keep their current words).
+edit(root/'common/src/main/res/values/strings.xml',
+    ('<string name="connection">Connection</string>', '<string name="connection">Connections</string>'),
+    ('<string name="settings_display">Display</string>', '<string name="settings_display">Projection</string>'),
+    ('<string name="settings_vehicle">Vehicle</string>', '<string name="settings_vehicle">Vehicle Integration</string>'))
+
+edit(ui_host,
+    ('    OVERVIEW, CONNECTION, DISPLAY, AUDIO, NAVIGATION, VEHICLE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,',
+     '    OVERVIEW, CONNECTION, DISPLAY, AUDIO, CLUSTER, NAVIGATION, CLIMATE, VEHICLE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,'),
+    ('    GWM_CLUSTER,\n', '    GWM_CLUSTER,\n    CLIMATE_STRIP,\n'),
+    ('''        SettingsCategory.ADVANCED to setOf(
+            SettingsSection.CLUSTER_MAP,
+            SettingsSection.GWM_CLUSTER,
+            SettingsSection.LAUNCHER_BUBBLE,''','''        SettingsCategory.CLUSTER to setOf(SettingsSection.GWM_CLUSTER, SettingsSection.CLUSTER_MAP),
+        SettingsCategory.CLIMATE to setOf(SettingsSection.CLIMATE_STRIP),
+        SettingsCategory.ADVANCED to setOf(
+            SettingsSection.LAUNCHER_BUBBLE,'''),
+    ('        SettingsCategory.AUDIO -> R.drawable.ic_dp_audio',
+     '        SettingsCategory.AUDIO -> R.drawable.ic_dp_audio\n        SettingsCategory.CLUSTER -> R.drawable.ic_dp_dashboard\n        SettingsCategory.CLIMATE -> R.drawable.ic_dc_fan'),
+    ('        SettingsCategory.AUDIO -> R.string.audio',
+     '        SettingsCategory.AUDIO -> R.string.audio\n        SettingsCategory.CLUSTER -> R.string.settings_cluster\n        SettingsCategory.CLIMATE -> R.string.settings_climate'),
+    ('            SettingsCategory.AUDIO -> audioSettings(content)', '''            SettingsCategory.AUDIO -> audioSettings(content)
+            SettingsCategory.CLUSTER -> {
+                settingsPageTitle(content, getString(R.string.settings_cluster), getString(R.string.settings_cluster_summary))
+                content.addView(button(getString(R.string.di_connect_themes), true) { page = "themes"; render() },
+                    LinearLayout.LayoutParams(-1, dp(56)).apply { bottomMargin = dp(SETTINGS_BLOCK_GAP_DP) })
+                renderSections(content, SettingsInformationArchitecture.sectionsByCategory.getValue(SettingsCategory.CLUSTER))
+            }
+            SettingsCategory.CLIMATE -> {
+                settingsPageTitle(content, getString(R.string.settings_climate), getString(R.string.settings_climate_summary))
+                renderSections(content, SettingsInformationArchitecture.sectionsByCategory.getValue(SettingsCategory.CLIMATE))
+            }'''),
+    ('            SettingsCategory.AUDIO to R.string.settings_audio_summary,',
+     '            SettingsCategory.AUDIO to R.string.settings_audio_summary,\n            SettingsCategory.CLUSTER to R.string.settings_cluster_summary,\n            SettingsCategory.CLIMATE to R.string.settings_climate_summary,'),
+    ('        filteredSection(content, SettingsSection.GWM_CLUSTER,', '''        filteredSection(content, SettingsSection.CLIMATE_STRIP,
+            getString(R.string.settings_climate), R.drawable.ic_dc_fan) { card ->
+            toggle(card, getString(R.string.settings_climate_strip), getString(R.string.settings_climate_strip_description),
+                com.andrerinas.openheadunit.gwm.GwmClimateBar.enabled(this)) {
+                com.andrerinas.openheadunit.gwm.GwmClimateBar.setEnabled(this, it)
+            }
+        }
+        filteredSection(content, SettingsSection.GWM_CLUSTER,'''),
+    # Home: the concept layout on full-size screens; compact windows keep the previous Home.
+    ('    private var homeConnectionHint: TextView? = null', '    private var homeConnectionHint: TextView? = null\n    private var homeStatusDot: View? = null'),
+    ('    private fun home(content: LinearLayout) {\n        val compact = isCompactLayout\n',
+     Path('target/_integration/ui/home-concept.kt').read_text() +
+     '    private fun home(content: LinearLayout) {\n        if (!isCompactLayout && resources.configuration.screenWidthDp >= 850) { homeConcept(content); return }\n        val compact = isCompactLayout\n'),
+    ('        homeConnectionHint?.visibility = if (wired) View.GONE else View.VISIBLE\n', '''        homeConnectionHint?.visibility = if (wired) View.GONE else View.VISIBLE
+        homeStatusDot?.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(if (CarPlayBackgroundSession.active || com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this@DiPlayActivity)) READY
+                else ACCENT)
+        }
+'''))
+edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt',
+    ('        assertEquals(10, destinations.size)', '        assertEquals(12, destinations.size)'),
+    # The CarPlay cluster map card now lives in Digital Cluster, not Advanced.
+    ('        assertTrue(texts(screen).any { it.text == screen.getString(R.string.carplay_map_on_instrument_cluster_experimental) })\n', ''))
+# The cluster-map tests open the cluster cards where they now live.
+for _t in ('DiLink3ClusterRouteSettingsTest','ClusterSpeedometerSettingsTest','ClusterSettingsConsentTest'):
+    edit(root/f'common/src/test/java/com/shilapi/xcertplay/{_t}.kt',
+        ('"settingsCategory", SettingsCategory.ADVANCED)', '"settingsCategory", SettingsCategory.CLUSTER)'))
+# Say what Di-Connect actually does on opening, now that it opens with Android Auto or CarPlay.
+edit(root/'common/src/main/res/values/strings_default_connection.xml',
+    ('Use the default connection mode and selected iPhone when DiPlay opens. Manual connection buttons use the mode you choose.',
+     'When Di-Connect opens, it connects Android Auto, or CarPlay if you chose to open with CarPlay. The buttons on Home still connect either one.'))
+
+# ---- UI modernisation, stage 3 (3 Nov 2026): climate page, Appearance, a lighter themes gallery ----
+STAGE3_TEXT={
+ 'settings_climate_live':['Live climate','المناخ المباشر','Climatización en directo','Clima in tempo reale','ライブ空調','Климат сейчас','Клімат зараз','实时空调','即時空調'],
+ 'settings_climate_live_description':['Changes go straight to the car. Only the controls your car answers for are shown.','تُرسل التغييرات إلى السيارة مباشرة. تظهر فقط عناصر التحكم التي تستجيب لها سيارتك.','Los cambios van directos al coche. Solo aparecen los controles a los que responde tu coche.','Le modifiche arrivano subito all’auto. Compaiono solo i comandi a cui l’auto risponde.','変更はすぐに車へ送られます。車が応答する操作だけを表示します。','Изменения сразу уходят в машину. Показаны только органы, на которые отвечает ваша машина.','Зміни одразу йдуть в авто. Показано лише елементи, на які відповідає ваше авто.','更改会直接发送到车辆。只显示车辆有响应的控制项。','變更會直接傳送到車輛。只顯示車輛有回應的控制項。'],
+ 'settings_climate_reading':['Reading the car’s climate…','جارٍ قراءة مناخ السيارة…','Leyendo la climatización del coche…','Lettura del clima dell’auto…','車の空調を読み取り中…','Читаем климат машины…','Зчитуємо клімат авто…','正在读取车辆空调…','正在讀取車輛空調…'],
+ 'settings_climate_unavailable':['Climate controls appear on a GWM car whose climate service answers.','تظهر عناصر التحكم بالمناخ في سيارة GWM تستجيب خدمة المناخ فيها.','Los controles de climatización aparecen en un coche GWM cuyo servicio de clima responde.','I comandi del clima compaiono su un’auto GWM il cui servizio clima risponde.','空調サービスが応答する GWM 車で空調操作が表示されます。','Органы климата появляются на машине GWM, чья служба климата отвечает.','Елементи клімату з’являються на авто GWM, служба клімату якого відповідає.','空调服务有响应的 GWM 车辆会显示空调控制。','空調服務有回應的 GWM 車輛會顯示空調控制。'],
+ 'settings_climate_retry':['Try again','حاول مجددًا','Reintentar','Riprova','再試行','Повторить','Повторити','重试','重試'],
+ 'settings_climate_driver':['Driver','السائق','Conductor','Conducente','運転席','Водитель','Водій','驾驶员','駕駛'],
+ 'settings_climate_passenger':['Passenger','الراكب','Pasajero','Passeggero','助手席','Пассажир','Пасажир','副驾驶','副駕駛'],
+ 'settings_climate_auto':['AUTO','تلقائي','AUTO','AUTO','オート','АВТО','АВТО','自动','自動'],
+ 'settings_climate_ac':['A/C','التكييف','A/C','A/C','A/C','Конд.','Конд.','空调','冷氣'],
+ 'settings_climate_max_ac':['Max A/C','أقصى تكييف','A/C máx.','A/C max','A/C 最大','Макс. конд.','Макс. конд.','最大制冷','最大冷氣'],
+ 'settings_climate_sync':['Sync','مزامنة','Sincronizar','Sincronizza','同期','Синхр.','Синхр.','同步','同步'],
+ 'settings_climate_sync_note':['Sync is on: the car copies the driver’s temperature to the passenger.','المزامنة مفعّلة: تنسخ السيارة حرارة السائق إلى الراكب.','Sincronizar activado: el coche copia la temperatura del conductor al pasajero.','Sincronizza attivo: l’auto copia la temperatura del conducente al passeggero.','同期オン: 車が運転席の温度を助手席にコピーします。','Синхронизация включена: машина копирует температуру водителя пассажиру.','Синхронізацію ввімкнено: авто копіює температуру водія пасажирові.','同步已开启：车辆会把驾驶员温度复制给副驾驶。','同步已開啟：車輛會把駕駛溫度複製給副駕駛。'],
+ 'settings_climate_front_demist':['Front demist','إزالة ضباب أمامي','Desempañar del.','Disappannamento ant.','フロントデフ','Обдув стекла','Обдув скла','前除雾','前除霧'],
+ 'settings_climate_rear_demist':['Rear demist','إزالة ضباب خلفي','Desempañar tras.','Lunotto termico','リアデフ','Обогрев заднего','Обігрів заднього','后除雾','後除霧'],
+ 'settings_climate_eco':['ECO','اقتصادي','ECO','ECO','ECO','ECO','ECO','节能','節能'],
+ 'settings_climate_ioniser':['Ioniser','المؤيِّن','Ionizador','Ionizzatore','イオナイザー','Ионизатор','Іонізатор','负离子','負離子'],
+ 'settings_climate_fan':['Fan speed','سرعة المروحة','Ventilador','Ventola','風量','Вентилятор','Вентилятор','风量','風量'],
+ 'settings_climate_seat_driver':['Driver seat','مقعد السائق','Asiento conductor','Sedile conducente','運転席シート','Сиденье водителя','Сидіння водія','驾驶座通风','駕駛座通風'],
+ 'settings_climate_seat_passenger':['Passenger seat','مقعد الراكب','Asiento pasajero','Sedile passeggero','助手席シート','Сиденье пассажира','Сидіння пасажира','副驾驶座通风','副駕駛座通風'],
+ 'settings_climate_off':['Off','إيقاف','Apagado','Spento','オフ','Выкл.','Вимк.','关','關'],
+ 'settings_appearance':['Appearance','المظهر','Apariencia','Aspetto','外観','Оформление','Вигляд','外观','外觀'],
+ 'settings_appearance_summary':['Theme, accent colour and language','السمة ولون التمييز واللغة','Tema, color de acento e idioma','Tema, colore d’accento e lingua','テーマ、アクセントカラー、言語','Тема, акцентный цвет и язык','Тема, акцентний колір і мова','主题、强调色和语言','主題、強調色和語言'],
+ 'settings_accent':['Accent colour','لون التمييز','Color de acento','Colore d’accento','アクセントカラー','Акцентный цвет','Акцентний колір','强调色','強調色'],
+ 'settings_accent_description':['Colours the buttons, switches and highlights in the night look. The day look keeps its own blue.','يلوّن الأزرار والمفاتيح والتمييزات في المظهر الليلي. يحتفظ المظهر النهاري بلونه الأزرق.','Colorea botones, interruptores y resaltados en el aspecto nocturno. El diurno conserva su azul.','Colora pulsanti, interruttori ed evidenziazioni nell’aspetto notturno. Quello diurno mantiene il suo blu.','夜間表示のボタン、スイッチ、強調色を変えます。昼間表示は独自の青のままです。','Меняет цвет кнопок, переключателей и выделений в ночном виде. Дневной вид остаётся синим.','Змінює колір кнопок, перемикачів і виділень у нічному вигляді. Денний лишається синім.','更改夜间外观中按钮、开关和高亮的颜色。日间外观保留自己的蓝色。','變更夜間外觀中按鈕、開關和強調的顏色。日間外觀保留自己的藍色。'],
+}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in STAGE3_TEXT.items())+'</resources>'))
+
+edit(ui_host,
+    # Appearance: its own group with the app theme (moved from Projection) and the accent colour.
+    ('    OVERVIEW, CONNECTION, DISPLAY, AUDIO, CLUSTER, NAVIGATION, CLIMATE, VEHICLE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,',
+     '    OVERVIEW, CONNECTION, DISPLAY, AUDIO, CLUSTER, NAVIGATION, CLIMATE, VEHICLE, APPEARANCE, LANGUAGE, DIAGNOSTICS, ADVANCED, ABOUT,'),
+    ('    CLIMATE_STRIP,\n', '    CLIMATE_LIVE,\n    CLIMATE_STRIP,\n    APPEARANCE,\n'),
+    ('        SettingsCategory.CLIMATE to setOf(SettingsSection.CLIMATE_STRIP),',
+     '        SettingsCategory.CLIMATE to setOf(SettingsSection.CLIMATE_LIVE, SettingsSection.CLIMATE_STRIP),\n        SettingsCategory.APPEARANCE to setOf(SettingsSection.APPEARANCE),'),
+    ('        SettingsCategory.LANGUAGE -> R.drawable.ic_dp_language', '        SettingsCategory.APPEARANCE -> R.drawable.ic_dp_night\n        SettingsCategory.LANGUAGE -> R.drawable.ic_dp_language'),
+    ('        SettingsCategory.LANGUAGE -> R.string.language_section_title', '        SettingsCategory.APPEARANCE -> R.string.settings_appearance\n        SettingsCategory.LANGUAGE -> R.string.language_section_title'),
+    ('            SettingsCategory.LANGUAGE -> {\n', '''            SettingsCategory.APPEARANCE -> {
+                settingsPageTitle(content, getString(R.string.settings_appearance), getString(R.string.settings_appearance_summary))
+                renderSections(content, SettingsInformationArchitecture.sectionsByCategory.getValue(SettingsCategory.APPEARANCE))
+            }
+            SettingsCategory.LANGUAGE -> {
+'''),
+    # Overview keeps Vehicle, Language and About together; Appearance follows Climate Control.
+    ('            SettingsCategory.CLIMATE to R.string.settings_climate_summary,',
+     '            SettingsCategory.CLIMATE to R.string.settings_climate_summary,\n            SettingsCategory.APPEARANCE to R.string.settings_appearance_summary,'),
+    ('''            val appearances = AppAppearance.entries
+            choice(
+                card,
+                getString(R.string.settings_app_appearance),
+                listOf(
+                    getString(R.string.settings_app_appearance_dark),
+                    getString(R.string.settings_app_appearance_light),
+                    getString(R.string.settings_app_appearance_auto),
+                ),
+                appearances.indexOf(AirPlayPersistence.loadAppAppearance(this)),
+                reconnects = false,
+            ) { index ->
+                AirPlayPersistence.saveAppAppearance(this, appearances[index])
+                rememberLaunchAppearance()
+                handler.post { checkForAppearanceChange() }
+            }
+            card.addView(label(getString(R.string.settings_app_appearance_description), 14, MUTED))
+''', ''),
+    ('        filteredSection(content, SettingsSection.CLIMATE_STRIP,', '''        filteredSection(content, SettingsSection.CLIMATE_LIVE,
+            getString(R.string.settings_climate_live), R.drawable.ic_dc_fan) { card -> climateLive(card) }
+        filteredSection(content, SettingsSection.APPEARANCE,
+            getString(R.string.settings_appearance), R.drawable.ic_dp_night) { card ->
+            val appearances = AppAppearance.entries
+            choice(
+                card,
+                getString(R.string.settings_app_appearance),
+                listOf(
+                    getString(R.string.settings_app_appearance_dark),
+                    getString(R.string.settings_app_appearance_light),
+                    getString(R.string.settings_app_appearance_auto),
+                ),
+                appearances.indexOf(AirPlayPersistence.loadAppAppearance(this)),
+                reconnects = false,
+            ) { index ->
+                AirPlayPersistence.saveAppAppearance(this, appearances[index])
+                rememberLaunchAppearance()
+                handler.post { checkForAppearanceChange() }
+            }
+            card.addView(label(getString(R.string.settings_app_appearance_description), 14, MUTED))
+            accentPicker(card)
+        }
+        filteredSection(content, SettingsSection.CLIMATE_STRIP,'''),
+    ('    private fun homeConcept(content: LinearLayout) {', Path('target/_integration/ui/climate-page.kt').read_text() + '    private fun homeConcept(content: LinearLayout) {'),
+    # The accent colour feeds the night palette and the main button.
+    ('''        if (resolved == appNight && palette === DiPlayPalette.of(resolved)) return false
+        appNight = resolved
+        palette = DiPlayPalette.of(resolved)''', '''        val chosen = DiConnectAccent.palette(this, resolved)
+        if (resolved == appNight && palette === chosen) return false
+        appNight = resolved
+        palette = chosen'''),
+    ('    private fun primaryFill() = if (appNight) DiConnectStyle.PRIMARY_NIGHT else ACCENT',
+     '    private fun primaryFill() = if (appNight) DiConnectAccent.fill(this) else ACCENT'),
+    # Themes gallery: options in one row and actions in another, the test theme out of the gallery,
+    # and pictures drawn after the page shows instead of all before it.
+    (Path('target/_integration/ui/themes-old-top.txt').read_text(), Path('target/_integration/ui/themes-new-top.txt').read_text()),
+    (Path('target/_integration/ui/themes-old-more.txt').read_text(), ''),
+    ('        val families = ClusterThemes.availableFor(connection)\n',
+     '        val families = ClusterThemes.availableFor(connection).filter { it.id != "split-test" }\n'),
+    ('''        card.addView(ImageView(this).apply {
+            setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection))
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(-1, -2))''', '''        card.addView(ImageView(this).apply {
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: android.graphics.Outline) =
+                    outline.setRoundRect(0, 0, view.width, view.height, dp(12).toFloat())
+            }
+            clipToOutline = true
+            val ready = ClusterThemePreview.cached(theme, connection)
+            if (ready != null) setImageBitmap(ready) else {
+                // An 8:3 frame holds the place; each picture is drawn in its own turn after the page shows.
+                setImageDrawable(GradientDrawable().apply { setColor(BUTTON); setSize(720, 270) })
+                this@DiPlayActivity.handler.post { setImageBitmap(ClusterThemePreview.bitmap(this@DiPlayActivity, theme, connection)) }
+            }
+        }, LinearLayout.LayoutParams(-1, -2))'''))
+edit(root/'common/src/test/java/com/shilapi/xcertplay/AdaptiveSettingsUiTest.kt',
+    ('        assertEquals(12, destinations.size)', '        assertEquals(13, destinations.size)'),
+    # The app theme moved from Projection to Appearance.
+    ('        assertTrue(display.any { it.startsWith(text(R.string.settings_app_appearance)) })',
+     '        assertFalse(display.any { it.startsWith(text(R.string.settings_app_appearance)) })'))
+
+# GWM: switch the phone's Bluetooth music link off while Android Auto runs (it competes with the
+# projected audio and stutters), and allow it again when Android Auto ends. Calls are untouched.
+edit(aa_java/'aap/AapService.kt',
+    ('    private fun onConnected() {\n        com.andrerinas.openheadunit.hud.BydNavigationOutputs.start(this)\n',
+     '    private fun onConnected() {\n        com.andrerinas.openheadunit.hud.BydNavigationOutputs.start(this)\n        com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionStarted(this)\n'),
+    ('    private fun onDisconnected(state: CommManager.ConnectionState.Disconnected) {\n        com.andrerinas.openheadunit.hud.BydNavigationOutputs.stop()\n',
+     '    private fun onDisconnected(state: CommManager.ConnectionState.Disconnected) {\n        com.andrerinas.openheadunit.hud.BydNavigationOutputs.stop()\n        com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionEnded(this)\n'))
+edit(D, ('        appendLine(DiConnectPhoneWake.report())\n',
+         '        appendLine(DiConnectPhoneWake.report())\n        appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")\n'))
+
+# The 5 GHz hotspot controls belong with Connections, not the cluster; Home offers the button
+# whenever the automatic check could not do it.
+edit(ui_host,
+    ('''        toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
+            HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
+''', ''),
+    ('''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
+            val app = applicationContext
+            Thread({
+                val result = HotspotBandGuard.ensureFiveGhz(app)
+                runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+            }, "hotspot-band-now").start()
+        }, matchButton(10, 56))
+''', ''),
+    ('    CLIMATE_LIVE,\n', '    GWM_HOTSPOT,\n    CLIMATE_LIVE,\n'),
+    ('            SettingsSection.ANDROID_AUTO,\n            SettingsSection.CONNECTION_SETUP,',
+     '            SettingsSection.ANDROID_AUTO,\n            SettingsSection.GWM_HOTSPOT,\n            SettingsSection.CONNECTION_SETUP,'),
+    ('        filteredSection(content, SettingsSection.CLIMATE_LIVE,', '''        filteredSection(content, SettingsSection.GWM_HOTSPOT,
+            getString(R.string.settings_gwm_hotspot_5ghz_now), R.drawable.ic_dp_connection) { card -> gwmHotspotControls(card) }
+        filteredSection(content, SettingsSection.CLIMATE_LIVE,'''),
+    ('    private fun homeConcept(content: LinearLayout) {', '''    private fun gwmHotspotControls(card: LinearLayout) {
+        toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
+            HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
+        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
+        gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true); setPadding(0, dp(8), 0, 0) }) }
+    }
+
+    private fun setHotspotFiveGhzNow() {
+        gwmScanResult = getString(R.string.settings_gwm_hotspot_5ghz_working)
+        render()
+        val app = applicationContext
+        Thread({
+            val result = HotspotBandGuard.ensureFiveGhz(app)
+            runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+        }, "hotspot-band-now").start()
+    }
+
+    private fun homeConcept(content: LinearLayout) {'''),
+    ('''        panel.addView(homeButton(getString(R.string.choose_iphone), false) { choosePhone() }, matchButton(14, 52))''',
+     '''        if (GwmMode.active(this) && HotspotBandGuard.needsHelp()) {
+            panel.addView(label(getString(R.string.settings_gwm_hotspot_5ghz_home), 15, WARNING).apply { setPadding(0, dp(12), 0, 0) })
+            panel.addView(homeButton(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(CONTROL_GAP_DP, 52))
+        }
+        panel.addView(homeButton(getString(R.string.choose_iphone), false) { choosePhone() }, matchButton(14, 52))'''))
+_txt={'settings_gwm_hotspot_5ghz_working':['Setting the hotspot to 5 GHz… this takes up to 30 seconds.','جارٍ ضبط نقطة الاتصال على 5 GHz… قد يستغرق ذلك حتى 30 ثانية.','Poniendo el punto de acceso en 5 GHz… tarda hasta 30 segundos.','Imposto l’hotspot su 5 GHz… richiede fino a 30 secondi.','ホットスポットを 5 GHz に設定中…最大 30 秒かかります。','Переключаем точку доступа на 5 ГГц… до 30 секунд.','Перемикаємо точку доступу на 5 ГГц… до 30 секунд.','正在把热点设为 5 GHz…最多需要 30 秒。','正在把熱點設為 5 GHz…最多需要 30 秒。'],
+      'settings_gwm_hotspot_5ghz_home':['The hotspot could not be set to 5 GHz automatically. Turn ADB over network on in the car’s developer options, then press below.','تعذّر ضبط نقطة الاتصال على 5 GHz تلقائيًا. فعّل ADB عبر الشبكة في خيارات المطوّر بالسيارة، ثم اضغط أدناه.','No se pudo poner el punto de acceso en 5 GHz automáticamente. Activa ADB por red en las opciones de desarrollador del coche y pulsa abajo.','Non è stato possibile impostare l’hotspot su 5 GHz automaticamente. Attiva ADB in rete nelle opzioni sviluppatore dell’auto, poi premi sotto.','ホットスポットを自動で 5 GHz にできませんでした。車の開発者オプションでネットワーク経由の ADB をオンにしてから、下を押してください。','Не удалось автоматически переключить точку доступа на 5 ГГц. Включите ADB по сети в параметрах разработчика машины и нажмите ниже.','Не вдалося автоматично перемкнути точку доступу на 5 ГГц. Увімкніть ADB через мережу в параметрах розробника авто й натисніть нижче.','无法自动把热点设为 5 GHz。请在车机开发者选项中开启网络 ADB，然后按下方按钮。','無法自動把熱點設為 5 GHz。請在車機開發者選項中開啟網路 ADB，然後按下方按鈕。']}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
+edit(aa_java/'aap/AapService.kt',
+    ('        com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionStarted(this)\n',
+     '        com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionStarted(this)\n        com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionStarted(this)\n'),
+    ('        com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionEnded(this)\n',
+     '        com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionEnded(this)\n        com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionEnded(this)\n'))
+edit(D, ('        appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")\n',
+         '        appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")\n        appendLine("Car Wi-Fi during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmCarWifi.last}")\n'))
+# Switches for both, beside the 5 GHz controls in Connections.
+edit(ui_host, ('''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
+''', '''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
+        toggle(card, getString(R.string.settings_gwm_wifi_off_during_aa), getString(R.string.settings_gwm_wifi_off_during_aa_description),
+            com.andrerinas.openheadunit.gwm.GwmCarWifi.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmCarWifi.setEnabled(this, it) }
+        toggle(card, getString(R.string.settings_gwm_bt_music_off_during_aa), getString(R.string.settings_gwm_bt_music_off_during_aa_description),
+            com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.setEnabled(this, it) }
+'''))
+_txt={'settings_gwm_wifi_off_during_aa':['Car Wi-Fi off during Android Auto','إيقاف Wi-Fi السيارة أثناء Android Auto','Wi-Fi del coche apagado durante Android Auto','Wi-Fi dell’auto spento durante Android Auto','Android Auto 中は車の Wi-Fi をオフ','Wi-Fi машины выкл. во время Android Auto','Wi-Fi авто вимк. під час Android Auto','Android Auto 期间关闭车机 Wi-Fi','Android Auto 期間關閉車機 Wi-Fi'],
+ 'settings_gwm_wifi_off_during_aa_description':['The car’s Wi-Fi shares one radio with its hotspot, and running both makes Android Auto stutter. It turns back on when Android Auto ends. The hotspot stays on.','يتشارك Wi-Fi السيارة راديو واحدًا مع نقطة الاتصال، وتشغيلهما معًا يسبب تقطّع Android Auto. يعود عند انتهاء Android Auto. تبقى نقطة الاتصال قيد التشغيل.','El Wi-Fi del coche comparte radio con su punto de acceso y usar ambos hace que Android Auto se entrecorte. Vuelve al terminar Android Auto. El punto de acceso sigue activo.','Il Wi-Fi dell’auto condivide la radio con l’hotspot e usarli insieme fa scattare Android Auto. Si riaccende alla fine di Android Auto. L’hotspot resta acceso.','車の Wi-Fi はホットスポットと同じ無線を使うため、両方使うと Android Auto が途切れます。Android Auto 終了時に戻ります。ホットスポットはオンのままです。','Wi-Fi машины делит радиомодуль с точкой доступа, и вместе они вызывают заикания Android Auto. Включится после Android Auto. Точка доступа остаётся.','Wi-Fi авто ділить радіомодуль із точкою доступу, і разом вони спричиняють заїкання Android Auto. Увімкнеться після Android Auto. Точка доступу лишається.','车机 Wi-Fi 与热点共用一个无线模块，同时使用会让 Android Auto 卡顿。Android Auto 结束后恢复。热点保持开启。','車機 Wi-Fi 與熱點共用一個無線模組，同時使用會讓 Android Auto 卡頓。Android Auto 結束後恢復。熱點保持開啟。'],
+ 'settings_gwm_bt_music_off_during_aa':['Bluetooth music off during Android Auto','إيقاف موسيقى البلوتوث أثناء Android Auto','Música Bluetooth apagada durante Android Auto','Musica Bluetooth spenta durante Android Auto','Android Auto 中は Bluetooth 音楽をオフ','Музыка Bluetooth выкл. во время Android Auto','Музика Bluetooth вимк. під час Android Auto','Android Auto 期间关闭蓝牙音乐','Android Auto 期間關閉藍牙音樂'],
+ 'settings_gwm_bt_music_off_during_aa_description':['Stops the car’s Bluetooth player competing with Android Auto. Calls stay on Bluetooth. Allowed again when Android Auto ends.','يمنع مشغّل البلوتوث في السيارة من منافسة Android Auto. تبقى المكالمات عبر البلوتوث. يُسمح به مجددًا عند انتهاء Android Auto.','Evita que el reproductor Bluetooth del coche compita con Android Auto. Las llamadas siguen por Bluetooth. Vuelve al terminar Android Auto.','Evita che il lettore Bluetooth dell’auto competa con Android Auto. Le chiamate restano su Bluetooth. Torna alla fine di Android Auto.','車の Bluetooth プレーヤーが Android Auto と競合しないようにします。通話は Bluetooth のままです。Android Auto 終了時に戻ります。','Не даёт Bluetooth-плееру машины мешать Android Auto. Звонки остаются на Bluetooth. Вернётся после Android Auto.','Не дає Bluetooth-плеєру авто заважати Android Auto. Дзвінки лишаються на Bluetooth. Повернеться після Android Auto.','防止车机蓝牙播放器与 Android Auto 冲突。通话仍走蓝牙。Android Auto 结束后恢复。','防止車機藍牙播放器與 Android Auto 衝突。通話仍走藍牙。Android Auto 結束後恢復。']}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
+
+# An app of the driver's choice (for example an audio tuning app) opened in the background at start.
+(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectStartApp.kt').write_text(Path('target/_integration/ui/DiConnectStartApp.kt').read_text())
+edit(root/'shared/src/main/AndroidManifest.xml',
+    ('<uses-permission android:name="android.permission.INTERNET" />', '<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REORDER_TASKS" />'))
+edit(ui_host,
+    ('        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()\n',
+     '        Thread({ AdbSwitch.keepOn(applicationContext) }, "adb-keep-on").start()\n        handler.postDelayed({ if (!isFinishing && !isDestroyed) DiConnectStartApp.onStart(this) }, 1500)\n'),
+    ('        appendLine(DiConnectPhoneWake.report())\n', '        appendLine(DiConnectPhoneWake.report())\n        appendLine("App opened at start: ${DiConnectStartApp.last}")\n'),
+    ('        SettingsCategory.AUDIO to setOf(SettingsSection.AUDIO_ROUTING),', '        SettingsCategory.AUDIO to setOf(SettingsSection.AUDIO_ROUTING, SettingsSection.START_APP),'),
+    ('    AUDIO_ROUTING,\n', '    AUDIO_ROUTING,\n    START_APP,\n'),
+    ('        filteredSection(content, SettingsSection.CLIMATE_LIVE,', '''        filteredSection(content, SettingsSection.START_APP,
+            getString(R.string.settings_start_app), R.drawable.ic_dp_audio) { card ->
+            val apps = DiConnectStartApp.choices(this)
+            val current = DiConnectStartApp.packageName(this)
+            choice(card, getString(R.string.settings_start_app),
+                listOf(getString(R.string.settings_start_app_none)) + apps.map { it.first },
+                apps.indexOfFirst { it.second == current } + 1, reconnects = false) { index ->
+                DiConnectStartApp.save(this, if (index == 0) null else apps[index - 1].second)
+            }
+            card.addView(label(getString(R.string.settings_start_app_description), 14, MUTED))
+        }
+        filteredSection(content, SettingsSection.CLIMATE_LIVE,'''))
+_txt={'settings_start_app':['Open an app at start','فتح تطبيق عند البدء','Abrir una app al iniciar','Apri un’app all’avvio','起動時にアプリを開く','Открывать приложение при запуске','Відкривати застосунок під час запуску','启动时打开应用','啟動時開啟應用程式'],
+ 'settings_start_app_none':['None','لا شيء','Ninguna','Nessuna','なし','Нет','Немає','无','無'],
+ 'settings_start_app_description':['Opens the chosen app in the background each time Di-Connect starts, for example an audio tuning app, then returns to Di-Connect.','يفتح التطبيق المختار في الخلفية عند كل بدء لـ Di-Connect، مثل تطبيق ضبط الصوت، ثم يعود إلى Di-Connect.','Abre la app elegida en segundo plano cada vez que se inicia Di-Connect, por ejemplo una app de ajuste de audio, y vuelve a Di-Connect.','Apre l’app scelta in background a ogni avvio di Di-Connect, ad esempio un’app di regolazione audio, poi torna a Di-Connect.','Di-Connect の起動ごとに選んだアプリ（音響調整アプリなど）をバックグラウンドで開き、Di-Connect に戻ります。','Открывает выбранное приложение в фоне при каждом запуске Di-Connect, например настройку звука, и возвращается в Di-Connect.','Відкриває вибраний застосунок у фоні під час кожного запуску Di-Connect, наприклад налаштування звуку, і повертається в Di-Connect.','每次 Di-Connect 启动时在后台打开所选应用（例如音效调节应用），然后返回 Di-Connect。','每次 Di-Connect 啟動時在背景開啟所選應用程式（例如音效調整應用程式），然後返回 Di-Connect。']}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
