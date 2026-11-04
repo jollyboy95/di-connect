@@ -1117,4 +1117,6 @@
     <string name="settings_appearance_summary">السمة ولون التمييز واللغة</string>
     <string name="settings_accent">لون التمييز</string>
     <string name="settings_accent_description">يلوّن الأزرار والمفاتيح والتمييزات في المظهر الليلي. يحتفظ المظهر النهاري بلونه الأزرق.</string>
+    <string name="settings_gwm_hotspot_5ghz_working">جارٍ ضبط نقطة الاتصال على 5 GHz… قد يستغرق ذلك حتى 30 ثانية.</string>
+    <string name="settings_gwm_hotspot_5ghz_home">تعذّر ضبط نقطة الاتصال على 5 GHz تلقائيًا. فعّل ADB عبر الشبكة في خيارات المطوّر بالسيارة، ثم اضغط أدناه.</string>
 </resources>

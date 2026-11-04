@@ -1128,4 +1128,6 @@
     <string name="settings_appearance_summary">主题、强调色和语言</string>
     <string name="settings_accent">强调色</string>
     <string name="settings_accent_description">更改夜间外观中按钮、开关和高亮的颜色。日间外观保留自己的蓝色。</string>
+    <string name="settings_gwm_hotspot_5ghz_working">正在把热点设为 5 GHz…最多需要 30 秒。</string>
+    <string name="settings_gwm_hotspot_5ghz_home">无法自动把热点设为 5 GHz。请在车机开发者选项中开启网络 ADB，然后按下方按钮。</string>
 </resources>

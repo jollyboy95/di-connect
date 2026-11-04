@@ -1068,4 +1068,6 @@
     <string name="settings_appearance_summary">Тема, акцентный цвет и язык</string>
     <string name="settings_accent">Акцентный цвет</string>
     <string name="settings_accent_description">Меняет цвет кнопок, переключателей и выделений в ночном виде. Дневной вид остаётся синим.</string>
+    <string name="settings_gwm_hotspot_5ghz_working">Переключаем точку доступа на 5 ГГц… до 30 секунд.</string>
+    <string name="settings_gwm_hotspot_5ghz_home">Не удалось автоматически переключить точку доступа на 5 ГГц. Включите ADB по сети в параметрах разработчика машины и нажмите ниже.</string>
 </resources>

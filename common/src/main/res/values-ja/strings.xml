@@ -1170,4 +1170,6 @@
     <string name="settings_appearance_summary">テーマ、アクセントカラー、言語</string>
     <string name="settings_accent">アクセントカラー</string>
     <string name="settings_accent_description">夜間表示のボタン、スイッチ、強調色を変えます。昼間表示は独自の青のままです。</string>
+    <string name="settings_gwm_hotspot_5ghz_working">ホットスポットを 5 GHz に設定中…最大 30 秒かかります。</string>
+    <string name="settings_gwm_hotspot_5ghz_home">ホットスポットを自動で 5 GHz にできませんでした。車の開発者オプションでネットワーク経由の ADB をオンにしてから、下を押してください。</string>
 </resources>

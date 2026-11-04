@@ -1171,4 +1171,6 @@
     <string name="settings_appearance_summary">Theme, accent colour and language</string>
     <string name="settings_accent">Accent colour</string>
     <string name="settings_accent_description">Colours the buttons, switches and highlights in the night look. The day look keeps its own blue.</string>
+    <string name="settings_gwm_hotspot_5ghz_working">Setting the hotspot to 5 GHz… this takes up to 30 seconds.</string>
+    <string name="settings_gwm_hotspot_5ghz_home">The hotspot could not be set to 5 GHz automatically. Turn ADB over network on in the car’s developer options, then press below.</string>
 </resources>

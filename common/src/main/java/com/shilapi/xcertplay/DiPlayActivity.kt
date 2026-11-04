@@ -130,6 +130,7 @@ internal enum class SettingsSection {
     LOCATION,
     CLUSTER_MAP,
     GWM_CLUSTER,
+    GWM_HOTSPOT,
     CLIMATE_LIVE,
     CLIMATE_STRIP,
     APPEARANCE,
@@ -146,6 +147,7 @@ internal object SettingsInformationArchitecture {
         SettingsCategory.ABOUT to emptySet(),
         SettingsCategory.CONNECTION to setOf(
             SettingsSection.ANDROID_AUTO,
+            SettingsSection.GWM_HOTSPOT,
             SettingsSection.CONNECTION_SETUP,
             SettingsSection.AUTOMATIC_CONNECTION,
             SettingsSection.USB_CONNECTION,
@@ -699,8 +701,6 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             }, "hotspot-band-probe").start()
         }, matchButton(10, 56))
         gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true) }) }
-        toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
-            HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
         card.addView(label(getString(R.string.settings_gwm_climate_test), 16, TEXT, true))
         card.addView(label(getString(R.string.settings_gwm_climate_test_description), 14, MUTED))
         card.addView(row().apply {
@@ -719,13 +719,6 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             addView(View(this@DiPlayActivity), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
             addView(climate(getString(R.string.settings_gwm_climate_seat_vent)) { ClimateTest.stepDriverVentilation(it) }, LinearLayout.LayoutParams(0, dp(56), 1f))
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })
-        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
-            val app = applicationContext
-            Thread({
-                val result = HotspotBandGuard.ensureFiveGhz(app)
-                runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
-            }, "hotspot-band-now").start()
-        }, matchButton(10, 56))
 
         if (ids.isNotEmpty()) {
             card.addView(button(getString(R.string.settings_gwm_launch_test), false) { launchGwmDisplayTest(selected) }, matchButton(10, 56))
@@ -1484,6 +1477,23 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         })
     }
 
+    private fun gwmHotspotControls(card: LinearLayout) {
+        toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
+            HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
+        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
+        gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true); setPadding(0, dp(8), 0, 0) }) }
+    }
+
+    private fun setHotspotFiveGhzNow() {
+        gwmScanResult = getString(R.string.settings_gwm_hotspot_5ghz_working)
+        render()
+        val app = applicationContext
+        Thread({
+            val result = HotspotBandGuard.ensureFiveGhz(app)
+            runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+        }, "hotspot-band-now").start()
+    }
+
     private fun homeConcept(content: LinearLayout) {
         fun homeButton(title: String, primary: Boolean, click: () -> Unit) = button(title, primary, click)
         // A tile is a glass panel holding an icon and the action's own button, so the button keeps
@@ -1594,6 +1604,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             val off = if (name.isBlank()) getString(R.string.hotspot_details_off) else getString(R.string.msg_car_hotspot_off, name)
             panel.addView(label(off, 15, WARNING).apply { setPadding(0, dp(12), 0, 0) })
             panel.addView(homeButton(getString(R.string.open_car_hotspot_settings), false) { openCarWifiSettings() }, matchButton(CONTROL_GAP_DP, 52))
+        }
+        if (GwmMode.active(this) && HotspotBandGuard.needsHelp()) {
+            panel.addView(label(getString(R.string.settings_gwm_hotspot_5ghz_home), 15, WARNING).apply { setPadding(0, dp(12), 0, 0) })
+            panel.addView(homeButton(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(CONTROL_GAP_DP, 52))
         }
         panel.addView(homeButton(getString(R.string.choose_iphone), false) { choosePhone() }, matchButton(14, 52))
         disconnectButton = homeButton(getString(R.string.disconnect), false) {
@@ -2923,6 +2937,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     else getString(R.string.center_map_overlay_missing, packageName), 14, if (overlay) MUTED else WARNING))
             }
         }
+        filteredSection(content, SettingsSection.GWM_HOTSPOT,
+            getString(R.string.settings_gwm_hotspot_5ghz_now), R.drawable.ic_dp_connection) { card -> gwmHotspotControls(card) }
         filteredSection(content, SettingsSection.CLIMATE_LIVE,
             getString(R.string.settings_climate_live), R.drawable.ic_dc_fan) { card -> climateLive(card) }
         filteredSection(content, SettingsSection.APPEARANCE,

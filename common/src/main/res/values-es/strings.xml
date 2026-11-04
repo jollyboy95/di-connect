@@ -1068,4 +1068,6 @@
     <string name="settings_appearance_summary">Tema, color de acento e idioma</string>
     <string name="settings_accent">Color de acento</string>
     <string name="settings_accent_description">Colorea botones, interruptores y resaltados en el aspecto nocturno. El diurno conserva su azul.</string>
+    <string name="settings_gwm_hotspot_5ghz_working">Poniendo el punto de acceso en 5 GHz… tarda hasta 30 segundos.</string>
+    <string name="settings_gwm_hotspot_5ghz_home">No se pudo poner el punto de acceso en 5 GHz automáticamente. Activa ADB por red en las opciones de desarrollador del coche y pulsa abajo.</string>
 </resources>

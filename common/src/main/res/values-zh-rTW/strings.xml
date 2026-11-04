@@ -1128,4 +1128,6 @@
     <string name="settings_appearance_summary">主題、強調色和語言</string>
     <string name="settings_accent">強調色</string>
     <string name="settings_accent_description">變更夜間外觀中按鈕、開關和強調的顏色。日間外觀保留自己的藍色。</string>
+    <string name="settings_gwm_hotspot_5ghz_working">正在把熱點設為 5 GHz…最多需要 30 秒。</string>
+    <string name="settings_gwm_hotspot_5ghz_home">無法自動把熱點設為 5 GHz。請在車機開發者選項中開啟網路 ADB，然後按下方按鈕。</string>
 </resources>

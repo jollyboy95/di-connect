@@ -3241,3 +3241,53 @@ edit(aa_java/'aap/AapService.kt',
      '    private fun onDisconnected(state: CommManager.ConnectionState.Disconnected) {\n        com.andrerinas.openheadunit.hud.BydNavigationOutputs.stop()\n        com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionEnded(this)\n'))
 edit(D, ('        appendLine(DiConnectPhoneWake.report())\n',
          '        appendLine(DiConnectPhoneWake.report())\n        appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")\n'))
+
+# The 5 GHz hotspot controls belong with Connections, not the cluster; Home offers the button
+# whenever the automatic check could not do it.
+edit(ui_host,
+    ('''        toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
+            HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
+''', ''),
+    ('''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
+            val app = applicationContext
+            Thread({
+                val result = HotspotBandGuard.ensureFiveGhz(app)
+                runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+            }, "hotspot-band-now").start()
+        }, matchButton(10, 56))
+''', ''),
+    ('    CLIMATE_LIVE,\n', '    GWM_HOTSPOT,\n    CLIMATE_LIVE,\n'),
+    ('            SettingsSection.ANDROID_AUTO,\n            SettingsSection.CONNECTION_SETUP,',
+     '            SettingsSection.ANDROID_AUTO,\n            SettingsSection.GWM_HOTSPOT,\n            SettingsSection.CONNECTION_SETUP,'),
+    ('        filteredSection(content, SettingsSection.CLIMATE_LIVE,', '''        filteredSection(content, SettingsSection.GWM_HOTSPOT,
+            getString(R.string.settings_gwm_hotspot_5ghz_now), R.drawable.ic_dp_connection) { card -> gwmHotspotControls(card) }
+        filteredSection(content, SettingsSection.CLIMATE_LIVE,'''),
+    ('    private fun homeConcept(content: LinearLayout) {', '''    private fun gwmHotspotControls(card: LinearLayout) {
+        toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
+            HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
+        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
+        gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true); setPadding(0, dp(8), 0, 0) }) }
+    }
+
+    private fun setHotspotFiveGhzNow() {
+        gwmScanResult = getString(R.string.settings_gwm_hotspot_5ghz_working)
+        render()
+        val app = applicationContext
+        Thread({
+            val result = HotspotBandGuard.ensureFiveGhz(app)
+            runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
+        }, "hotspot-band-now").start()
+    }
+
+    private fun homeConcept(content: LinearLayout) {'''),
+    ('''        panel.addView(homeButton(getString(R.string.choose_iphone), false) { choosePhone() }, matchButton(14, 52))''',
+     '''        if (GwmMode.active(this) && HotspotBandGuard.needsHelp()) {
+            panel.addView(label(getString(R.string.settings_gwm_hotspot_5ghz_home), 15, WARNING).apply { setPadding(0, dp(12), 0, 0) })
+            panel.addView(homeButton(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(CONTROL_GAP_DP, 52))
+        }
+        panel.addView(homeButton(getString(R.string.choose_iphone), false) { choosePhone() }, matchButton(14, 52))'''))
+_txt={'settings_gwm_hotspot_5ghz_working':['Setting the hotspot to 5 GHz… this takes up to 30 seconds.','جارٍ ضبط نقطة الاتصال على 5 GHz… قد يستغرق ذلك حتى 30 ثانية.','Poniendo el punto de acceso en 5 GHz… tarda hasta 30 segundos.','Imposto l’hotspot su 5 GHz… richiede fino a 30 secondi.','ホットスポットを 5 GHz に設定中…最大 30 秒かかります。','Переключаем точку доступа на 5 ГГц… до 30 секунд.','Перемикаємо точку доступу на 5 ГГц… до 30 секунд.','正在把热点设为 5 GHz…最多需要 30 秒。','正在把熱點設為 5 GHz…最多需要 30 秒。'],
+      'settings_gwm_hotspot_5ghz_home':['The hotspot could not be set to 5 GHz automatically. Turn ADB over network on in the car’s developer options, then press below.','تعذّر ضبط نقطة الاتصال على 5 GHz تلقائيًا. فعّل ADB عبر الشبكة في خيارات المطوّر بالسيارة، ثم اضغط أدناه.','No se pudo poner el punto de acceso en 5 GHz automáticamente. Activa ADB por red en las opciones de desarrollador del coche y pulsa abajo.','Non è stato possibile impostare l’hotspot su 5 GHz automaticamente. Attiva ADB in rete nelle opzioni sviluppatore dell’auto, poi premi sotto.','ホットスポットを自動で 5 GHz にできませんでした。車の開発者オプションでネットワーク経由の ADB をオンにしてから、下を押してください。','Не удалось автоматически переключить точку доступа на 5 ГГц. Включите ADB по сети в параметрах разработчика машины и нажмите ниже.','Не вдалося автоматично перемкнути точку доступу на 5 ГГц. Увімкніть ADB через мережу в параметрах розробника авто й натисніть нижче.','无法自动把热点设为 5 GHz。请在车机开发者选项中开启网络 ADB，然后按下方按钮。','無法自動把熱點設為 5 GHz。請在車機開發者選項中開啟網路 ADB，然後按下方按鈕。']}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))

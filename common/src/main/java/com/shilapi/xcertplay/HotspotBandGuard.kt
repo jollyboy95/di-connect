@@ -33,6 +33,9 @@ internal object HotspotBandGuard {
 
     fun report(): String = "Hotspot band guard: ${last ?: "not run"}"
 
+    /** True when the last check could not get the hotspot to 5 GHz by itself, so Home offers the button. */
+    fun needsHelp(): Boolean = last?.let { it.contains("not available") || it.contains("not found") } ?: false
+
     /** Once per app start when switched on, off the main thread. */
     fun checkOnStart(context: Context) {
         if (checkedThisRun || !enabled(context)) return
