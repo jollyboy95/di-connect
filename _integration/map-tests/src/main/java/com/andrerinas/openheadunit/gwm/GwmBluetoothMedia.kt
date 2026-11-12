@@ -188,19 +188,43 @@ object GwmCarWifi {
         if (!on) sessionEnded(context)
     }
 
+    /**
+     * Android 9 keeps scanning for Wi-Fi networks and Bluetooth devices in the background even with
+     * Wi-Fi off ("scanning always available"), for location. On the H7 a Wi-Fi scan takes the shared
+     * radio away from the hotspot, and a full scan lasts about as long as the drop-outs in the
+     * 13 Nov report (five of 1578 to 1597 ms with the car's Wi-Fi already off). Both are
+     * switched off while Android Auto runs and put back as they were afterwards. Needs
+     * WRITE_SECURE_SETTINGS, which Di-Connect grants itself over ADB.
+     */
+    private val SCAN_SETTINGS = arrayOf("wifi_scan_always_enabled", "ble_scan_always_enabled")
+
     @Suppress("DEPRECATION")
     fun sessionStarted(context: Context) {
         if (!GwmMode.active(context) || !enabled(context)) return
-        val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager ?: return
-        if (!runCatching { wifi.isWifiEnabled }.getOrDefault(false)) { note("car Wi-Fi already off"); return }
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val scans = SCAN_SETTINGS.mapNotNull { key ->
+            val now = runCatching { android.provider.Settings.Global.getInt(context.contentResolver, key, 0) }.getOrDefault(0)
+            if (now == 0) return@mapNotNull null
+            val ok = runCatching { android.provider.Settings.Global.putInt(context.contentResolver, key, 0) }.getOrDefault(false)
+            if (ok) { prefs.edit().putBoolean("restore_$key", true).apply(); key.substringBefore("_scan") } else "${key.substringBefore("_scan")} (not allowed)"
+        }
+        val scanText = if (scans.isEmpty()) "background scans already off" else "background scans off: ${scans.joinToString()}"
+        val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+        if (wifi == null || !runCatching { wifi.isWifiEnabled }.getOrDefault(false)) { note("car Wi-Fi already off; $scanText"); return }
         val ok = runCatching { wifi.setWifiEnabled(false) }.getOrDefault(false)
-        if (ok) context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("turned_off", true).apply()
-        note(if (ok) "car Wi-Fi off while Android Auto runs (hotspot stays on)" else "car Wi-Fi could not be switched off")
+        if (ok) prefs.edit().putBoolean("turned_off", true).apply()
+        note((if (ok) "car Wi-Fi off while Android Auto runs (hotspot stays on)" else "car Wi-Fi could not be switched off") + "; $scanText")
     }
 
     @Suppress("DEPRECATION")
     fun sessionEnded(context: Context) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        SCAN_SETTINGS.forEach { key ->
+            if (prefs.getBoolean("restore_$key", false)) {
+                runCatching { android.provider.Settings.Global.putInt(context.contentResolver, key, 1) }
+                prefs.edit().putBoolean("restore_$key", false).apply()
+            }
+        }
         if (!prefs.getBoolean("turned_off", false)) return
         val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager ?: return
         val ok = runCatching { wifi.setWifiEnabled(true) }.getOrDefault(false)

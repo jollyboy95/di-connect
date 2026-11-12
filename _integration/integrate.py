@@ -3335,6 +3335,25 @@ for p in STRINGS:
     i=LOCALE_ORDER.index(p.parent.name)
     edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
 
+# The car's background Wi-Fi scans in the report (Nov 2026): the 13 Nov drop-outs were all about
+# 1.6 s with the car's Wi-Fi already off, the length of a full scan, so the report lists the car's
+# scans with their times to match against the drop-outs.
+(root/'common/src/main/java/com/shilapi/xcertplay/CarWifiScanReport.kt').write_text(Path('target/_integration/CarWifiScanReport.kt').read_text())
+edit(D, ('        appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")\n',
+         '        appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")\n        append(CarWifiScanReport.report(appContext))\n'))
+# The report-saved dialog's Share and Done ran together on the car's screen ("SHAREDONE").
+edit(D, ('''                            }.onFailure { showDiagnosticReport(report) }
+                        }.show()
+''', '''                            }.onFailure { showDiagnosticReport(report) }
+                        }.show().also { dialog ->
+                            listOf(android.content.DialogInterface.BUTTON_NEUTRAL, android.content.DialogInterface.BUTTON_NEGATIVE).forEach { which ->
+                                dialog.getButton(which)?.let { b ->
+                                    (b.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.let { it.marginEnd = dp(24); b.layoutParams = it }
+                                }
+                            }
+                        }
+'''))
+
 # An app of the driver's choice (for example an audio tuning app) opened in the background at start.
 (root/'common/src/main/java/com/shilapi/xcertplay/DiConnectStartApp.kt').write_text(Path('target/_integration/ui/DiConnectStartApp.kt').read_text())
 edit(root/'shared/src/main/AndroidManifest.xml',

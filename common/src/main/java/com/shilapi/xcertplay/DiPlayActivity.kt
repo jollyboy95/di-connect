@@ -7075,7 +7075,13 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }, getString(R.string.share_diagnostic_report)))
                             }.onFailure { showDiagnosticReport(report) }
-                        }.show()
+                        }.show().also { dialog ->
+                            listOf(android.content.DialogInterface.BUTTON_NEUTRAL, android.content.DialogInterface.BUTTON_NEGATIVE).forEach { which ->
+                                dialog.getButton(which)?.let { b ->
+                                    (b.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.let { it.marginEnd = dp(24); b.layoutParams = it }
+                                }
+                            }
+                        }
                 } else {
                     appDialogBuilder().setTitle(getString(R.string.could_not_save_the_report))
                         .setMessage(getString(R.string.check_that_storage_is_available_or_choose_another_save_loc))
@@ -7169,6 +7175,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")
         appendLine("Car Wi-Fi during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmCarWifi.last}")
         appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")
+        append(CarWifiScanReport.report(appContext))
         appendLine(AdbSwitch.report(appContext))
         appendLine(WheelKeyService.report(appContext))
         WheelKeyLog.report(WheelKeyService.connected()).forEach { appendLine(it) }
