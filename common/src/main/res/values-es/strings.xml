@@ -1074,6 +1074,8 @@
     <string name="settings_gwm_wifi_off_during_aa_description">El Wi-Fi del coche comparte radio con su punto de acceso y usar ambos hace que Android Auto se entrecorte. Vuelve al terminar Android Auto. El punto de acceso sigue activo.</string>
     <string name="settings_gwm_bt_music_off_during_aa">Música Bluetooth apagada durante Android Auto</string>
     <string name="settings_gwm_bt_music_off_during_aa_description">Evita que el reproductor Bluetooth del coche compita con Android Auto. Las llamadas siguen por Bluetooth. Vuelve al terminar Android Auto.</string>
+    <string name="settings_gwm_voice_key">El botón de voz del volante abre el asistente del teléfono</string>
+    <string name="settings_gwm_voice_key_description">Durante Android Auto, el botón de voz del volante abre el Asistente de Google del teléfono en lugar del asistente del coche. Fuera de Android Auto funciona como siempre.</string>
     <string name="settings_start_app">Abrir una app al iniciar</string>
     <string name="settings_start_app_none">Ninguna</string>
     <string name="settings_start_app_description">Abre la app elegida en segundo plano cada vez que se inicia Di-Connect, por ejemplo una app de ajuste de audio, y vuelve a Di-Connect.</string>

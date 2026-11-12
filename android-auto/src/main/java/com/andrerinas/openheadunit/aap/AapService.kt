@@ -1012,6 +1012,7 @@ class AapService : Service(), UsbReceiver.Listener {
         com.andrerinas.openheadunit.hud.BydNavigationOutputs.start(this)
         com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionStarted(this)
         com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionStarted(this)
+        com.andrerinas.openheadunit.gwm.GwmVoiceKey.sessionStarted(this)
         isSwitchingToAccessory.set(false)
         updateNotification()
         acquireWifiLock()
@@ -1176,6 +1177,7 @@ class AapService : Service(), UsbReceiver.Listener {
         com.andrerinas.openheadunit.hud.BydNavigationOutputs.stop()
         com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.sessionEnded(this)
         com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionEnded(this)
+        com.andrerinas.openheadunit.gwm.GwmVoiceKey.sessionEnded(this)
         isSwitchingToAccessory.set(false)
         releaseWifiLock()
 

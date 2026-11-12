@@ -3,7 +3,12 @@ package com.andrerinas.openheadunit.gwm
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothProfile
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Handler
+import android.os.Looper
 import com.andrerinas.openheadunit.utils.AppLog
 
 /**
@@ -16,7 +21,9 @@ import com.andrerinas.openheadunit.utils.AppLog
  *
  * The head unit is the A2DP sink (profile 11, hidden from the SDK). Its proxy's disconnect and
  * setPriority are reached by reflection; on Android 9 they need only BLUETOOTH_ADMIN. Priority 0
- * stops the car reconnecting mid-session; it goes back to 100 (on) when Android Auto ends.
+ * stops the car reconnecting mid-session; it goes back to 100 (on) when Android Auto ends. The
+ * phone often connects its music link after Android Auto has started, so the switch keeps
+ * watching through the session rather than looking once.
  */
 object GwmBluetoothMedia {
     private const val PROFILE_A2DP_SINK = 11
@@ -24,42 +31,94 @@ object GwmBluetoothMedia {
     private const val PRIORITY_ON = 100
     private const val PREFS = "gwm_bluetooth_media"
     private const val KEY_PAUSED = "paused_addresses"
+    private const val ACTION_SINK_STATE = "android.bluetooth.a2dp-sink.profile.action.CONNECTION_STATE_CHANGED"
+    /** The phone often brings its music link up a little after Android Auto starts, so look again. */
+    private val RETRY_MS = longArrayOf(3_000, 10_000, 25_000, 60_000)
 
-    @Volatile var last: String = "not used yet"
-        private set
+    private val handler = Handler(Looper.getMainLooper())
+    private val history = ArrayDeque<String>()
+    @Volatile private var session = false
+    private var receiver: BroadcastReceiver? = null
+
+    /** The last few things this did, newest last, for the diagnostic report. */
+    val last: String get() = synchronized(history) { if (history.isEmpty()) "not used yet" else history.joinToString(" | ") }
 
     fun enabled(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("enabled", true)
 
     fun setEnabled(context: Context, on: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("enabled", on).apply()
-        if (!on) restore(context)
+        if (!on) { stopWatching(context); restore(context) }
     }
 
-    /** Android Auto connected: switch off the Bluetooth music link of every connected phone. */
+    /**
+     * Android Auto connected: switch off the Bluetooth music link of every connected phone now,
+     * a few more times over the first minute, and whenever the car brings it back during the session.
+     */
     fun sessionStarted(context: Context) {
         if (!GwmMode.active(context) || !enabled(context)) return
-        withSink(context) { proxy ->
-            val devices = runCatching { proxy.connectedDevices }.getOrDefault(emptyList())
-            if (devices.isEmpty()) { note("no Bluetooth music link to switch off"); return@withSink }
-            val paused = mutableSetOf<String>()
+        val app = context.applicationContext
+        session = true
+        sweep(app, "Android Auto started")
+        RETRY_MS.forEach { delay -> handler.postDelayed({ if (session) sweep(app, "check after ${delay / 1000} s") }, delay) }
+        if (receiver == null) {
+            receiver = object : BroadcastReceiver() {
+                override fun onReceive(c: Context, intent: Intent) {
+                    // 1 = connecting, 2 = connected.
+                    val state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1)
+                    if (session && (state == 1 || state == 2)) handler.postDelayed({ if (session) sweep(app, "music link came back") }, 800)
+                }
+            }
+            runCatching { app.registerReceiver(receiver, IntentFilter(ACTION_SINK_STATE)) }
+                .onFailure { receiver = null; note("could not watch the music link: ${it.javaClass.simpleName}") }
+        }
+    }
+
+    /** Android Auto ended: allow the Bluetooth music link again. */
+    fun sessionEnded(context: Context) {
+        stopWatching(context)
+        restore(context)
+    }
+
+    private fun stopWatching(context: Context) {
+        session = false
+        handler.removeCallbacksAndMessages(null)
+        receiver?.let { r -> runCatching { context.applicationContext.unregisterReceiver(r) } }
+        receiver = null
+    }
+
+    private fun sweep(context: Context, why: String) {
+        withSink(context, why) { proxy ->
+            val devices = runCatching {
+                @Suppress("UNCHECKED_CAST")
+                proxy.javaClass.getMethod("getDevicesMatchingConnectionStates", IntArray::class.java)
+                    .invoke(proxy, intArrayOf(1, 2)) as List<BluetoothDevice>
+            }.getOrElse { runCatching { proxy.connectedDevices }.getOrDefault(emptyList()) }
+            if (devices.isEmpty()) {
+                // Say whether a phone is on Bluetooth at all, so a report shows which case this is.
+                val phones = runCatching {
+                    BluetoothAdapter.getDefaultAdapter().bondedDevices.filter { d ->
+                        runCatching { d.javaClass.getMethod("isConnected").invoke(d) as Boolean }.getOrDefault(false)
+                    }.map { it.name ?: "phone" }
+                }.getOrDefault(emptyList())
+                note("$why: no Bluetooth music link" + if (phones.isEmpty()) "" else " (on Bluetooth: ${phones.joinToString()})")
+                return@withSink
+            }
+            val paused = load(context).toMutableSet()
             devices.forEach { device ->
-                val priority = call(proxy, "setPriority", device, PRIORITY_OFF)
+                val hold = call(proxy, "setPriority", device, PRIORITY_OFF)
                 val disconnected = call(proxy, "disconnect", device, null)
                 paused += device.address
-                note("Bluetooth music off for ${device.name ?: "phone"} (disconnect=$disconnected, hold=$priority)")
+                note("$why: music off for ${device.name ?: "phone"} (disconnect=$disconnected, hold=$hold)")
             }
             save(context, paused)
         }
     }
 
-    /** Android Auto ended: allow the Bluetooth music link again. */
-    fun sessionEnded(context: Context) = restore(context)
-
     private fun restore(context: Context) {
         val paused = load(context)
         if (paused.isEmpty()) return
-        withSink(context) { proxy ->
+        withSink(context, "Android Auto ended") { proxy ->
             val adapter = BluetoothAdapter.getDefaultAdapter() ?: return@withSink
             paused.forEach { address ->
                 val device = runCatching { adapter.getRemoteDevice(address) }.getOrNull() ?: return@forEach
@@ -70,20 +129,20 @@ object GwmBluetoothMedia {
         }
     }
 
-    private fun withSink(context: Context, work: (BluetoothProfile) -> Unit) {
+    private fun withSink(context: Context, why: String, work: (BluetoothProfile) -> Unit) {
         val adapter = runCatching { BluetoothAdapter.getDefaultAdapter() }.getOrNull()
-        if (adapter == null || !runCatching { adapter.isEnabled }.getOrDefault(false)) return
+        if (adapter == null || !runCatching { adapter.isEnabled }.getOrDefault(false)) { note("$why: Bluetooth is off"); return }
         val app = context.applicationContext
         val asked = runCatching {
             adapter.getProfileProxy(app, object : BluetoothProfile.ServiceListener {
                 override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
-                    try { work(proxy) } catch (e: Exception) { note("failed: ${e.javaClass.simpleName} ${e.message}") }
+                    try { work(proxy) } catch (e: Exception) { note("$why: failed ${e.javaClass.simpleName} ${e.message}") }
                     finally { runCatching { adapter.closeProfileProxy(PROFILE_A2DP_SINK, proxy) } }
                 }
                 override fun onServiceDisconnected(profile: Int) = Unit
             }, PROFILE_A2DP_SINK)
         }.getOrDefault(false)
-        if (!asked) note("the car's Bluetooth music service did not answer")
+        if (!asked) note("$why: the car's Bluetooth music service did not answer")
     }
 
     private fun call(proxy: BluetoothProfile, name: String, device: BluetoothDevice, value: Int?): String = runCatching {
@@ -96,11 +155,12 @@ object GwmBluetoothMedia {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet(KEY_PAUSED, emptySet()) ?: emptySet()
 
     private fun save(context: Context, addresses: Set<String>) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putStringSet(KEY_PAUSED, addresses).apply()
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putStringSet(KEY_PAUSED, HashSet(addresses)).apply()
     }
 
     private fun note(what: String) {
-        last = "${java.text.SimpleDateFormat("h:mm:ss a", java.util.Locale.US).format(java.util.Date())} $what"
+        val line = "${java.text.SimpleDateFormat("h:mm:ss a", java.util.Locale.US).format(java.util.Date())} $what"
+        synchronized(history) { history.addLast(line); while (history.size > 4) history.removeFirst() }
         AppLog.i("GwmBluetoothMedia: $what")
     }
 }

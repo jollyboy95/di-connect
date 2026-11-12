@@ -1487,6 +1487,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             com.andrerinas.openheadunit.gwm.GwmCarWifi.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmCarWifi.setEnabled(this, it) }
         toggle(card, getString(R.string.settings_gwm_bt_music_off_during_aa), getString(R.string.settings_gwm_bt_music_off_during_aa_description),
             com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.setEnabled(this, it) }
+        toggle(card, getString(R.string.settings_gwm_voice_key), getString(R.string.settings_gwm_voice_key_description),
+            com.andrerinas.openheadunit.gwm.GwmVoiceKey.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmVoiceKey.setEnabled(this, it) }
         gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true); setPadding(0, dp(8), 0, 0) }) }
     }
 
@@ -7166,6 +7168,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         appendLine("App opened at start: ${DiConnectStartApp.last}")
         appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")
         appendLine("Car Wi-Fi during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmCarWifi.last}")
+        appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")
         appendLine(AdbSwitch.report(appContext))
         appendLine(WheelKeyService.report(appContext))
         WheelKeyLog.report(WheelKeyService.connected()).forEach { appendLine(it) }

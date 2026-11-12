@@ -3314,6 +3314,27 @@ for p in STRINGS:
     i=LOCALE_ORDER.index(p.parent.name)
     edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
 
+# The steering wheel voice button opens the phone's assistant during Android Auto (Nov 2026). The H7
+# sends that button to its hardkey_service, not as an Android key, so Di-Connect registers for it
+# there while Android Auto runs and lets it through to the car's own assistant otherwise.
+edit(aa_java/'aap/AapService.kt',
+    ('        com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionStarted(this)\n',
+     '        com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionStarted(this)\n        com.andrerinas.openheadunit.gwm.GwmVoiceKey.sessionStarted(this)\n'),
+    ('        com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionEnded(this)\n',
+     '        com.andrerinas.openheadunit.gwm.GwmCarWifi.sessionEnded(this)\n        com.andrerinas.openheadunit.gwm.GwmVoiceKey.sessionEnded(this)\n'))
+edit(D, ('        appendLine("Car Wi-Fi during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmCarWifi.last}")\n',
+         '        appendLine("Car Wi-Fi during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmCarWifi.last}")\n        appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")\n'))
+edit(ui_host, ('''            com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.setEnabled(this, it) }
+''', '''            com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.setEnabled(this, it) }
+        toggle(card, getString(R.string.settings_gwm_voice_key), getString(R.string.settings_gwm_voice_key_description),
+            com.andrerinas.openheadunit.gwm.GwmVoiceKey.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmVoiceKey.setEnabled(this, it) }
+'''))
+_txt={'settings_gwm_voice_key':['Wheel voice button opens the phone’s assistant','زر الصوت في المقود يفتح مساعد الهاتف','El botón de voz del volante abre el asistente del teléfono','Il tasto vocale al volante apre l’assistente del telefono','ハンドルの音声ボタンでスマホのアシスタントを起動','Кнопка голоса на руле открывает ассистента телефона','Кнопка голосу на кермі відкриває асистента телефона','方向盘语音键打开手机助手','方向盤語音鍵開啟手機助理'],
+ 'settings_gwm_voice_key_description':['During Android Auto the steering wheel voice button opens Google Assistant on the phone instead of the car’s assistant. Outside Android Auto it works as before.','أثناء Android Auto يفتح زر الصوت في المقود مساعد Google على الهاتف بدل مساعد السيارة. خارج Android Auto يعمل كالمعتاد.','Durante Android Auto, el botón de voz del volante abre el Asistente de Google del teléfono en lugar del asistente del coche. Fuera de Android Auto funciona como siempre.','Durante Android Auto il tasto vocale al volante apre l’Assistente Google del telefono invece di quello dell’auto. Fuori da Android Auto funziona come prima.','Android Auto 中は、ハンドルの音声ボタンで車のアシスタントではなくスマホの Google アシスタントを起動します。それ以外は従来どおりです。','Во время Android Auto кнопка голоса на руле открывает Google Ассистент на телефоне вместо ассистента машины. Вне Android Auto всё как раньше.','Під час Android Auto кнопка голосу на кермі відкриває Google Асистент на телефоні замість асистента авто. Поза Android Auto все як раніше.','Android Auto 期间，方向盘语音键打开手机上的 Google 助理，而不是车机助手。其他时候照常使用。','Android Auto 期間，方向盤語音鍵開啟手機上的 Google 助理，而不是車機助理。其他時候照常使用。']}
+for p in STRINGS:
+    i=LOCALE_ORDER.index(p.parent.name)
+    edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
+
 # An app of the driver's choice (for example an audio tuning app) opened in the background at start.
 (root/'common/src/main/java/com/shilapi/xcertplay/DiConnectStartApp.kt').write_text(Path('target/_integration/ui/DiConnectStartApp.kt').read_text())
 edit(root/'shared/src/main/AndroidManifest.xml',
