@@ -65,16 +65,38 @@ internal object AdbSwitch {
     }.getOrDefault("?").ifEmpty { "-" }
 
     /**
-     * The H7's "ADB over network" switch is lost at every restart: it sets adbd's port only until
-     * the next boot. adbd also reads persist.adb.tcp.port at start, which survives restarts and
-     * which the ADB shell may set, so once set the car's ADB answers on the network after every
-     * boot without the driver turning the switch on.
+     * Keep the car answering ADB over the network, ideally across cold boots.
+     *
+     * The H7's Engineering Menu "Wi-Fi ADB" switch is, decompiled from `com.gwm.engineermode`
+     * (GwmHutInfoFragment.writeNetAdbPort), exactly two volatile setprops run as the system user:
+     * ```
+     *     setprop service.adb.tcp.port 5555      // "-1" turns it back off
+     *     setprop ctl.restart adbd
+     * ```
+     * Nothing in that firmware restores them at boot (its BOOT_COMPLETED receiver only sets the
+     * adb-install block), so wireless ADB dies at every cold start. adbd keeps the stock init rule
+     * `on property:persist.adb.tcp.port=*`, which copies that persistent value into
+     * service.adb.tcp.port at boot, so setting `persist.adb.tcp.port` makes the port re-open by
+     * itself every boot -- IF this unit lets the shell user write that property.
+     *
+     * So this does two things: reproduce the factory switch so the live port is open now (without
+     * the Engineering Menu), and set the persistent property for next boot. [report] reads both
+     * back, so the diagnostic shows whether the shell could persist it (the one open question) or
+     * whether a cold boot will still need the switch once.
      */
     fun persistNetwork(adb: LocalAdb) {
+        // Reproduce the factory switch when the live port is not already open. adbd is restarted
+        // only then: a restart drops this very loopback connection, and in the normal case we are
+        // already connected on 5555, so this branch is skipped and nothing is disturbed.
+        if (prop("service.adb.tcp.port") != "5555") {
+            adb.shell("setprop service.adb.tcp.port 5555", 6_000)
+            adb.shell("setprop ctl.restart adbd", 6_000)
+        }
         if (prop("persist.adb.tcp.port") == "5555") { networkAction = "kept on across restarts (persist.adb.tcp.port=5555)"; return }
         adb.shell("setprop persist.adb.tcp.port 5555", 6_000)
         val now = adb.shell("getprop persist.adb.tcp.port", 6_000)?.trim().orEmpty()
-        networkAction = if (now == "5555") "set to stay on across restarts" else "the car refused to keep it on (persist.adb.tcp.port='$now')"
+        networkAction = if (now == "5555") "set to stay on across restarts (persist.adb.tcp.port=5555)"
+            else "shell cannot persist the port (persist.adb.tcp.port='$now'); re-opened for this session only — a cold boot still needs the Engineering switch or root"
         Log.i(TAG, "ADB over network: $networkAction")
     }
 
