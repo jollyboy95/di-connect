@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -98,7 +99,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     var connected = false; set(v) { field = v; invalidate() }
     var connectionName = "No phone"; set(v) { field = v; invalidate() }
-    var night = true; set(v) { field = v; invalidate() }
+    var night = isNight(context.resources.configuration); set(v) { field = v; invalidate() }
     var rightHandDrive = true; set(v) { field = v; invalidate() }
     var media = Media("No source", null, null, false, null); set(v) { field = v; invalidate() }
     /** Which projection is live; drives the map zone title and what the source list offers. */
@@ -374,6 +375,14 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        night = isNight(newConfig)
+    }
+
+    private fun isNight(config: Configuration): Boolean =
+        config.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_NO
+
     // ---- Look --------------------------------------------------------------------------------------
     private val W = 1280f
     private val H = 720f
@@ -389,9 +398,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private val hits = ArrayList<Pair<RectF, () -> Unit>>()
     private val icons = HashMap<Int, Drawable?>()
 
-    private val ink get() = Color.WHITE
-    private val quiet get() = if (night) Color.argb(150, 226, 230, 244) else Color.argb(205, 255, 255, 255)
-    private val accent get() = if (night) Color.rgb(176, 168, 255) else Color.rgb(255, 255, 255)
+    private val ink get() = if (night) Color.rgb(242, 247, 255) else Color.rgb(21, 34, 61)
+    private val quiet get() = if (night) Color.rgb(175, 191, 218) else Color.rgb(67, 83, 116)
+    private val accent get() = if (night) Color.rgb(187, 177, 255) else Color.rgb(77, 67, 167)
 
     // Mirror a horizontal position for left-hand drive: positions move, drawing never flips.
     private fun mx(x: Float): Float = if (rightHandDrive) x else W - x
@@ -435,61 +444,67 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     private fun drawBackdrop(c: Canvas) {
-        val w = width.toFloat(); val h = height.toFloat()
+        val w = width.toFloat()
+        val h = height.toFloat()
         p.style = Paint.Style.FILL
-        p.shader = if (night) LinearGradient(0f, 0f, w, h, Color.rgb(24, 27, 40), Color.rgb(36, 38, 60), Shader.TileMode.CLAMP)
-            else LinearGradient(0f, 0f, w, h, Color.rgb(104, 120, 170), Color.rgb(146, 130, 196), Shader.TileMode.CLAMP)
+        p.color = Color.BLACK
+        p.shader = LinearGradient(0f, 0f, w, h,
+            if (night) Color.rgb(10, 17, 32) else Color.rgb(210, 229, 244),
+            if (night) Color.rgb(21, 19, 41) else Color.rgb(226, 218, 248), Shader.TileMode.CLAMP)
         c.drawRect(0f, 0f, w, h, p)
-        // Soft light: a misty blue glow upper left and a lavender one lower right.
-        fun glow(x: Float, y: Float, rad: Float, color: Int) {
-            p.shader = RadialGradient(x, y, rad, color, Color.TRANSPARENT, Shader.TileMode.CLAMP)
-            c.drawCircle(x, y, rad, p)
+
+        fun glow(x: Float, y: Float, radius: Float, color: Int) {
+            p.shader = RadialGradient(x, y, radius, color, color and 0x00ffffff, Shader.TileMode.CLAMP)
+            c.drawCircle(x, y, radius, p)
         }
-        if (night) {
-            glow(w * .18f, h * .12f, w * .45f, Color.argb(70, 98, 132, 214))
-            glow(w * .82f, h * .92f, w * .5f, Color.argb(80, 150, 112, 220))
-            glow(w * .55f, h * .45f, w * .35f, Color.argb(30, 200, 200, 255))
-        } else {
-            glow(w * .15f, h * .1f, w * .5f, Color.argb(120, 196, 220, 255))
-            glow(w * .85f, h * .95f, w * .5f, Color.argb(120, 214, 178, 255))
-            glow(w * .5f, h * .5f, w * .4f, Color.argb(60, 255, 255, 255))
-        }
+        val extent = max(w, h)
+        glow(w * .16f, h * .14f, extent * .48f,
+            if (night) Color.argb(150, 46, 87, 152) else Color.argb(180, 244, 252, 255))
+        glow(w * .86f, h * .34f, extent * .38f,
+            if (night) Color.argb(135, 89, 62, 150) else Color.argb(150, 195, 182, 242))
+        glow(w * .57f, h * .98f, extent * .40f,
+            if (night) Color.argb(100, 37, 99, 145) else Color.argb(130, 184, 222, 241))
         p.shader = null
     }
 
-    /** A glass panel: a soft lit fill, a fine bright edge and a faint shadow below. */
+    /** Thin specular edge and a translucent, tinted body. */
     private fun glass(c: Canvas, rect: RectF, radius: Float, strength: Float = 1f) {
         p.style = Paint.Style.FILL
+        p.color = Color.argb(if (night) 38 else 23, 11, 15, 40)
+        c.drawRoundRect(rect.left, rect.top + 3f, rect.right, rect.bottom + 5f, radius, radius, p)
+        p.color = Color.BLACK
+        val intensity = strength.coerceAtMost(3f)
+        val highlight = (if (night) 36 else 122) + (intensity * 18).toInt()
+        val shade = (if (night) 14 else 60) + (intensity * 9).toInt()
+        p.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom,
+            Color.argb(highlight, 244, 249, 255),
+            Color.argb(shade, if (night) 141 else 245, if (night) 155 else 248, 255),
+            Shader.TileMode.CLAMP)
+        c.drawRoundRect(rect, radius, radius, p)
+        p.style = Paint.Style.STROKE
+        p.strokeWidth = 1f
+        p.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom,
+            Color.argb(if (night) 83 else 224, 250, 253, 255),
+            Color.argb(if (night) 16 else 105, 250, 253, 255), Shader.TileMode.CLAMP)
+        c.drawRoundRect(rect, radius, radius, p)
         p.shader = null
-        p.color = Color.argb(if (night) 70 else 40, 0, 0, 20)
-        c.drawRoundRect(rect.left, rect.top + 6f, rect.right, rect.bottom + 8f, radius, radius, p)
-        // Note: the shader is multiplied by the shadow colour's alpha above; the values are tuned with that.
-        val top = ((if (night) 34 else 70) * strength).toInt()
-        val bottom = ((if (night) 14 else 38) * strength).toInt()
-        p.shader = LinearGradient(0f, rect.top, 0f, rect.bottom, Color.argb(top, 255, 255, 255), Color.argb(bottom, 255, 255, 255), Shader.TileMode.CLAMP)
+        p.style = Paint.Style.FILL
+    }
+
+    /** A readable surface that fully covers whatever is beneath the menu. */
+    private fun panel(c: Canvas, rect: RectF, radius: Float) {
+        p.style = Paint.Style.FILL
+        p.color = Color.argb(if (night) 135 else 49, 12, 18, 43)
+        c.drawRoundRect(rect.left, rect.top + 6f, rect.right, rect.bottom + 10f, radius, radius, p)
+        p.color = Color.BLACK
+        p.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom,
+            if (night) Color.rgb(40, 49, 75) else Color.rgb(239, 246, 255),
+            if (night) Color.rgb(25, 29, 53) else Color.rgb(224, 221, 251), Shader.TileMode.CLAMP)
         c.drawRoundRect(rect, radius, radius, p)
         p.shader = null
         p.style = Paint.Style.STROKE
-        p.strokeWidth = 1.2f
-        p.shader = LinearGradient(0f, rect.top, 0f, rect.bottom, Color.argb(if (night) 70 else 130, 255, 255, 255), Color.argb(if (night) 18 else 40, 255, 255, 255), Shader.TileMode.CLAMP)
-        c.drawRoundRect(rect, radius, radius, p)
-        p.shader = null
-        p.style = Paint.Style.FILL
-    }
-
-    /** A floating panel over other content: nearly opaque, so what is behind never shows through the words. */
-    private fun panel(c: Canvas, rect: RectF, radius: Float) {
-        p.style = Paint.Style.FILL; p.shader = null
-        p.color = Color.argb(if (night) 110 else 70, 0, 0, 20)
-        c.drawRoundRect(rect.left, rect.top + 8f, rect.right, rect.bottom + 14f, radius, radius, p)
-        // A shader is multiplied by the paint's own alpha, so the paint must be opaque here.
-        p.color = Color.BLACK
-        p.shader = LinearGradient(0f, rect.top, 0f, rect.bottom,
-            if (night) Color.argb(246, 52, 55, 84) else Color.argb(246, 128, 132, 186),
-            if (night) Color.argb(246, 38, 40, 64) else Color.argb(246, 112, 110, 170), Shader.TileMode.CLAMP)
-        c.drawRoundRect(rect, radius, radius, p)
-        p.shader = null
-        p.style = Paint.Style.STROKE; p.strokeWidth = 1.2f; p.color = Color.argb(if (night) 80 else 140, 255, 255, 255)
+        p.strokeWidth = 1f
+        p.color = Color.argb(if (night) 82 else 240, 249, 251, 255)
         c.drawRoundRect(rect, radius, radius, p)
         p.style = Paint.Style.FILL
     }
@@ -607,16 +622,11 @@ internal class HomeDashboardView(context: Context) : View(context) {
             Color.argb(if (night) 40 else 30, 120, 90, 190), Shader.TileMode.CLAMP)
         c.drawRect(z, p); p.shader = null
         c.restore()
-        icon(c, R.drawable.ic_dp_navigation, z.centerX(), z.centerY() - 40f, 64f, Color.argb(200, 255, 255, 255))
+        icon(c, R.drawable.ic_dp_navigation, z.centerX(), z.centerY() - 40f, 64f, accent)
         val carPlay = projection == HomeSources.Projection.CARPLAY
         text(c, if (carPlay) "CarPlay" else "Android Auto", z.centerX(), z.centerY() + 24f, 30f, ink, light, Paint.Align.CENTER)
         text(c, mapNote, z.centerX(), z.centerY() + 56f, 16f, quiet, null, Paint.Align.CENTER, z.width() - 80f)
         hit(z) { if (!showLiveProjection()) openProjection() }
-        // Search goes to the real search inside Android Auto.
-        r.set(z.left + 20f, z.top + 20f, z.left + 360f, z.top + 72f); glass(c, r, 26f, 2.4f)
-        icon(c, R.drawable.ic_dp_search, r.left + 30f, r.centerY(), 24f, ink)
-        text(c, if (carPlay) "Search in Maps" else "Search in Google Maps", r.left + 54f, r.centerY() + 6.5f, 18f, ink)
-        hit(r) { openProjection() }
         drawProjectionExpand(c)
     }
 
@@ -690,31 +700,33 @@ internal class HomeDashboardView(context: Context) : View(context) {
         p.style = Paint.Style.FILL
         hit(r) { popover = if (popover == Popover.SOURCES) Popover.NONE else Popover.SOURCES }
         // Artwork, or a soft tile when there is none.
-        val art = RectF(card.left + 18f, card.top + 72f, card.left + 110f, card.top + 164f)
+        val art = RectF(card.centerX() - 53f, card.top + 67f, card.centerX() + 53f, card.top + 173f)
         val bitmap = media.art?.takeUnless { it.isRecycled }
         if (bitmap != null) {
             c.save(); path.reset(); path.addRoundRect(art, 16f, 16f, Path.Direction.CW); c.clipPath(path)
             c.drawBitmap(bitmap, null, art, p); c.restore()
         } else {
-            p.shader = LinearGradient(art.left, art.top, art.right, art.bottom, Color.rgb(112, 128, 200), Color.rgb(170, 130, 210), Shader.TileMode.CLAMP)
-            c.drawRoundRect(art, 16f, 16f, p); p.shader = null
-            icon(c, R.drawable.ic_dp_audio, art.centerX(), art.centerY(), 40f, Color.argb(220, 255, 255, 255))
+            glass(c, art, 25f, 2.5f)
+            icon(c, R.drawable.ic_dp_audio, art.centerX(), art.centerY(), 39f, accent)
         }
-        hit(art) { openMediaSource() }
-        val tx = art.right + 16f; val tw = card.right - 18f - tx
-        text(c, media.title ?: "Nothing playing", tx, card.top + 106f, 21f, ink, medium, Paint.Align.LEFT, tw)
-        text(c, media.artist ?: "Choose a source", tx, card.top + 134f, 16f, quiet, null, Paint.Align.LEFT, tw)
-        // Progress.
-        val py = card.top + 194f
-        p.color = Color.argb(60, 255, 255, 255); c.drawRoundRect(card.left + 22f, py - 2.5f, card.right - 22f, py + 2.5f, 3f, 3f, p)
+        val titleWidth = card.width() - 36f
+        text(c, media.title ?: "Nothing playing", card.centerX(), card.top + 199f, 21f, ink, medium,
+            Paint.Align.CENTER, titleWidth)
+        media.artist?.takeIf { it.isNotBlank() }?.let {
+            text(c, it, card.centerX(), card.top + 222f, 15f, quiet, null, Paint.Align.CENTER, titleWidth)
+        }
+        hit(RectF(card.left + 18f, art.top, card.right - 18f, card.top + 226f)) { openMediaSource() }
+        val py = card.top + 241f
+        p.color = if (night) Color.argb(60, 255, 255, 255) else Color.argb(65, 69, 82, 123)
+        c.drawRoundRect(card.left + 22f, py - 2.5f, card.right - 22f, py + 2.5f, 3f, 3f, p)
         media.progress?.let { f ->
             p.color = accent; c.drawRoundRect(card.left + 22f, py - 2.5f, card.left + 22f + (card.width() - 44f) * f, py + 2.5f, 3f, 3f, p)
         }
         // Controls: previous, play or pause, next.
-        val cy = card.top + 268f
+        val cy = card.top + 286f
         circleButton(c, card.centerX() - 86f, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_PREVIOUS) }
         skip(c, card.centerX() - 86f, cy, false)
-        r.set(card.centerX() - 38f, cy - 38f, card.centerX() + 38f, cy + 38f); glass(c, r, 38f, 3f)
+        r.set(card.centerX() - 32f, cy - 32f, card.centerX() + 32f, cy + 32f); glass(c, r, 32f, 3f)
         p.color = ink
         if (media.playing) {
             c.drawRoundRect(card.centerX() - 11f, cy - 13f, card.centerX() - 4f, cy + 13f, 2f, 2f, p)
@@ -770,8 +782,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
                 (Color.green(a) + (Color.green(b) - Color.green(a)) * k).toInt(),
                 (Color.blue(a) + (Color.blue(b) - Color.blue(a)) * k).toInt())
         }
-        val blue = Color.rgb(130, 186, 255); val white = Color.rgb(240, 242, 250)
-        val amber = Color.rgb(255, 190, 120); val red = Color.rgb(250, 128, 110)
+        val blue = if (night) Color.rgb(130, 186, 255) else Color.rgb(28, 84, 163); val white = ink
+        val amber = if (night) Color.rgb(255, 190, 120) else Color.rgb(137, 73, 27)
+        val red = if (night) Color.rgb(250, 128, 110) else Color.rgb(164, 47, 48)
         return when {
             v <= 22f -> mix(blue, white, (v - 16f) / 6f)
             v <= 26f -> mix(white, amber, (v - 22f) / 4f)

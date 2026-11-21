@@ -1,11 +1,16 @@
 package com.shilapi.xcertplay
 
+import android.app.Activity
+import android.content.ComponentName
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -103,24 +108,114 @@ class DiConnectUiPreviewTest {
     }
 
     @Test fun liveProjectionLetsMapTouchesThroughAndKeepsExpandAndModalTouches() {
-        val view = HomeDashboardView(org.robolectric.RuntimeEnvironment.getApplication())
-        view.useLiveProjection { }
+        var expansions = 0
+        withDashboard { view, bitmap ->
+            view.useLiveProjection { expansions++ }
+            view.draw(Canvas(bitmap))
+            val bounds = view.projectionBounds(1280, 720)
+            assertFalse(touch(view, MotionEvent.ACTION_DOWN, bounds.centerX(), bounds.centerY()))
+            val expandX = bounds.right - 30
+            val expandY = bounds.top + 40
+            assertTrue(touch(view, MotionEvent.ACTION_DOWN, expandX, expandY))
+            assertTrue(touch(view, MotionEvent.ACTION_UP, expandX, expandY))
+            assertEquals(1, expansions)
+            view.popover = HomeDashboardView.Popover.SETTINGS
+            assertTrue(touch(view, MotionEvent.ACTION_DOWN, bounds.centerX(), bounds.centerY()))
+        }
+    }
+
+    @Test fun liveMapHasATransparentViewportInBothThemes() {
+        withDashboard { view, bitmap ->
+            view.useLiveProjection { }
+            for (night in listOf(true, false)) {
+                view.night = night
+                bitmap.eraseColor(Color.TRANSPARENT)
+                view.draw(Canvas(bitmap))
+                val bounds = view.projectionBounds(1280, 720)
+                assertEquals(Color.TRANSPARENT, bitmap.getPixel(bounds.centerX().toInt(), bounds.centerY().toInt()))
+                assertEquals(255, Color.alpha(bitmap.getPixel(8, 8)))
+            }
+        }
+    }
+
+    @Test fun settingsMenuCoversTheLiveProjection() {
+        withDashboard { view, bitmap ->
+            view.useLiveProjection { }
+            view.popover = HomeDashboardView.Popover.SETTINGS
+            view.draw(Canvas(bitmap))
+            val bounds = view.projectionBounds(1280, 720)
+            assertEquals(255, Color.alpha(bitmap.getPixel(bounds.centerX().toInt(), bounds.centerY().toInt())))
+        }
+    }
+
+    @Test fun liveViewportMirrorsWithoutChangingItsSizeOnANarrowWindow() {
+        withDashboard { view, _ ->
+            val right = view.projectionBounds(1200, 720)
+            view.rightHandDrive = false
+            val left = view.projectionBounds(1200, 720)
+            assertEquals(right.width(), left.width(), .01f)
+            assertEquals(right.height(), left.height(), .01f)
+            assertEquals(right.top, left.top, .01f)
+            assertEquals(1200f, right.left + left.right, .01f)
+            assertTrue(right.left < left.left)
+        }
+    }
+
+    @Test fun defaultLauncherStaysDisabledUntilTheDriverOpensThePicker() {
+        val activity = Robolectric.buildActivity(Activity::class.java).create().get()
+        val alias = ComponentName(activity.packageName, "com.shilapi.xcertplay.HomeLauncher")
+        val pm = activity.packageManager
+        assertFalse(pm.getActivityInfo(alias, PackageManager.MATCH_DISABLED_COMPONENTS).enabled)
+        withDashboard(activity) { view, bitmap ->
+            view.popover = HomeDashboardView.Popover.SETTINGS
+            view.draw(Canvas(bitmap))
+            touch(view, MotionEvent.ACTION_DOWN, 240f, 525f)
+            touch(view, MotionEvent.ACTION_UP, 240f, 525f)
+        }
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_ENABLED, pm.getComponentEnabledSetting(alias))
+        assertEquals(android.provider.Settings.ACTION_HOME_SETTINGS, shadowOf(activity).nextStartedActivity.action)
+    }
+
+    @Test fun daylightHasALighterBackdropThanNightMode() {
+        withDashboard { view, bitmap ->
+            fun backdropRed(night: Boolean): Int {
+                view.night = night
+                view.draw(Canvas(bitmap))
+                return Color.red(bitmap.getPixel(8, 8))
+            }
+            assertTrue(backdropRed(false) - backdropRed(true) > 100)
+        }
+    }
+
+    @Test fun home2LiveNightGlass() = home2("home2-live-night-glass") {
+        it.sample()
+        it.night = true
+        it.useLiveProjection { }
+    }
+
+    @Test fun home2LiveDayGlass() = home2("home2-live-day-glass") {
+        it.sample()
+        it.night = false
+        it.useLiveProjection { }
+    }
+
+    private fun withDashboard(
+        context: android.content.Context = org.robolectric.RuntimeEnvironment.getApplication(),
+        action: (HomeDashboardView, Bitmap) -> Unit,
+    ) {
+        val view = HomeDashboardView(context)
         view.layout(0, 0, 1280, 720)
         val bitmap = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888)
         try {
-            view.draw(Canvas(bitmap))
-            fun down(x: Float, y: Float): Boolean {
-                val event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, x, y, 0)
-                return try { view.onTouchEvent(event) } finally { event.recycle() }
-            }
-            val bounds = view.projectionBounds(1280, 720)
-            assertFalse(down(bounds.centerX(), bounds.centerY()))
-            assertTrue(down(bounds.right - 30, bounds.top + 40))
-            view.popover = HomeDashboardView.Popover.SETTINGS
-            assertTrue(down(bounds.centerX(), bounds.centerY()))
+            action(view, bitmap)
         } finally {
             bitmap.recycle()
         }
+    }
+
+    private fun touch(view: HomeDashboardView, action: Int, x: Float, y: Float): Boolean {
+        val event = MotionEvent.obtain(0, 0, action, x, y, 0)
+        return try { view.onTouchEvent(event) } finally { event.recycle() }
     }
 
     private fun capture(name: String, open: (DiPlayActivity) -> Unit) {
