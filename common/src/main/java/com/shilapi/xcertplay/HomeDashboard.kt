@@ -37,6 +37,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -103,6 +104,10 @@ class HomeDashboardActivity : Activity() {
             context.startActivity(Intent(Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }.isSuccess
     }
+}
+
+private val homeClimateWrites by lazy {
+    Executors.newSingleThreadExecutor { work -> Thread(work, "home-climate-write").apply { isDaemon = true } }
 }
 
 private const val HEADLIGHT_MODE = "car_mode"
@@ -221,6 +226,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
     private var stopMusic: (() -> Unit)? = null
     private var running = false
+    private var lifecycleGeneration = 0
+    private var mediaReadInFlight = false
+    private val climateReadback = Runnable { if (running) readClimate() }
     private val tick = object : Runnable {
         override fun run() {
             refreshTheme()
@@ -233,10 +241,17 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private val mediaPoll = object : Runnable {
         override fun run() { readFactoryMedia(); if (running) main.postDelayed(this, 2_000) }
     }
+    @Volatile private var lastVehicleReading: Triple<Float?, Float?, Boolean>? = null
     private val vehicleListener: (GwmVehicleData.Snapshot?) -> Unit = { snap ->
-        main.post {
-            outsideTemp = snap?.outsideTempC; rangeKm = snap?.rangeKm?.takeIf { it > 0f }
-            moving = (snap?.speedKph ?: 0f) > 3f
+        val reading = Triple(snap?.outsideTempC, snap?.rangeKm?.takeIf { it > 0f }, (snap?.speedKph ?: 0f) > 3f)
+        if (reading != lastVehicleReading) {
+            lastVehicleReading = reading
+            main.post {
+                if (!running || lastVehicleReading != reading) return@post
+                outsideTemp = reading.first
+                rangeKm = reading.second
+                moving = reading.third
+            }
         }
     }
     private var carPlayMedia: Media? = null
@@ -260,6 +275,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
     fun start() {
         if (running) return
         running = true
+        lifecycleGeneration++
+        lastVehicleReading = null
         runCatching {
             context.contentResolver.registerContentObserver(Settings.System.getUriFor(HEADLIGHT_MODE), false, headlightModeObserver)
         }
@@ -291,6 +308,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
     fun stop() {
         if (!running) return
         running = false
+        lifecycleGeneration++
+        main.removeCallbacks(climateReadback)
         runCatching { context.contentResolver.unregisterContentObserver(headlightModeObserver) }
         main.removeCallbacks(tick)
         main.removeCallbacks(mediaPoll)
@@ -369,10 +388,15 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }.getOrDefault(false)
 
     private fun readFactoryMedia() {
+        if (mediaReadInFlight) return
+        mediaReadInFlight = true
+        val generation = lifecycleGeneration
         val app = context.applicationContext
         Thread({
             val now = runCatching { HomeMediaSessions.current(app) }.getOrNull()
             main.post {
+                mediaReadInFlight = false
+                if (generation != lifecycleGeneration || !running) return@post
                 factoryMedia = now?.let { Media(it.source, it.title, it.artist, it.playing, it.progress, it.art, it.packageName) }
                 refreshMedia()
             }
@@ -380,6 +404,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     private fun readConnectivity() {
+        val generation = lifecycleGeneration
         val app = context.applicationContext
         val readTyres = onCar
         Thread({
@@ -402,7 +427,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
                 }.getOrNull()
             } else null
             main.post {
-                if (!running) return@post
+                if (generation != lifecycleGeneration || !running) return@post
                 tyrePressure = tyres
                 wifiEnabled = wifi
                 bluetoothEnabled = bluetooth
@@ -411,14 +436,15 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }, "home-connectivity-read").start()
     }
 
-    private fun readClimate(delay: Long = 0) {
+    private fun readClimate() {
+        val generation = lifecycleGeneration
         val app = context.applicationContext
         Thread({
-            if (delay > 0) runCatching { Thread.sleep(delay) }
             val keys = arrayOf(bar.DRIVER_TEMP, bar.PASS_TEMP, bar.FAN, bar.AC, keyAuto, bar.DRIVER_VENT, bar.PASS_VENT, keyFront, keyRear,
                 keySync, keyEco, keyPower, HomeFactoryTargets.CLIMATE_CYCLE_MODE)
             val v = runCatching { bar.readKeys(app, keys) }.getOrDefault(emptyMap())
             main.post {
+                if (generation != lifecycleGeneration || !running) return@post
                 driverTemp = v[bar.DRIVER_TEMP]; passengerTemp = v[bar.PASS_TEMP]; fan = v[bar.FAN]?.toInt()
                 ac = v[bar.AC]?.let { it.toInt() == 1 }; auto = v[keyAuto]?.let { it.toInt() == 1 }
                 driverSeat = v[bar.DRIVER_VENT]?.toInt(); passengerSeat = v[bar.PASS_VENT]?.toInt()
@@ -437,13 +463,19 @@ internal class HomeDashboardView(context: Context) : View(context) {
         if (!onCar) return
         val allowed = changes.filter { HomeFactoryTargets.climateWritable(it.first) }
         if (allowed.isEmpty()) return
-        Thread({
+        val generation = lifecycleGeneration
+        main.removeCallbacks(climateReadback)
+        homeClimateWrites.execute {
             allowed.forEach { (key, value) ->
                 val wire = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.US, "%.1f", value)
                 runCatching { bar.write(key, wire) }
             }
-            main.post { readClimate(1200) }
-        }, "home-climate-write").start()
+            main.post {
+                if (generation != lifecycleGeneration || !running) return@post
+                main.removeCallbacks(climateReadback)
+                main.postDelayed(climateReadback, 1200)
+            }
+        }
     }
 
     /**
@@ -545,28 +577,43 @@ internal class HomeDashboardView(context: Context) : View(context) {
         canvas.restore()
     }
 
+    private data class BackdropGlow(val x: Float, val y: Float, val radius: Float, val shader: Shader)
+    private data class Backdrop(val width: Int, val height: Int, val night: Boolean, val base: Shader, val glows: List<BackdropGlow>)
+    private var backdrop: Backdrop? = null
+
     private fun drawBackdrop(c: Canvas) {
         val w = width.toFloat()
         val h = height.toFloat()
+        val colors = backdrop?.takeIf { it.width == width && it.height == height && it.night == night }
+            ?: createBackdrop(w, h).also { backdrop = it }
+
         p.style = Paint.Style.FILL
         p.color = Color.BLACK
-        p.shader = LinearGradient(0f, 0f, w, h,
+        p.shader = colors.base
+        c.drawRect(0f, 0f, w, h, p)
+        for (glow in colors.glows) {
+            p.shader = glow.shader
+            c.drawCircle(glow.x, glow.y, glow.radius, p)
+        }
+        p.shader = null
+    }
+
+    private fun createBackdrop(w: Float, h: Float): Backdrop {
+        val base = LinearGradient(0f, 0f, w, h,
             if (night) Color.rgb(10, 17, 32) else Color.rgb(122, 150, 171),
             if (night) Color.rgb(21, 19, 41) else Color.rgb(133, 140, 168), Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, w, h, p)
-
-        fun glow(x: Float, y: Float, radius: Float, color: Int) {
-            p.shader = RadialGradient(x, y, radius, color, color and 0x00ffffff, Shader.TileMode.CLAMP)
-            c.drawCircle(x, y, radius, p)
-        }
+        fun glow(x: Float, y: Float, radius: Float, color: Int) =
+            BackdropGlow(x, y, radius, RadialGradient(x, y, radius, color, color and 0x00ffffff, Shader.TileMode.CLAMP))
         val extent = max(w, h)
-        glow(w * .16f, h * .14f, extent * .48f,
-            if (night) Color.argb(150, 46, 87, 152) else Color.argb(110, 184, 209, 226))
-        glow(w * .86f, h * .34f, extent * .38f,
-            if (night) Color.argb(135, 89, 62, 150) else Color.argb(115, 165, 155, 195))
-        glow(w * .57f, h * .98f, extent * .40f,
-            if (night) Color.argb(100, 37, 99, 145) else Color.argb(90, 113, 169, 183))
-        p.shader = null
+        val glows = listOf(
+            glow(w * .16f, h * .14f, extent * .48f,
+                if (night) Color.argb(150, 46, 87, 152) else Color.argb(110, 184, 209, 226)),
+            glow(w * .86f, h * .34f, extent * .38f,
+                if (night) Color.argb(135, 89, 62, 150) else Color.argb(115, 165, 155, 195)),
+            glow(w * .57f, h * .98f, extent * .40f,
+                if (night) Color.argb(100, 37, 99, 145) else Color.argb(90, 113, 169, 183)),
+        )
+        return Backdrop(width, height, night, base, glows)
     }
 
     /** Thin specular edge and a translucent, tinted body. */
@@ -656,16 +703,18 @@ internal class HomeDashboardView(context: Context) : View(context) {
         // Connection status, beside the clock.
         t.textSize = 17f; t.typeface = Typeface.DEFAULT
         var x = dayX + t.measureText(day) + 24f
-        fun chip(label: String, on: Boolean) {
+        val availableEnd = if (connected || expandProjection != null) min(1020f, projectionExpandBounds().left - 12f) else 1020f
+        fun chip(label: String, on: Boolean, maxWidth: Float = 220f) {
             t.textSize = 15f; t.typeface = medium
-            val w = t.measureText(label) + 40f
+            val w = min(min(t.measureText(label) + 40f, maxWidth), availableEnd - x)
+            if (w < 60f) return
             r.set(x, 20f, x + w, 48f); glass(c, r, 14f, .8f)
             p.color = if (on) Color.rgb(120, 220, 160) else Color.argb(160, 255, 255, 255)
             c.drawCircle(x + 16f, 34f, 4.5f, p)
-            text(c, label, x + 28f, 39.5f, 15f, ink, medium)
+            text(c, label, x + 28f, 39.5f, 15f, ink, medium, maxWidth = w - 34f)
             x += w + 10f
         }
-        chip(connectionName, connected)
+        chip(connectionName, connected, 375f)
         // Car readings, each shown only while the car answers for it.
         outsideTemp?.let { chip(String.format(Locale.US, "%.0f° outside", it), true) }
         rangeKm?.let { chip(String.format(Locale.US, "%.0f km", it), true) }

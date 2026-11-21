@@ -3552,3 +3552,8 @@ edit(aa_java/'aap/AapProjectionActivity.kt',
 
 (dest/'src/test/java/com/andrerinas/openheadunit/aap/ProjectionClimateInsetTest.kt').write_text(
     Path('target/_integration/ProjectionClimateInsetTest.kt').read_text())
+
+edit(aa_java/"aap/AapProjectionActivity.kt",
+    ('            val home = com.andrerinas.openheadunit.DiConnectViews.projectionHome?.invoke(this) {\n                showProjectionHome(false)\n            } ?: return', '            val home = projectionHome ?: com.andrerinas.openheadunit.DiConnectViews.projectionHome?.invoke(this) {\n                showProjectionHome(false)\n            } ?: return'),
+    ('            projectionHome?.let { home -> home.stop(); frame.removeView(home.view) }\n            projectionHome = null\n            showingProjectionHome = false', '            projectionHome?.let { home -> home.stop(); frame.removeView(home.view) }\n            showingProjectionHome = false'),
+    ('        val bounds = projectionHome?.mapBounds(w, h)', '        val bounds = if (showingProjectionHome) projectionHome?.mapBounds(w, h) else null'))

@@ -1096,7 +1096,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         val enteringHomeFlow = show && !returnToProjectionHome
         if (show) {
             if (Build.VERSION.SDK_INT < 24) return
-            val home = com.andrerinas.openheadunit.DiConnectViews.projectionHome?.invoke(this) {
+            val home = projectionHome ?: com.andrerinas.openheadunit.DiConnectViews.projectionHome?.invoke(this) {
                 showProjectionHome(false)
             } ?: return
             projectionHome = home
@@ -1107,7 +1107,6 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             if (isForeground) home.start()
         } else {
             projectionHome?.let { home -> home.stop(); frame.removeView(home.view) }
-            projectionHome = null
             showingProjectionHome = false
             touchOverlayView?.requestFocus()
             if (!returnToProjectionHome && isForeground && !App.isPiPActive) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
@@ -1136,7 +1135,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         val w = frame.width
         val h = frame.height
         if (w <= 0 || h <= 0) return
-        val bounds = projectionHome?.mapBounds(w, h)
+        val bounds = if (showingProjectionHome) projectionHome?.mapBounds(w, h) else null
         val scale = bounds?.let { minOf(it.width() / w, it.height() / h) } ?: 1f
         projectionLayer.scaleX = scale
         projectionLayer.scaleY = scale
