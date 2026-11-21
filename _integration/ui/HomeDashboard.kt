@@ -694,9 +694,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun drawSettings(c: Canvas) {
         val f = overlayFrame(c, "Settings")
-        val rows = listOf(
+        val rows = listOf<Triple<String, String, () -> Unit>>(
             Triple("Vehicle settings", "The car's own vehicle menu") { openVehicle() },
-            Triple("System settings", "The head unit's display, sound and connection menu") { openByLabel("system setting", "setting") },
+            Triple("System settings", "The head unit's display, sound and connection menu") { openByLabel("system setting", "setting"); Unit },
             Triple("Android settings", "The full Android settings app") { start(Intent(android.provider.Settings.ACTION_SETTINGS)) },
             Triple("Di-Connect settings", "Projection, cluster, HUD, themes and diagnostics") { openDiConnect() },
         )
