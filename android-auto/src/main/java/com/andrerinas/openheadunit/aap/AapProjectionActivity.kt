@@ -1041,8 +1041,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         if (intent.getBooleanExtra(EXTRA_HOME, false)) {
             showProjectionHome(true)
         } else {
+            val wasHomeFlow = returnToProjectionHome
             returnToProjectionHome = false
             showProjectionHome(false)
+            if (wasHomeFlow) setFullscreen()
         }
     }
 
@@ -1054,6 +1056,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private fun showProjectionHome(show: Boolean) {
         if (!::projectionLayer.isInitialized || show == showingProjectionHome) return
         val frame = findViewById<FrameLayout>(R.id.aa_container)
+        val enteringHomeFlow = show && !returnToProjectionHome
         if (show) {
             if (Build.VERSION.SDK_INT < 24) return
             val home = com.andrerinas.openheadunit.DiConnectViews.projectionHome?.invoke(this) {
@@ -1073,7 +1076,8 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             if (!returnToProjectionHome && isForeground && !App.isPiPActive) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
         }
         layoutProjectionHome()
-        setFullscreen()
+        if (enteringHomeFlow) setFullscreen()
+        AppLog.i("Home projection: showingHome=$show surfaceReady=$isSurfaceSet")
     }
 
     private fun layoutProjectionHome() {
@@ -1832,7 +1836,8 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         // 1. Let the system handle volume keys and unmapped back keys.
         // If Back was explicitly learned in Keymap and transport is running,
         // route it through CommManager so it can be remapped and sent to Android Auto.
-        if (commManager.connectionState.value is CommManager.ConnectionState.TransportStarted &&
+        val backReturnsToHome = event.keyCode == KeyEvent.KEYCODE_BACK && returnToProjectionHome && !showingProjectionHome
+        if (!backReturnsToHome && commManager.connectionState.value is CommManager.ConnectionState.TransportStarted &&
             ProjectionKeyPolicy.shouldRouteBackKeyToProjection(cachedKeyCodes, event.keyCode)) {
             commManager.sendKey(event.keyCode, action == KeyEvent.ACTION_DOWN, event.downTime, "projection")
             return true

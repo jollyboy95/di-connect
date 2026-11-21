@@ -3514,3 +3514,9 @@ _home_theme_strings = {'settings_home_theme': ['Home theme', 'سمة الشاش�
 for p in STRINGS:
     i = LOCALE_ORDER.index(p.parent.name)
     edit(p, ('</resources>', ''.join(f'    <string name="{key}">{values[i]}</string>\n' for key, values in _home_theme_strings.items()) + '</resources>'))
+
+edit(aa_java/"aap/AapProjectionActivity.kt",
+    ('        } else {\n            returnToProjectionHome = false\n            showProjectionHome(false)\n        }\n    }\n\n    private lateinit var projectionLayer', '        } else {\n            val wasHomeFlow = returnToProjectionHome\n            returnToProjectionHome = false\n            showProjectionHome(false)\n            if (wasHomeFlow) setFullscreen()\n        }\n    }\n\n    private lateinit var projectionLayer'),
+    ('        val frame = findViewById<FrameLayout>(R.id.aa_container)\n        if (show) {\n            if (Build.VERSION.SDK_INT < 24) return', '        val frame = findViewById<FrameLayout>(R.id.aa_container)\n        val enteringHomeFlow = show && !returnToProjectionHome\n        if (show) {\n            if (Build.VERSION.SDK_INT < 24) return'),
+    ('        layoutProjectionHome()\n        setFullscreen()\n    }\n\n    private fun layoutProjectionHome()', '        layoutProjectionHome()\n        if (enteringHomeFlow) setFullscreen()\n        AppLog.i("Home projection: showingHome=$show surfaceReady=$isSurfaceSet")\n    }\n\n    private fun layoutProjectionHome()'),
+    ('        if (commManager.connectionState.value is CommManager.ConnectionState.TransportStarted &&\n            ProjectionKeyPolicy.shouldRouteBackKeyToProjection', '        val backReturnsToHome = event.keyCode == KeyEvent.KEYCODE_BACK && returnToProjectionHome && !showingProjectionHome\n        if (!backReturnsToHome && commManager.connectionState.value is CommManager.ConnectionState.TransportStarted &&\n            ProjectionKeyPolicy.shouldRouteBackKeyToProjection'))
