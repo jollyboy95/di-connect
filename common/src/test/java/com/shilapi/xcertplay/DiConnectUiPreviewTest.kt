@@ -172,10 +172,10 @@ class DiConnectUiPreviewTest {
             try {
                 view.media = view.media.copy(art = red)
                 view.draw(Canvas(bitmap))
-                val redTint = bitmap.getPixel(910, 162)
+                val redTint = bitmap.getPixel(954, 162)
                 view.media = view.media.copy(art = blue)
                 view.draw(Canvas(bitmap))
-                val blueTint = bitmap.getPixel(910, 162)
+                val blueTint = bitmap.getPixel(954, 162)
                 assertTrue(Color.red(redTint) > Color.red(blueTint))
                 assertTrue(Color.blue(blueTint) > Color.blue(redTint))
             } finally {

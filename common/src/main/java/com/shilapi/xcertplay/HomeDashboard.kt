@@ -429,6 +429,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
     // ---- Look --------------------------------------------------------------------------------------
     private val W = 1280f
     private val H = 720f
+    private val bodyTop = 64f
+    private val bodyBottom = 594f
+    private val mapEnd = 900f
     private var s = 1f
     private var ox = 0f
     private var oy = 0f
@@ -473,7 +476,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
             connected -> drawMapZone(canvas)
             else -> drawLocalZone(canvas)
         }
-        drawMediaShelf(canvas)
+        drawMediaGlow(canvas)
         drawMediaCard(canvas)
         drawLowerCard(canvas)
         drawClimateBar(canvas)
@@ -614,10 +617,6 @@ internal class HomeDashboardView(context: Context) : View(context) {
         outsideTemp?.let { chip(String.format(Locale.US, "%.0f° outside", it), true) }
         rangeKm?.let { chip(String.format(Locale.US, "%.0f km", it), true) }
         hotspotOn?.let { chip(if (it) "Hotspot on" else "Hotspot off", it) }
-        // Small brand mark above the dock.
-        val dockX = mx(1222f)
-        icon(c, R.drawable.ic_di_connect_monochrome, dockX - 36f, 34f, 40f, ink)
-        text(c, "Di-Connect", dockX - 20f, 39.5f, 14f, quiet, medium)
     }
 
     private fun drawDock(c: Canvas) {
@@ -630,14 +629,14 @@ internal class HomeDashboardView(context: Context) : View(context) {
             Triple(R.drawable.ic_dp_car, "Vehicle") { openVehicle() },
             Triple(R.drawable.ic_dp_advanced, "Settings") { popover = if (popover == Popover.SETTINGS) Popover.NONE else Popover.SETTINGS },
         )
-        val step = 520f / items.size
+        val step = (bodyBottom - bodyTop) / items.size
         items.forEachIndexed { i, (res, label, action) ->
-            val cy = 64f + step * (i + .5f)
+            val cy = bodyTop + step * (i + .5f)
             val active = (i == 0 && popover == Popover.NONE) || (label == "Apps" && popover == Popover.APPS) ||
                 (label == "Settings" && popover == Popover.SETTINGS)
             if (active) {
-                r.set(cx - 25f, cy - 35f, cx + 25f, cy + 10f)
-                glass(c, r, 23f, 2f)
+                p.color = ColorUtils.setAlphaComponent(accent, if (night) 51 else 66)
+                c.drawCircle(cx, cy - 12f, 27f, p)
             }
             if (res == 0) drawGridIcon(c, cx, cy - 9f, 26f, ink) else icon(c, res, cx, cy - 9f, 28f, ink)
             text(c, label, cx, cy + 22f, 12.5f, if (active) ink else quiet, medium, Paint.Align.CENTER)
@@ -656,8 +655,12 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     // ---- Map zone (phone connected) -------------------------------------------------------------
-    private val zone get() = if (rightHandDrive) RectF(20f, 64f, 856f, 584f) else RectF(424f, 64f, 1260f, 584f)
-    private val column get() = if (rightHandDrive) RectF(872f, 64f, 1168f, 584f) else RectF(112f, 64f, 408f, 584f)
+    private val zone get() = bodyBounds(20f, mapEnd)
+    private val column get() = bodyBounds(mapEnd + 14f, 1172f)
+
+    private fun bodyBounds(left: Float, right: Float): RectF =
+        if (rightHandDrive) RectF(left, bodyTop, right, bodyBottom)
+        else RectF(W - right, bodyTop, W - left, bodyBottom)
 
     private fun drawMapZone(c: Canvas) {
         val z = zone
@@ -746,23 +749,17 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }.getOrNull()
     }
 
-    private fun drawMediaShelf(c: Canvas) {
+    private fun drawMediaGlow(c: Canvas) {
         val bounds = column
-        glass(c, bounds, 38f)
-        c.save()
-        path.reset()
-        path.addRoundRect(bounds, 38f, 38f, Path.Direction.CW)
-        c.clipPath(path)
         val glow = albumTint?.let { ColorUtils.blendARGB(accent, it, .55f) } ?: accent
         p.color = Color.BLACK
-        p.shader = RadialGradient(bounds.centerX(), bounds.top + 90f, bounds.width() * .77f,
-            ColorUtils.setAlphaComponent(glow, if (night) 75 else 60),
+        p.shader = RadialGradient(bounds.centerX(), bounds.top + 119f, bounds.width() * .59f,
+            ColorUtils.setAlphaComponent(glow, if (night) 115 else 94),
             ColorUtils.setAlphaComponent(glow, 0), Shader.TileMode.CLAMP)
-        c.drawRect(bounds, p)
+        c.drawRoundRect(bounds, 52f, 52f, p)
         p.shader = null
-        c.restore()
 
-        p.color = ColorUtils.setAlphaComponent(ink, 40)
+        p.color = ColorUtils.setAlphaComponent(ink, 30)
         p.strokeWidth = 1f
         val y = bounds.top + 342f
         c.drawLine(bounds.left + 22f, y, bounds.right - 22f, y, p)
@@ -771,7 +768,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private fun drawMediaCard(c: Canvas) {
         val col = column
         val card = RectF(col.left, col.top, col.right, col.top + 330f)
-        r.set(card.left + 18f, card.top + 14f, card.right - 18f, card.top + 56f)
+        r.set(card.left + 12f, card.top + 10f, card.right - 12f, card.top + 56f)
         if (popover == Popover.SOURCES) glass(c, r, 21f, 1.2f)
         text(c, media.source, r.left + 18f, r.centerY() + 6f, 16f, ink, medium, Paint.Align.LEFT, r.width() - 60f)
         p.style = Paint.Style.STROKE; p.strokeWidth = 2f; p.color = quiet; p.strokeCap = Paint.Cap.ROUND
@@ -779,7 +776,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         p.style = Paint.Style.FILL
         hit(r) { popover = if (popover == Popover.SOURCES) Popover.NONE else Popover.SOURCES }
         // Artwork, or a soft tile when there is none.
-        val art = RectF(card.centerX() - 58f, card.top + 61f, card.centerX() + 58f, card.top + 177f)
+        val art = RectF(card.centerX() - 64f, card.top + 57f, card.centerX() + 64f, card.top + 185f)
         val bitmap = media.art?.takeUnless { it.isRecycled }
         if (bitmap != null) {
             c.save(); path.reset(); path.addRoundRect(art, 24f, 24f, Path.Direction.CW); c.clipPath(path)
@@ -794,22 +791,22 @@ internal class HomeDashboardView(context: Context) : View(context) {
             icon(c, R.drawable.ic_dp_audio, art.centerX(), art.centerY(), 39f, ink)
         }
         val titleWidth = card.width() - 36f
-        text(c, media.title ?: "Nothing playing", card.centerX(), card.top + 199f, 21f, ink, medium,
+        text(c, media.title ?: "Nothing playing", card.centerX(), card.top + 209f, 22f, ink, medium,
             Paint.Align.CENTER, titleWidth)
         media.artist?.takeIf { it.isNotBlank() }?.let {
-            text(c, it, card.centerX(), card.top + 222f, 15f, quiet, null, Paint.Align.CENTER, titleWidth)
+            text(c, it, card.centerX(), card.top + 233f, 16f, quiet, null, Paint.Align.CENTER, titleWidth)
         }
-        hit(RectF(card.left + 18f, art.top, card.right - 18f, card.top + 226f)) { openMediaSource() }
-        val py = card.top + 241f
+        hit(RectF(card.left + 18f, art.top, card.right - 18f, card.top + 238f)) { openMediaSource() }
+        val py = card.top + 254f
         p.color = if (night) Color.argb(60, 255, 255, 255) else Color.argb(65, 69, 82, 123)
         c.drawRoundRect(card.left + 22f, py - 2.5f, card.right - 22f, py + 2.5f, 3f, 3f, p)
         media.progress?.let { f ->
             p.color = accent; c.drawRoundRect(card.left + 22f, py - 2.5f, card.left + 22f + (card.width() - 44f) * f, py + 2.5f, 3f, 3f, p)
         }
         // Controls: previous, play or pause, next.
-        val cy = card.top + 286f
-        circleButton(c, card.centerX() - 86f, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_PREVIOUS) }
-        skip(c, card.centerX() - 86f, cy, false)
+        val cy = card.top + 298f
+        circleButton(c, card.centerX() - 75f, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_PREVIOUS) }
+        skip(c, card.centerX() - 75f, cy, false)
         r.set(card.centerX() - 32f, cy - 32f, card.centerX() + 32f, cy + 32f); glass(c, r, 32f, 3f)
         p.color = ink
         if (media.playing) {
@@ -820,8 +817,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
             c.drawPath(path, p)
         }
         hit(r) { transport(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) }
-        circleButton(c, card.centerX() + 86f, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_NEXT) }
-        skip(c, card.centerX() + 86f, cy, true)
+        circleButton(c, card.centerX() + 75f, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_NEXT) }
+        skip(c, card.centerX() + 75f, cy, true)
     }
 
     /** A previous or next symbol: a triangle and a bar. */
@@ -838,11 +835,11 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val card = RectF(col.left, col.top + 346f, col.right, col.bottom)
         val next = turn
         if (connected && next != null) {
-            text(c, "NEXT TURN", card.left + 22f, card.top + 34f, 13f, quiet, medium)
-            icon(c, next.icon, card.left + 52f, card.top + 92f, 60f, ink)
-            text(c, next.distance, card.left + 100f, card.top + 96f, 34f, ink, light)
-            text(c, next.road, card.left + 100f, card.top + 124f, 17f, quiet, null, Paint.Align.LEFT, card.width() - 120f)
-            next.eta?.let { text(c, it, card.left + 22f, card.bottom - 20f, 16f, quiet) }
+            val start = card.left + 18f
+            icon(c, next.icon, start + 28f, card.top + 60f, 53f, accent)
+            text(c, next.distance, start + 69f, card.top + 73f, 34f, ink, medium)
+            text(c, next.road, start, card.top + 115f, 20f, ink, medium, Paint.Align.LEFT, card.width() - 36f)
+            next.eta?.let { text(c, it, start, card.bottom - 22f, 15f, quiet, null, Paint.Align.LEFT, card.width() - 36f) }
             hit(card) { openDiConnect() }
         } else {
             text(c, "VEHICLE", card.left + 22f, card.top + 34f, 13f, quiet, medium)
@@ -880,10 +877,15 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
     }
 
-    private val barRect = RectF(20f, 600f, 1260f, 704f)
+    private val barRect = RectF(20f, 610f, 1260f, 704f)
 
     private fun drawClimateBar(c: Canvas) {
-        glass(c, barRect, 34f, 1.1f)
+        p.color = Color.BLACK
+        p.shader = LinearGradient(barRect.left, barRect.top, barRect.right, barRect.bottom,
+            ColorUtils.setAlphaComponent(ink, if (night) 37 else 28),
+            ColorUtils.setAlphaComponent(ink, if (night) 13 else 18), Shader.TileMode.CLAMP)
+        c.drawRoundRect(barRect, 47f, 47f, p)
+        p.shader = null
         val cy = barRect.centerY()
         // Passenger on the left and driver on the right in a right-hand-drive car; mirrored otherwise.
         tempGroup(c, mx(146f), cy, false)
