@@ -244,11 +244,12 @@ In priority order. Each is small and keeps today's behaviour as the fallback.
    `com.gwm.app.mediatunerovs/.ui.HomeActivity`, `com.gwm.overseas.localmusic`,
    `com.gwm.app.car.media`), try each with `resolveActivity`, and only then fall back to
    label matching. This fixes "Vehicle settings" opening Di-Connect.
-2. **"Full climate" button** in the temperature and fan popovers, calling
-   `startService(Intent("com.gwm.intent.action.TOGGLE_HVAC_CONTROLS").setPackage("com.gwm.app.hvac"))`.
-   It opens the factory panel for anything the glass bar does not cover (rear, recirculation,
-   max defrost). It needs an on-car test, because the service's exported state was not
-   confirmed.
+2. ~~"Full climate" button through `TOGGLE_HVAC_CONTROLS`.~~ **Rejected after an on-car test
+   (21 Nov 2026).** `am startservice -a com.gwm.intent.action.TOGGLE_HVAC_CONTROLS -p
+   com.gwm.app.hvac` opened and closed the factory panel and **switched the climate on**. A
+   button that changes climate power as a side effect is not acceptable, so Home has none.
+   `com.gwm.app.vehicle.center/.VehicleSettingService` answers the same action and is not used
+   either.
 3. **Hide engineering and test apps** in the Apps popover: `com.gwm.engineermode`,
    `com.gwm.traceur`, `com.gwm.naviengineer`, `vendor.gwm.gwmpkiengmode`,
    `com.gwmv3.radio.testmode`, `com.gwm.app.personalization` (TestActivity), `com.gwm.eol.*`,
@@ -281,3 +282,32 @@ In priority order. Each is small and keeps today's behaviour as the fallback.
 - Changing the Wi-Fi country code, HUD or cluster coding, or any `persist.vendor.gwm.cfg.*` value.
 - Opening engineering mode functions or writing any `GWM_HUT_*` / ADAS / chassis property.
 - Setting Di-Connect as the default Home.
+
+## 12. Home fixes and on-car checks (21 Nov 2026)
+
+Home now opens factory screens by component (with the old label search as a fallback), hides
+engineering and test apps, reads Sync, ECO and climate power, keeps the passenger zone
+independent (a passenger change turns Sync off), shows outside temperature, range and hotspot
+chips, can show the car's own media sessions as Now Playing, and refuses any gwm_adapter write
+outside a cabin-climate allow-list. `CarAutomationSignals` gives the automation engine a
+read-only view of the hotspot, the hotspot preference, A/C ECO, drive mode, speed and gear.
+
+Checked on the car over ADB. ADB install is blocked on this unit, so the new APK itself reaches
+the car through the GitHub build and the in-app updater.
+
+| Function | Status |
+|---|---|
+| Vehicle settings → `com.gwm.app.vehicle.center/…VehicleDesignMainActivity` | **Confirmed**: started from shell, came to the front |
+| System settings → `com.gwm.app.settings/…MainActivity` | **Confirmed** |
+| Android settings → `com.android.settings/.Settings` | **Confirmed** |
+| FM / DAB radio → `com.gwm.app.mediatunerovs/.ui.HomeActivity` | **Confirmed** |
+| Factory Home → `com.gwm.app.launcher/.view.HomeActivity` | Resolves; not opened in this test |
+| USB → `com.gwm.overseas.localmusic` | Starts, but hands back to the current source with no USB stick. **Test with a stick** |
+| Bluetooth → Media Center `MediaDispatcherActivity` | Starts, and opens the *current* source (Radio here). **Test with a Bluetooth phone playing** |
+| Climate reads: temperatures, Sync, ECO, power, fan, A/C, AUTO, seat ventilation | **Confirmed** through gwm_adapter (read-only) |
+| Vehicle reads: outside temperature, range, fuel, speed, gear, drive mode | **Confirmed** through gwm_adapter (read-only) |
+| Seat heating keys | Not answered on this car |
+| Climate writes from Home (zones, Sync, ECO) | Same write path as the existing climate bar. **Test in the new build** |
+| Factory media sessions as Now Playing | Needs notification access for `HomeMediaListener`. **Test in the new build** |
+| Factory climate panel via `TOGGLE_HVAC_CONTROLS` | **Rejected**: it also switched the climate on |
+| Hotspot chip | Same reader as Android Auto's hotspot logic. **Test in the new build** |

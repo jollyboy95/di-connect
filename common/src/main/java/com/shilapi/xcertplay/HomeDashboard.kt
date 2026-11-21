@@ -67,8 +67,9 @@ class HomeDashboardActivity : Activity() {
 
 internal class HomeDashboardView(context: Context) : View(context) {
     // ---- What the screen shows --------------------------------------------------------------------
+    /** [pkg] is set for a car or app media session (not the projection), so Home can open and control it. */
     data class Media(val source: String, val title: String?, val artist: String?, val playing: Boolean,
-        val progress: Float?, val art: Bitmap? = null)
+        val progress: Float?, val art: Bitmap? = null, val pkg: String? = null)
     data class Turn(val icon: Int, val distance: String, val road: String, val eta: String?)
     enum class Popover { NONE, PASSENGER_TEMP, DRIVER_TEMP, FAN, APPS, SETTINGS }
 
@@ -94,58 +95,153 @@ internal class HomeDashboardView(context: Context) : View(context) {
     var passengerSeat: Int? = 0; set(v) { field = v; invalidate() }
     var frontDemist: Boolean? = false; set(v) { field = v; invalidate() }
     var rearDemist: Boolean? = false; set(v) { field = v; invalidate() }
+    /** Both zones follow the driver while on; the passenger zone is independent while off. */
+    var sync: Boolean? = false; set(v) { field = v; invalidate() }
+    var eco: Boolean? = null; set(v) { field = v; invalidate() }
+    /** False while the climate system is switched off; the temperatures then show as Off. */
+    var climateOn: Boolean? = null; set(v) { field = v; invalidate() }
+
+    // Vehicle chips along the top; null hides a chip.
+    var outsideTemp: Float? = null; set(v) { field = v; invalidate() }
+    var rangeKm: Float? = null; set(v) { field = v; invalidate() }
+    var hotspotOn: Boolean? = null; set(v) { field = v; invalidate() }
+    /** Moving faster than walking pace: the app grid waits until the car is parked. */
+    var moving = false; set(v) { field = v; invalidate() }
 
     // ---- Car wiring (only on a GWM head unit) -------------------------------------------------------
     private val main = Handler(Looper.getMainLooper())
     private var stopMusic: (() -> Unit)? = null
+    private var running = false
     private val tick = object : Runnable {
-        override fun run() { invalidate(); main.postDelayed(this, 15_000) }
+        override fun run() { invalidate(); readHotspot(); main.postDelayed(this, 15_000) }
     }
+    private val mediaPoll = object : Runnable {
+        override fun run() { readFactoryMedia(); if (running) main.postDelayed(this, 2_000) }
+    }
+    private val vehicleListener: (GwmVehicleData.Snapshot?) -> Unit = { snap ->
+        main.post {
+            outsideTemp = snap?.outsideTempC; rangeKm = snap?.rangeKm?.takeIf { it > 0f }
+            moving = (snap?.speedKph ?: 0f) > 3f
+        }
+    }
+    private var projectionMedia: Media? = null
+    private var factoryMedia: Media? = null
+    private val idleMedia = Media("Bluetooth audio", null, null, false, null)
     private val bar get() = com.andrerinas.openheadunit.gwm.GwmClimateBar
     private val keyAuto = "car.hvac.auto_enable"
     private val keyFront = "car.hvac.front_defrost_enable"
     private val keyRear = "car.hvac.rear_defrost_enable"
+    private val keySync = HomeFactoryTargets.CLIMATE_SYNC
+    private val keyEco = HomeFactoryTargets.CLIMATE_ECO
+    private val keyPower = "car.hvac.power_mode"
     private val onCar: Boolean get() = runCatching { GwmMode.active(context) }.getOrDefault(false)
 
     fun start() {
+        running = true
         main.removeCallbacks(tick); main.post(tick)
+        main.removeCallbacks(mediaPoll); main.post(mediaPoll)
         stopMusic?.invoke()
         stopMusic = ClusterMusicState.observe { snap ->
             val info = snap.info
             val hasTrack = !info.title.isNullOrBlank()
             connected = hasTrack || connected
-            media = if (hasTrack) Media(info.sourceApp?.takeIf { it.isNotBlank() } ?: "Phone", info.title, info.artist, info.playing,
+            projectionMedia = if (hasTrack) Media(info.sourceApp?.takeIf { it.isNotBlank() } ?: "Phone", info.title, info.artist, info.playing,
                 info.durationMillis?.takeIf { it > 0 }?.let { d -> ((info.elapsedMillis ?: 0L).toFloat() / d).coerceIn(0f, 1f) }, snap.artwork)
-            else Media("Bluetooth audio", null, null, false, null)
+            else null
+            refreshMedia()
         }
-        if (onCar) readClimate() else { driverTemp = null; passengerTemp = null; fan = null; ac = null; auto = null
-            driverSeat = null; passengerSeat = null; frontDemist = null; rearDemist = null }
+        if (onCar) {
+            readClimate()
+            GwmVehicleData.addListener(context, vehicleListener)
+        } else { driverTemp = null; passengerTemp = null; fan = null; ac = null; auto = null
+            driverSeat = null; passengerSeat = null; frontDemist = null; rearDemist = null; sync = null; eco = null }
     }
 
     fun stop() {
+        running = false
         main.removeCallbacks(tick)
+        main.removeCallbacks(mediaPoll)
         stopMusic?.invoke(); stopMusic = null
+        GwmVehicleData.removeListener(vehicleListener)
+    }
+
+    /** The projection's own music wins; otherwise the car's (or an app's) media session. */
+    private fun refreshMedia() { media = projectionMedia ?: factoryMedia ?: idleMedia }
+
+    private fun readFactoryMedia() {
+        val app = context.applicationContext
+        Thread({
+            val now = runCatching { HomeMediaSessions.current(app) }.getOrNull()
+            main.post {
+                factoryMedia = now?.let { Media(it.source, it.title, it.artist, it.playing, it.progress, it.art, it.packageName) }
+                refreshMedia()
+            }
+        }, "home-media-read").start()
+    }
+
+    private fun readHotspot() {
+        if (!onCar) return
+        val app = context.applicationContext
+        Thread({
+            val state = runCatching { com.andrerinas.openheadunit.utils.SoftApStateReader.read(app) }.getOrNull()
+            main.post {
+                hotspotOn = when (state) {
+                    com.andrerinas.openheadunit.aap.SoftApState.ENABLED -> true
+                    com.andrerinas.openheadunit.aap.SoftApState.NOT_ENABLED -> false
+                    else -> null
+                }
+            }
+        }, "home-hotspot-read").start()
     }
 
     private fun readClimate(delay: Long = 0) {
         val app = context.applicationContext
         Thread({
             if (delay > 0) runCatching { Thread.sleep(delay) }
-            val keys = arrayOf(bar.DRIVER_TEMP, bar.PASS_TEMP, bar.FAN, bar.AC, keyAuto, bar.DRIVER_VENT, bar.PASS_VENT, keyFront, keyRear)
+            val keys = arrayOf(bar.DRIVER_TEMP, bar.PASS_TEMP, bar.FAN, bar.AC, keyAuto, bar.DRIVER_VENT, bar.PASS_VENT, keyFront, keyRear,
+                keySync, keyEco, keyPower)
             val v = runCatching { bar.readKeys(app, keys) }.getOrDefault(emptyMap())
             main.post {
                 driverTemp = v[bar.DRIVER_TEMP]; passengerTemp = v[bar.PASS_TEMP]; fan = v[bar.FAN]?.toInt()
                 ac = v[bar.AC]?.let { it.toInt() == 1 }; auto = v[keyAuto]?.let { it.toInt() == 1 }
                 driverSeat = v[bar.DRIVER_VENT]?.toInt(); passengerSeat = v[bar.PASS_VENT]?.toInt()
                 frontDemist = v[keyFront]?.let { it.toInt() == 1 }; rearDemist = v[keyRear]?.let { it.toInt() == 1 }
+                sync = v[keySync]?.let { it.toInt() == 1 }; eco = v[keyEco]?.let { it.toInt() == 1 }
+                climateOn = v[keyPower]?.let { it.toInt() != 0 }
             }
         }, "home-climate-read").start()
     }
 
-    private fun write(key: String, value: Float) {
+    private fun write(key: String, value: Float) = writeAll(key to value)
+
+    /** Sends the changes in order on one thread, then reads the car back. Only allow-listed climate keys go out. */
+    private fun writeAll(vararg changes: Pair<String, Float>) {
         if (!onCar) return
-        val wire = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.US, "%.1f", value)
-        Thread({ runCatching { bar.write(key, wire) }; main.post { readClimate(1200) } }, "home-climate-write").start()
+        val allowed = changes.filter { HomeFactoryTargets.climateWritable(it.first) }
+        if (allowed.isEmpty()) return
+        Thread({
+            allowed.forEach { (key, value) ->
+                val wire = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.US, "%.1f", value)
+                runCatching { bar.write(key, wire) }
+            }
+            main.post { readClimate(1200) }
+        }, "home-climate-write").start()
+    }
+
+    /**
+     * Sets one zone. The driver's zone carries the passenger's along while Sync is on, as the car
+     * does. A passenger change first turns Sync off, so the two zones become independent.
+     */
+    private fun setZoneTemp(driver: Boolean, next: Float) {
+        val value = next.coerceIn(16f, 32f)
+        if (driver) {
+            driverTemp = value
+            if (sync == true) passengerTemp = value
+            write(bar.DRIVER_TEMP, value)
+        } else {
+            passengerTemp = value
+            if (sync == true) { sync = false; writeAll(keySync to 0f, bar.PASS_TEMP to value) } else write(bar.PASS_TEMP, value)
+        }
     }
 
     // ---- Look --------------------------------------------------------------------------------------
@@ -312,6 +408,10 @@ internal class HomeDashboardView(context: Context) : View(context) {
             x += w + 10f
         }
         chip(connectionName, connected)
+        // Car readings, each shown only while the car answers for it.
+        outsideTemp?.let { chip(String.format(Locale.US, "%.0f° outside", it), true) }
+        rangeKm?.let { chip(String.format(Locale.US, "%.0f km", it), true) }
+        hotspotOn?.let { chip(if (it) "Hotspot on" else "Hotspot off", it) }
         // Small brand mark above the dock.
         val dockX = mx(1222f)
         icon(c, R.drawable.ic_di_connect_monochrome, dockX - 36f, 34f, 40f, ink)
@@ -436,7 +536,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         p.style = Paint.Style.STROKE; p.strokeWidth = 2f; p.color = quiet; p.strokeCap = Paint.Cap.ROUND
         c.drawLine(r.right - 28f, r.centerY() - 3f, r.right - 22f, r.centerY() + 3f); c.drawLine(r.right - 22f, r.centerY() + 3f, r.right - 16f, r.centerY() - 3f)
         p.style = Paint.Style.FILL
-        hit(r) { openDiConnect() }
+        hit(r) { openMediaSource() }
         // Artwork, or a soft tile when there is none.
         val art = RectF(card.left + 18f, card.top + 72f, card.left + 110f, card.top + 164f)
         val bitmap = media.art?.takeUnless { it.isRecycled }
@@ -448,7 +548,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
             c.drawRoundRect(art, 16f, 16f, p); p.shader = null
             icon(c, R.drawable.ic_dp_audio, art.centerX(), art.centerY(), 40f, Color.argb(220, 255, 255, 255))
         }
-        hit(art) { openDiConnect() }
+        hit(art) { openMediaSource() }
         val tx = art.right + 16f; val tw = card.right - 18f - tx
         text(c, media.title ?: "Nothing playing", tx, card.top + 106f, 21f, ink, medium, Paint.Align.LEFT, tw)
         text(c, media.artist ?: "Choose a source", tx, card.top + 134f, 16f, quiet, null, Paint.Align.LEFT, tw)
@@ -460,7 +560,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
         // Controls: previous, play or pause, next.
         val cy = card.top + 268f
-        circleButton(c, card.centerX() - 86f, cy, 26f, "") { mediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS) }
+        circleButton(c, card.centerX() - 86f, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_PREVIOUS) }
         skip(c, card.centerX() - 86f, cy, false)
         r.set(card.centerX() - 38f, cy - 38f, card.centerX() + 38f, cy + 38f); glass(c, r, 38f, 3f)
         p.color = ink
@@ -471,8 +571,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
             path.reset(); path.moveTo(card.centerX() - 8f, cy - 14f); path.lineTo(card.centerX() + 14f, cy); path.lineTo(card.centerX() - 8f, cy + 14f); path.close()
             c.drawPath(path, p)
         }
-        hit(r) { mediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) }
-        circleButton(c, card.centerX() + 86f, cy, 26f, "") { mediaKey(KeyEvent.KEYCODE_MEDIA_NEXT) }
+        hit(r) { transport(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) }
+        circleButton(c, card.centerX() + 86f, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_NEXT) }
         skip(c, card.centerX() + 86f, cy, true)
     }
 
@@ -504,7 +604,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
                 r.set(card.left + 18f, card.top + 50f + i * 58f, card.right - 18f, card.top + 98f + i * 58f); glass(c, r, 16f, 1.4f)
                 text(c, label, r.left + 18f, r.centerY() + 6f, 17f, ink, medium)
                 text(c, "›", r.right - 20f, r.centerY() + 7f, 22f, quiet, null, Paint.Align.CENTER)
-                hit(r) { if (i == 0) openVehicle() else showSettings() }
+                hit(r) { if (i == 0) openVehicle() else openSystemSettings() }
             }
         }
     }
@@ -570,19 +670,16 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun tempGroup(c: Canvas, cx: Float, cy: Float, driver: Boolean) {
         val v = (if (driver) driverTemp else passengerTemp) ?: return
-        val key = if (driver) bar.DRIVER_TEMP else bar.PASS_TEMP
-        fun set(next: Float) {
-            val value = next.coerceIn(16f, 32f)
-            if (driver) driverTemp = value else passengerTemp = value
-            write(key, value)
-        }
-        circleButton(c, cx - 86f, cy, 24f, "−") { set(v - .5f) }
-        circleButton(c, cx + 86f, cy, 24f, "+") { set(v + .5f) }
+        circleButton(c, cx - 86f, cy, 24f, "−") { setZoneTemp(driver, v - .5f) }
+        circleButton(c, cx + 86f, cy, 24f, "+") { setZoneTemp(driver, v + .5f) }
         r.set(cx - 56f, cy - 40f, cx + 56f, cy + 40f)
         val open = popover == if (driver) Popover.DRIVER_TEMP else Popover.PASSENGER_TEMP
         if (open) glass(c, r, 20f, 2f)
-        text(c, if (driver) "DRIVER" else "PASSENGER", cx, cy - 16f, 11.5f, quiet, medium, Paint.Align.CENTER)
-        text(c, String.format(Locale.US, "%.1f°", v), cx, cy + 22f, 34f, tempColor(v), light, Paint.Align.CENTER)
+        val zone = if (driver) "DRIVER" else "PASSENGER"
+        val label = if (!driver && sync == true) "$zone · SYNC" else zone
+        text(c, label, cx, cy - 16f, 11.5f, quiet, medium, Paint.Align.CENTER)
+        if (climateOn == false) text(c, "Off", cx, cy + 22f, 30f, quiet, light, Paint.Align.CENTER)
+        else text(c, String.format(Locale.US, "%.1f°", v), cx, cy + 22f, 34f, tempColor(v), light, Paint.Align.CENTER)
         hit(RectF(r)) {
             val mine = if (driver) Popover.DRIVER_TEMP else Popover.PASSENGER_TEMP
             popover = if (popover == mine) Popover.NONE else mine
@@ -648,11 +745,21 @@ internal class HomeDashboardView(context: Context) : View(context) {
         text(c, "16°", x0, f.bottom - 12f, 13f, quiet, null, Paint.Align.CENTER)
         text(c, "24°", (x0 + x1) / 2, f.bottom - 12f, 13f, quiet, null, Paint.Align.CENTER)
         text(c, "32°", x1, f.bottom - 12f, 13f, quiet, null, Paint.Align.CENTER)
-        slider = Slider(x0, x1, ty, 16f, 32f, .5f) { value ->
-            if (driver) driverTemp = value else passengerTemp = value
-            write(if (driver) bar.DRIVER_TEMP else bar.PASS_TEMP, value)
-        }
+        slider = Slider(x0, x1, ty, 16f, 32f, .5f) { value -> setZoneTemp(driver, value) }
         hit(RectF(x0 - 20f, ty - 30f, x1 + 20f, ty + 30f)) { }
+        // Sync: both zones follow the driver. Turning it off makes the passenger zone independent.
+        sync?.let { on -> popoverChip(c, f.right - 72f, f.top + 77f, "Sync", on) { sync = !on; write(keySync, if (on) 0f else 1f) } }
+    }
+
+    /** A chip right-aligned at [right] in a popover's title row; returns the next chip's right edge. */
+    private fun popoverChip(c: Canvas, right: Float, cy: Float, label: String, on: Boolean?, action: () -> Unit): Float {
+        t.textSize = 15f; t.typeface = medium
+        val w = t.measureText(label) + 32f
+        r.set(right - w, cy - 21f, right, cy + 21f)
+        glass(c, r, 21f, if (on == true) 3f else 1.4f)
+        text(c, label, r.centerX(), r.centerY() + 5.5f, 15f, if (on == false) quiet else ink, medium, Paint.Align.CENTER)
+        hit(RectF(r), action)
+        return r.left - 10f
     }
 
     private fun drawFanPopover(c: Canvas) {
@@ -674,6 +781,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
             text(c, "AUTO", r.centerX(), r.centerY() + 6f, 16f, ink, medium, Paint.Align.CENTER)
             hit(RectF(r)) { auto = !on; write(keyAuto, if (on) 0f else 1f) }
         }
+        // ECO shows only on a car that answers for it.
+        eco?.let { on -> popoverChip(c, f.right - 72f, f.top + 77f, "ECO", on) { eco = !on; write(keyEco, if (on) 0f else 1f) } }
     }
 
     private fun overlayFrame(c: Canvas, title: String): RectF {
@@ -699,6 +808,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
         r.set(f.right - 260f, f.top + 20f, f.right - 80f, f.top + 64f); glass(c, r, 22f, 1.8f)
         text(c, "Factory Home", r.centerX(), r.centerY() + 6f, 16f, ink, medium, Paint.Align.CENTER)
         hit(RectF(r)) { openFactoryHome() }
+        if (moving) {
+            text(c, "Apps open when the car is parked", f.left + 32f, f.top + 110f, 18f, quiet); return
+        }
         if (list.isEmpty()) {
             text(c, "No other apps found", f.left + 32f, f.top + 110f, 18f, quiet); return
         }
@@ -715,8 +827,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val f = overlayFrame(c, "Settings")
         val rows = listOf<Triple<String, String, () -> Unit>>(
             Triple("Vehicle settings", "The car's own vehicle menu") { openVehicle() },
-            Triple("System settings", "The head unit's display, sound and connection menu") { openByLabel("system setting", "setting"); Unit },
-            Triple("Android settings", "The full Android settings app") { start(Intent(android.provider.Settings.ACTION_SETTINGS)) },
+            Triple("System settings", "The head unit's display, sound and connection menu") { openSystemSettings() },
+            Triple("Android settings", "The full Android settings app") { openAndroidSettings() },
             Triple("Di-Connect settings", "Projection, cluster, HUD, themes and diagnostics") { openDiConnect() },
         )
         rows.forEachIndexed { i, (title, sub, action) ->
@@ -766,45 +878,95 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     // ---- Opening things ---------------------------------------------------------------------------
-    private fun start(intent: Intent) {
-        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-    }
+    private fun start(intent: Intent): Boolean =
+        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
 
     private fun openDiConnect() = start(Intent(context, DiPlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
 
-    private fun launch(pkg: String) {
-        context.packageManager.getLaunchIntentForPackage(pkg)?.let { start(it) }
+    private fun launch(pkg: String): Boolean =
+        context.packageManager.getLaunchIntentForPackage(pkg)?.let { start(it) } ?: false
+
+    /** Opens the car's own screen by component; false when this car does not have it. */
+    private fun openFactory(target: HomeFactoryTargets.Target): Boolean {
+        val pm = context.packageManager
+        val intent = HomeFactoryTargets.candidates(target).firstNotNullOfOrNull { (pkg, cls) ->
+            val i = if (cls == null) pm.getLaunchIntentForPackage(pkg) else Intent(Intent.ACTION_MAIN).setClassName(pkg, cls)
+            i?.takeIf { runCatching { pm.resolveActivity(it, 0) }.getOrNull() != null }
+        } ?: return false
+        return start(intent)
     }
 
-    /** The car's settings app names are not confirmed yet, so they are found by their launcher label. */
+    /** Fallback for cars whose screens are not in [HomeFactoryTargets]: find them by launcher label. */
     private fun openByLabel(vararg words: String): Boolean {
         val list = apps ?: loadApps().also { apps = it }
         for (word in words) {
             val match = list.firstOrNull { it.first.lowercase(Locale.ROOT).contains(word) } ?: continue
-            launch(match.second); return true
+            if (launch(match.second)) return true
         }
         return false
     }
 
+    /** A whole-label match, for short labels such as the H7's "Car" that a substring would over-match. */
+    private fun openByExactLabel(label: String): Boolean {
+        val list = apps ?: loadApps().also { apps = it }
+        val match = list.firstOrNull { it.first.equals(label, ignoreCase = true) } ?: return false
+        return launch(match.second)
+    }
+
     private fun openVehicle() {
-        if (!openByLabel("vehicle", "car setting")) openDiConnect()
+        if (!openFactory(HomeFactoryTargets.Target.VEHICLE) && !openByExactLabel("car") &&
+            !openByLabel("vehicle", "car setting")) openDiConnect()
+    }
+
+    private fun openSystemSettings() {
+        if (!openFactory(HomeFactoryTargets.Target.SYSTEM_SETTINGS)) start(Intent(android.provider.Settings.ACTION_SETTINGS))
+    }
+
+    /** AOSP Settings by component: on the H7 the GWM settings app also answers ACTION_SETTINGS. */
+    private fun openAndroidSettings() {
+        if (!openFactory(HomeFactoryTargets.Target.ANDROID_SETTINGS)) start(Intent(android.provider.Settings.ACTION_SETTINGS))
     }
 
     private fun openSource(label: String) {
         val found = when (label) {
-            "FM / DAB radio" -> openByLabel("radio", "fm")
-            "Bluetooth" -> openByLabel("bluetooth music", "bt music", "bluetooth")
-            "USB" -> openByLabel("usb", "music")
+            "FM / DAB radio" -> openFactory(HomeFactoryTargets.Target.RADIO) || openByLabel("radio", "fm")
+            "Bluetooth" -> openFactory(HomeFactoryTargets.Target.MEDIA) || openByLabel("bluetooth music", "bt music", "bluetooth")
+            "USB" -> openFactory(HomeFactoryTargets.Target.USB_MUSIC) || openByLabel("usb", "music")
             else -> false
         }
         if (!found) showApps()
     }
 
     private fun openFactoryHome() {
+        if (openFactory(HomeFactoryTargets.Target.FACTORY_HOME)) return
         val pm = context.packageManager
         val homes = pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), 0)
         val factory = homes.firstOrNull { it.activityInfo.packageName != context.packageName }?.activityInfo ?: return
         start(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setClassName(factory.packageName, factory.name))
+    }
+
+    /** Opens the app behind Now Playing: the car's source, an app, or Di-Connect for the projection. */
+    private fun openMediaSource() {
+        val pkg = media.pkg ?: return run { openDiConnect() }
+        val target = when (pkg) {
+            "com.gwm.app.media.server.radio" -> HomeFactoryTargets.Target.RADIO
+            "com.gwm.app.media.server.usbmusic" -> HomeFactoryTargets.Target.USB_MUSIC
+            else -> HomeFactoryTargets.Target.MEDIA
+        }
+        if (!launch(pkg) && !openFactory(target)) openDiConnect()
+    }
+
+    /** Controls the session Home shows; the projection and unknown sources get a media key. */
+    private fun transport(code: Int) {
+        val pkg = media.pkg
+        val sent = pkg != null && HomeMediaSessions.control(context, pkg) { t ->
+            when (code) {
+                KeyEvent.KEYCODE_MEDIA_PREVIOUS -> t.skipToPrevious()
+                KeyEvent.KEYCODE_MEDIA_NEXT -> t.skipToNext()
+                else -> if (media.playing) t.pause() else t.play()
+            }
+        }
+        if (!sent) mediaKey(code)
     }
 
     private fun mediaKey(code: Int) {
@@ -821,10 +983,69 @@ internal class HomeDashboardView(context: Context) : View(context) {
         return runCatching { pm.queryIntentActivities(intent, 0) }.getOrDefault(emptyList())
             .mapNotNull { info ->
                 val pkg = info.activityInfo?.packageName ?: return@mapNotNull null
-                if (pkg == context.packageName) null
+                if (pkg == context.packageName || HomeFactoryTargets.hiddenFromApps(pkg)) null
                 else Triple(info.loadLabel(pm)?.toString() ?: pkg, pkg, runCatching { info.loadIcon(pm) }.getOrNull())
             }
             .distinctBy { it.second }
             .sortedBy { it.first.lowercase(Locale.ROOT) }
     }
+}
+
+/**
+ * The car's own screens that Home opens, by component, as found on a Haval H7 (build
+ * GW35OVBPU1G091203B11; see docs/haval-h7/HEAD_UNIT_SURVEY.md). Components come first because the
+ * labels mislead: the H7 calls Vehicle Settings "Car", and both settings apps "Settings". A car
+ * without a component falls back to label matching in [HomeDashboardView].
+ */
+internal object HomeFactoryTargets {
+    enum class Target { VEHICLE, SYSTEM_SETTINGS, ANDROID_SETTINGS, FACTORY_HOME, RADIO, USB_MUSIC, MEDIA }
+
+    /** Package and activity in order of preference; a null activity means the package's launcher entry. */
+    fun candidates(target: Target): List<Pair<String, String?>> = when (target) {
+        Target.VEHICLE -> listOf("com.gwm.app.vehicle.center" to "com.gwm.app.vehicle_center.VehicleDesignMainActivity")
+        Target.SYSTEM_SETTINGS -> listOf("com.gwm.app.settings" to "com.gwm.settings.view.ui.MainActivity")
+        Target.ANDROID_SETTINGS -> listOf("com.android.settings" to "com.android.settings.Settings")
+        Target.FACTORY_HOME -> listOf("com.gwm.app.launcher" to "com.gwm.app.launcher.view.HomeActivity")
+        Target.RADIO -> listOf("com.gwm.app.mediatunerovs" to "com.gwm.app.mediatunerovs.ui.HomeActivity")
+        Target.USB_MUSIC -> listOf("com.gwm.overseas.localmusic" to null)
+        // Media Center opens the car's current source; the H7 has no separate Bluetooth music app.
+        Target.MEDIA -> listOf("com.gwm.app.car.media" to "com.android.car.media.MediaDispatcherActivity")
+    }
+
+    /**
+     * Engineering, end-of-line and test menus that can change the car's coding or calibration, plus
+     * keyboard and voice-test entries that are not apps a driver opens. They stay out of Home's grid.
+     */
+    private val HIDDEN_PACKAGES = setOf(
+        "com.gwm.engineermode",
+        "com.gwm.traceur",
+        "com.gwm.naviengineer",
+        "vendor.gwm.gwmpkiengmode",
+        "com.gwmv3.radio.testmode",
+        "com.gwm.app.personalization",
+        "com.qualcomm.qti.sva",
+        "com.emoji.keyboard.touchpal",
+        "com.emoji.keyboard.touchpal.go",
+    )
+    private val HIDDEN_PREFIXES = listOf("com.gwm.eol.", "com.gwm.car.eol")
+
+    // Not used on purpose: com.gwm.app.hvac's TOGGLE_HVAC_CONTROLS service action also switched the
+    // H7's climate on when it opened the panel (21 Nov 2026), so Home has no "open factory panel" button.
+
+    const val CLIMATE_SYNC = "car.hvac.sync_enable"
+    const val CLIMATE_ECO = "car.hvac.eco_enable"
+
+    /**
+     * The only gwm_adapter keys Home writes: cabin climate and seat ventilation. Anything else
+     * (drive mode, parking brake, driver assistance, charging) is refused here, whatever calls it.
+     */
+    private val CLIMATE_WRITABLE = setOf(
+        "car.hvac.driver_temperature", "car.hvac.pass_temperature", "car.hvac.fan_speed", "car.hvac.ac_enable",
+        "car.hvac.auto_enable", "car.hvac.front_defrost_enable", "car.hvac.rear_defrost_enable", CLIMATE_SYNC, CLIMATE_ECO,
+        "car.comfort_setting.driver_seat_ventilation_level_nine", "car.comfort_setting.passenger_seat_ventilation_level_nine",
+    )
+
+    fun climateWritable(key: String): Boolean = key in CLIMATE_WRITABLE
+
+    fun hiddenFromApps(pkg: String): Boolean = pkg in HIDDEN_PACKAGES || HIDDEN_PREFIXES.any { pkg.startsWith(it) }
 }

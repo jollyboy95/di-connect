@@ -3357,11 +3357,24 @@ edit(D, ('''                            }.onFailure { showDiagnosticReport(repor
 # Di-Connect 2.0 Home, phase 1 preview (Nov 2026): a glass home screen opened from Settings >
 # Appearance. It declares no HOME category, so the car's own launcher is untouched.
 (root/'common/src/main/java/com/shilapi/xcertplay/HomeDashboard.kt').write_text(Path('target/_integration/ui/HomeDashboard.kt').read_text())
+# Home's factory media sessions (needs notification access) and the read-only car signals for automation.
+for _n in ('HomeMediaListener.kt','CarAutomationSignals.kt'):
+    (root/'common/src/main/java/com/shilapi/xcertplay'/_n).write_text(Path('target/_integration/ui/'+_n).read_text())
+(root/'common/src/test/java/com/shilapi/xcertplay/HomeFactoryTargetsTest.kt').write_text(Path('target/_integration/ui/HomeFactoryTargetsTest.kt').read_text())
 edit(root/'common/src/main/AndroidManifest.xml', ('''        <activity android:name="com.shilapi.xcertplay.DiPlayActivity"''',
     '''        <!-- Di-Connect 2.0 Home preview. Deliberately NOT a Home app: no HOME category. -->
         <activity android:name="com.shilapi.xcertplay.HomeDashboardActivity"
             android:exported="false"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
+        <!-- Lets Home read the car's media sessions once the driver allows notification access. -->
+        <service android:name="com.shilapi.xcertplay.HomeMediaListener"
+            android:exported="true"
+            android:label="Di-Connect Home media"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
         <activity android:name="com.shilapi.xcertplay.DiPlayActivity"'''))
 edit(D, ('''            accentPicker(card)
         }
