@@ -101,6 +101,7 @@ class DiConnectUiPreviewTest {
         hotspotOn = true
         bluetoothEnabled = true
         recirculation = HomeRecirculation.RECIRCULATE
+        tyrePressure = HomeTyrePressure(37.2f, 35.6f, 37.4f, 37.4f)
         mapNote = "Preview placeholder · the phone's live map is shown here"
         media = HomeDashboardView.Media("Spotify · Android Auto", "Song title", "Artist name", true, .42f)
         turn = HomeDashboardView.Turn(com.shilapi.xcertplay.host.R.drawable.ic_turn_card_turn_left, "300 m", "Hunter St", "Arrive 12:58 PM · 6.2 km")
@@ -216,6 +217,29 @@ class DiConnectUiPreviewTest {
                 blue.recycle()
             }
         }
+    }
+
+    @Test fun tyrePressureReadsAllFourWheelsInTheFactoryOrder() {
+        val tyres = requireNotNull(HomeTyrePressure.parse("car.basic.tpms_status=[256.5, 28, 245.5, 27, 258, 27, 255, 26]"))
+        assertEquals(37.2f, requireNotNull(tyres.frontLeft), .1f)
+        assertEquals(35.6f, requireNotNull(tyres.frontRight), .1f)
+        assertEquals(37.4f, requireNotNull(tyres.rearLeft), .1f)
+        assertEquals(37.0f, requireNotNull(tyres.rearRight), .1f)
+    }
+
+    @Test fun tyrePressureNormalisesBarAndDoesNotReinterpretAFlatTyreAsBar() {
+        val bars = requireNotNull(HomeTyrePressure.parse("[2.55, 26, 2.46, 28, 2.58, 29, 2.55, 30]"))
+        assertEquals(37f, requireNotNull(bars.frontLeft), .1f)
+        val psi = requireNotNull(HomeTyrePressure.parse("[3, 26, 37, 28, 38, 29, 39, 30]"))
+        assertEquals(3f, requireNotNull(psi.frontLeft), .01f)
+    }
+
+    @Test fun tyrePressureHidesMissingAndMalformedValuesWithoutShiftingWheels() {
+        assertEquals(null, HomeTyrePressure.parse("[0, 0, -1001, 0, NaN, 0, 10000, 0]"))
+        assertEquals(null, HomeTyrePressure.parse("[37, 26, 38]"))
+        val partial = requireNotNull(HomeTyrePressure.parse("[37, 26, unavailable, 28, 38, 29, 39, 30]"))
+        assertEquals(null, partial.frontRight)
+        assertEquals(38f, requireNotNull(partial.rearLeft), .01f)
     }
 
     @Test fun recirculationUsesTheFactoryValuesAndOnlyTogglesKnownModes() {

@@ -207,6 +207,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     var hotspotOn: Boolean? = null; set(v) { field = v; invalidate() }
     var wifiEnabled: Boolean? = null; set(v) { field = v; invalidate() }
     var bluetoothEnabled: Boolean? = null; set(v) { field = v; invalidate() }
+    var tyrePressure: HomeTyrePressure? = null; set(v) { field = v; invalidate() }
     /** Moving faster than walking pace: the app grid waits until the car is parked. */
     var moving = false; set(v) { field = v; invalidate() }
 
@@ -379,6 +380,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun readConnectivity() {
         val app = context.applicationContext
+        val readTyres = onCar
         Thread({
             val wifi = runCatching { app.getSystemService(WifiManager::class.java)?.isWifiEnabled }.getOrNull()
             val canReadBluetooth = Build.VERSION.SDK_INT < 31 || ContextCompat.checkSelfPermission(
@@ -392,8 +394,15 @@ internal class HomeDashboardView(context: Context) : View(context) {
                 com.andrerinas.openheadunit.aap.SoftApState.NOT_ENABLED -> false
                 else -> null
             }
+            val tyres = if (readTyres) {
+                runCatching {
+                    val data = GwmVehicleData.read(app, arrayOf(HomeTyrePressure.KEY))
+                    HomeTyrePressure.parse(data[HomeTyrePressure.KEY])
+                }.getOrNull()
+            } else null
             main.post {
                 if (!running) return@post
+                tyrePressure = tyres
                 wifiEnabled = wifi
                 bluetoothEnabled = bluetooth
                 hotspotOn = hotspot
@@ -521,6 +530,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         drawMediaGlow(canvas)
         drawMediaCard(canvas)
         drawLowerCard(canvas)
+        drawTyrePressure(canvas)
         drawClimateBar(canvas)
         when (popover) {
             Popover.DRIVER_TEMP -> drawTempPopover(canvas, true)
@@ -981,6 +991,18 @@ internal class HomeDashboardView(context: Context) : View(context) {
                 hit(r) { if (i == 0) openVehicle() else openSystemSettings() }
             }
         }
+    }
+
+    private fun drawTyrePressure(c: Canvas) {
+        val tyres = tyrePressure ?: return
+        val col = column
+        fun psi(value: Float?): String = value?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: "—"
+        val left = col.left + 18f
+        val width = col.width() - 36f
+        text(c, "FL ${psi(tyres.frontLeft)}  ·  FR ${psi(tyres.frontRight)}  psi", left, 608f,
+            13f, quiet, medium, Paint.Align.LEFT, width)
+        text(c, "RL ${psi(tyres.rearLeft)}  ·  RR ${psi(tyres.rearRight)}  psi", left, 625f,
+            13f, quiet, medium, Paint.Align.LEFT, width)
     }
 
     // ---- Climate bar ------------------------------------------------------------------------------
@@ -1512,6 +1534,39 @@ internal object HomeSources {
             factory != null && factoryPlaying -> factory
             projection != null -> projection
             else -> factory
+        }
+    }
+}
+
+internal data class HomeTyrePressure(
+    val frontLeft: Float?,
+    val frontRight: Float?,
+    val rearLeft: Float?,
+    val rearRight: Float?,
+) {
+    companion object {
+        const val KEY = "car.basic.tpms_status"
+        private const val KPA_PER_PSI = 6.894757f
+
+        fun parse(raw: String?): HomeTyrePressure? {
+            val values = raw?.substringAfter('=')?.trim()?.removeSurrounding("[", "]")?.split(',') ?: return null
+            if (values.size < 8) return null
+            val rawPressures = listOf(0, 2, 4, 6).map { index ->
+                values[index].trim().toFloatOrNull()?.takeIf { it > 0f && it <= 100f * KPA_PER_PSI }
+            }
+            val available = rawPressures.filterNotNull().sorted()
+            if (available.isEmpty()) return null
+            // The packet uses one unit for all four wheels. Choose it from the middle reading
+            // so a single low tyre doesn't get interpreted as a different unit.
+            val typical = available[available.size / 2]
+            val psiPerUnit = when {
+                typical <= 6f -> 100f / KPA_PER_PSI
+                typical >= 100f -> 1f / KPA_PER_PSI
+                else -> 1f
+            }
+            val pressures = rawPressures.map { it?.times(psiPerUnit)?.takeIf { psi -> psi in 1f..100f } }
+            if (pressures.all { it == null }) return null
+            return HomeTyrePressure(pressures[0], pressures[1], pressures[2], pressures[3])
         }
     }
 }
