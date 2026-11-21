@@ -20,6 +20,7 @@ internal class AapMessageHandlerType(
     private val aapControl: AapControl = AapControlGateway(transport, recorder, aapAudio, settings, context)
     private val mediaPlayback = AapMediaPlayback(onAaMediaMetadata, onAaPlaybackStatus)
     private val aapNavigation = AapNavigation(context, settings)
+    private var loggedMediaPlaybackPayload = false
 
     @Throws(AapMessageHandler.HandleException::class)
     override fun handle(message: AapMessage) {
@@ -70,6 +71,11 @@ internal class AapMessageHandlerType(
 
         // 3. Media Playback Status (separate channel)
         if (message.channel == Channel.ID_MPB && msgType > 31) {
+            if (!loggedMediaPlaybackPayload) {
+                loggedMediaPlaybackPayload = true
+                AppLog.i("Media playback channel received payload type=%d flags=%d bytes=%d",
+                    msgType, flags.toInt(), message.size - message.dataOffset)
+            }
             mediaPlayback.process(message)
             return
         }

@@ -1133,9 +1133,9 @@
     <string name="di_connect_theme_category_concept">コンセプト</string>
     <string name="di_connect_theme_category_pets">ペット</string>
     <string name="di_connect_update_wrong_signer">このダウンロードはあなたの鍵で署名された Di-Connect ではないため、インストールしませんでした。</string>
-    <string name="settings_gwm_hotspot_5ghz">車のホットスポットを 5 GHz に保つ（実験的機能）</string>
-    <string name="settings_gwm_hotspot_5ghz_description">車はホットスポットを「両方」に戻すことがあり、2.4 GHz が選ばれると Android Auto が途切れます。Di-Connect は起動時にバックグラウンドで帯域を確認します。5 GHz でない場合だけ、画面の静止画の裏で数秒間ホットスポット画面を開き、AP 帯域を 5 GHz にします。</string>
-    <string name="settings_gwm_hotspot_5ghz_now">今すぐホットスポットを 5 GHz にする</string>
+    <string name="settings_gwm_hotspot_5ghz">車のホットスポットの帯域を確認（実験的機能）</string>
+    <string name="settings_gwm_hotspot_5ghz_description">起動時にホットスポットの帯域を確認し、5 GHz のみで動作しているかを表示します。帯域は車のホットスポット設定で変更できます。</string>
+    <string name="settings_gwm_hotspot_5ghz_now">今すぐ帯域を確認</string>
     <string name="settings_gwm_climate_test">エアコンテスト（実験的機能）</string>
     <string name="settings_gwm_climate_test_description">Di-Connect がエアコンを変更できるか確認します。運転席側の温度を 1 度、または A/C のオン/オフを変え、値を読み直します。停車中に使ってください。</string>
     <string name="settings_gwm_climate_seat_vent">シート送風</string>
@@ -1170,8 +1170,8 @@
     <string name="settings_appearance_summary">テーマ、アクセントカラー、言語</string>
     <string name="settings_accent">アクセントカラー</string>
     <string name="settings_accent_description">夜間表示のボタン、スイッチ、強調色を変えます。昼間表示は独自の青のままです。</string>
-    <string name="settings_gwm_hotspot_5ghz_working">ホットスポットを 5 GHz に設定中…最大 30 秒かかります。</string>
-    <string name="settings_gwm_hotspot_5ghz_home">ホットスポットを自動で 5 GHz にできませんでした。車の開発者オプションでネットワーク経由の ADB をオンにしてから、下を押してください。</string>
+    <string name="settings_gwm_hotspot_5ghz_working">ホットスポットの帯域を確認中…</string>
+    <string name="settings_gwm_hotspot_5ghz_home">5 GHz のみで動作していることを確認できませんでした。車のホットスポット設定で帯域を確認してください。</string>
     <string name="settings_gwm_wifi_off_during_aa">Android Auto 中は車の Wi-Fi をオフ</string>
     <string name="settings_gwm_wifi_off_during_aa_description">車の Wi-Fi はホットスポットと同じ無線を使うため、両方使うと Android Auto が途切れます。Android Auto 終了時に戻ります。ホットスポットはオンのままです。</string>
     <string name="settings_gwm_bt_music_off_during_aa">Android Auto 中は Bluetooth 音楽をオフ</string>

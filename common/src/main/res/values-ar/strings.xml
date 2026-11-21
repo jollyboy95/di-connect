@@ -1080,9 +1080,9 @@
     <string name="di_connect_theme_category_concept">مفاهيم</string>
     <string name="di_connect_theme_category_pets">الحيوانات الأليفة</string>
     <string name="di_connect_update_wrong_signer">هذا التنزيل ليس إصدارًا من Di-Connect موقّعًا بمفتاحك، لذلك لم يُثبَّت.</string>
-    <string name="settings_gwm_hotspot_5ghz">إبقاء نقطة اتصال السيارة على 5 غيغاهرتز (تجريبي)</string>
-    <string name="settings_gwm_hotspot_5ghz_description">تضبط السيارة أحيانًا نقطة الاتصال على النطاقين، وقد يختار ذلك 2.4 غيغاهرتز فيتقطع Android Auto. عند بدء Di-Connect يتحقق من النطاق في الخلفية. فقط إذا لم يكن 5 غيغاهرتز يضبط نطاق AP على 5 غيغاهرتز في شاشة نقطة الاتصال، خلف صورة ثابتة لشاشتك لبضع ثوانٍ.</string>
-    <string name="settings_gwm_hotspot_5ghz_now">ضبط نقطة اتصال السيارة على 5 غيغاهرتز الآن</string>
+    <string name="settings_gwm_hotspot_5ghz">التحقق من نطاق نقطة اتصال السيارة (تجريبي)</string>
+    <string name="settings_gwm_hotspot_5ghz_description">يتحقق من نطاق نقطة الاتصال عند بدء التشغيل ويبلغ عما إذا كانت تعمل على 5 غيغاهرتز فقط. اضبط النطاق في إعدادات نقطة اتصال السيارة.</string>
+    <string name="settings_gwm_hotspot_5ghz_now">التحقق من نطاق نقطة الاتصال الآن</string>
     <string name="settings_gwm_climate_test">اختبار التكييف (تجريبي)</string>
     <string name="settings_gwm_climate_test_description">يتحقق مما إذا كان Di-Connect يستطيع تغيير التكييف: درجة واحدة لجهة السائق أو تشغيل المكيّف وإيقافه، ثم يقرأ القيمة مجددًا. استخدمه والسيارة متوقفة.</string>
     <string name="settings_gwm_climate_seat_vent">تهوية المقعد</string>
@@ -1117,8 +1117,8 @@
     <string name="settings_appearance_summary">السمة ولون التمييز واللغة</string>
     <string name="settings_accent">لون التمييز</string>
     <string name="settings_accent_description">يلوّن الأزرار والمفاتيح والتمييزات في المظهر الليلي. يحتفظ المظهر النهاري بلونه الأزرق.</string>
-    <string name="settings_gwm_hotspot_5ghz_working">جارٍ ضبط نقطة الاتصال على 5 GHz… قد يستغرق ذلك حتى 30 ثانية.</string>
-    <string name="settings_gwm_hotspot_5ghz_home">تعذّر ضبط نقطة الاتصال على 5 GHz تلقائيًا. فعّل ADB عبر الشبكة في خيارات المطوّر بالسيارة، ثم اضغط أدناه.</string>
+    <string name="settings_gwm_hotspot_5ghz_working">جارٍ التحقق من نطاق نقطة الاتصال…</string>
+    <string name="settings_gwm_hotspot_5ghz_home">تعذّر تأكيد التشغيل على 5 غيغاهرتز فقط. تحقق من النطاق في إعدادات نقطة اتصال السيارة.</string>
     <string name="settings_gwm_wifi_off_during_aa">إيقاف Wi-Fi السيارة أثناء Android Auto</string>
     <string name="settings_gwm_wifi_off_during_aa_description">يتشارك Wi-Fi السيارة راديو واحدًا مع نقطة الاتصال، وتشغيلهما معًا يسبب تقطّع Android Auto. يعود عند انتهاء Android Auto. تبقى نقطة الاتصال قيد التشغيل.</string>
     <string name="settings_gwm_bt_music_off_during_aa">إيقاف موسيقى البلوتوث أثناء Android Auto</string>

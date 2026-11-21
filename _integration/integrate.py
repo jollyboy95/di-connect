@@ -2709,21 +2709,16 @@ edit(D,
         // The photo button lives on the Co-Pilot card itself, so it is right where the driver taps.'''))
 
 # Hotspot band guard (Oct 2026). The H7's AP Band falls back to "Both", which can pick 2.4 GHz
-# (measured: 2.4 GHz -> apBand 0 at 2437 MHz; 5.0 GHz and Both -> apBand 1 at 5745 MHz). No API sets
-# it, so over local ADB Di-Connect opens the car's hotspot screen and picks 5.0 GHz, once per start.
-# Nov 2026: it reads the band from dumpsys first ("Both" is a bridge over two radios, not an apBand
-# value) and opens nothing when the hotspot is on 5 GHz alone. When Settings must open, ScreenCurtain
-# keeps a still picture of the screen in front of the driver while the shell works underneath.
+# (measured: 2.4 GHz -> apBand 0 at 2437 MHz; 5.0 GHz and Both -> apBand 1 at 5745 MHz).
+# Inspect the running frequency and bridge members over an existing local ADB connection.
 (root/'common/src/main/java/com/shilapi/xcertplay/HotspotBandGuard.kt').write_text(
     Path('target/_integration/HotspotBandGuard.kt').read_text())
-(root/'common/src/main/java/com/shilapi/xcertplay/ScreenCurtain.kt').write_text(
-    Path('target/_integration/ScreenCurtain.kt').read_text())
 (root/'common/src/test/java/com/shilapi/xcertplay/BackgroundAutomationTest.kt').write_text(
     Path('target/_integration/BackgroundAutomationTest.kt').read_text())
 HOTSPOT_STRINGS={
- 'settings_gwm_hotspot_5ghz':['Keep the car’s hotspot on 5 GHz (experimental)', 'إبقاء نقطة اتصال السيارة على 5 غيغاهرتز (تجريبي)', 'Mantener el punto de acceso del coche en 5 GHz (experimental)', 'Mantieni l’hotspot dell’auto a 5 GHz (sperimentale)', '車のホットスポットを 5 GHz に保つ（実験的機能）', 'Держать точку доступа автомобиля на 5 ГГц (экспериментально)', 'Тримати точку доступу авто на 5 ГГц (експериментально)', '让车辆热点保持 5 GHz（实验性）', '讓車輛熱點保持 5 GHz（實驗性）'],
- 'settings_gwm_hotspot_5ghz_description':['The car sometimes sets its hotspot to Both, which can pick 2.4 GHz and make Android Auto stutter. When Di-Connect starts, it checks the band in the background. Only if it is not 5 GHz does it set AP Band to 5 GHz on the car’s hotspot screen, behind a still picture of your screen for a few seconds.', 'تضبط السيارة أحيانًا نقطة الاتصال على النطاقين، وقد يختار ذلك 2.4 غيغاهرتز فيتقطع Android Auto. عند بدء Di-Connect يتحقق من النطاق في الخلفية. فقط إذا لم يكن 5 غيغاهرتز يضبط نطاق AP على 5 غيغاهرتز في شاشة نقطة الاتصال، خلف صورة ثابتة لشاشتك لبضع ثوانٍ.', 'El coche a veces pone su punto de acceso en Ambas, que puede elegir 2,4 GHz y hacer que Android Auto se entrecorte. Al iniciarse, Di-Connect comprueba la banda en segundo plano. Solo si no es 5 GHz, ajusta la banda del AP a 5 GHz en la pantalla del punto de acceso, tras una imagen fija de tu pantalla durante unos segundos.', 'A volte l’auto imposta l’hotspot su Entrambe, che può scegliere 2,4 GHz e far scattare Android Auto. All’avvio Di-Connect controlla la banda in background. Solo se non è 5 GHz imposta la banda AP a 5 GHz nella schermata dell’hotspot, dietro un’immagine fissa del tuo schermo per pochi secondi.', '車はホットスポットを「両方」に戻すことがあり、2.4 GHz が選ばれると Android Auto が途切れます。Di-Connect は起動時にバックグラウンドで帯域を確認します。5 GHz でない場合だけ、画面の静止画の裏で数秒間ホットスポット画面を開き、AP 帯域を 5 GHz にします。', 'Иногда машина ставит точку доступа на «Оба», и тогда может выбраться 2,4 ГГц, из-за чего Android Auto прерывается. При запуске Di-Connect проверяет диапазон в фоне. Только если он не 5 ГГц, Di-Connect ставит диапазон AP на 5 ГГц на экране точки доступа, за неподвижной картинкой вашего экрана на несколько секунд.', 'Іноді авто ставить точку доступу на «Обидва», і тоді може вибратися 2,4 ГГц, через що Android Auto переривається. Під час запуску Di-Connect перевіряє діапазон у фоні. Лише якщо він не 5 ГГц, Di-Connect ставить діапазон AP на 5 ГГц на екрані точки доступу, за нерухомим знімком вашого екрана на кілька секунд.', '车辆有时会把热点设为“双频”，可能选到 2.4 GHz，使 Android Auto 卡顿。Di-Connect 启动时会在后台检查频段。只有不是 5 GHz 时，才会在你屏幕的静态画面后面打开热点页面几秒，把 AP 频段设为 5 GHz。', '車輛有時會把熱點設為「雙頻」，可能選到 2.4 GHz，使 Android Auto 卡頓。Di-Connect 啟動時會在背景檢查頻段。只有不是 5 GHz 時，才會在你畫面的靜態影像後面開啟熱點頁面幾秒，把 AP 頻段設為 5 GHz。'],
- 'settings_gwm_hotspot_5ghz_now':['Set the car’s hotspot to 5 GHz now', 'ضبط نقطة اتصال السيارة على 5 غيغاهرتز الآن', 'Poner ahora el punto de acceso en 5 GHz', 'Imposta ora l’hotspot a 5 GHz', '今すぐホットスポットを 5 GHz にする', 'Переключить точку доступа на 5 ГГц сейчас', 'Перемкнути точку доступу на 5 ГГц зараз', '立即将热点设为 5 GHz', '立即將熱點設為 5 GHz'],
+ 'settings_gwm_hotspot_5ghz':['Check the car’s hotspot band (experimental)', 'التحقق من نطاق نقطة اتصال السيارة (تجريبي)', 'Comprobar la banda del punto de acceso del coche (experimental)', 'Verifica la banda dell’hotspot dell’auto (sperimentale)', '車のホットスポットの帯域を確認（実験的機能）', 'Проверять диапазон точки доступа автомобиля (экспериментально)', 'Перевіряти діапазон точки доступу авто (експериментально)', '检查车辆热点频段（实验性）', '檢查車輛熱點頻段（實驗性）'],
+ 'settings_gwm_hotspot_5ghz_description':['Checks the hotspot band at startup and reports whether it is running on 5 GHz only. Set the band in the car’s hotspot settings.', 'يتحقق من نطاق نقطة الاتصال عند بدء التشغيل ويبلغ عما إذا كانت تعمل على 5 غيغاهرتز فقط. اضبط النطاق في إعدادات نقطة اتصال السيارة.', 'Comprueba la banda al iniciar e indica si el punto de acceso funciona solo a 5 GHz. Ajusta la banda en los ajustes del punto de acceso del coche.', 'Controlla la banda all’avvio e indica se l’hotspot funziona solo a 5 GHz. Imposta la banda nelle impostazioni dell’hotspot dell’auto.', '起動時にホットスポットの帯域を確認し、5 GHz のみで動作しているかを表示します。帯域は車のホットスポット設定で変更できます。', 'При запуске проверяет диапазон и сообщает, работает ли точка доступа только на 5 ГГц. Диапазон можно выбрать в настройках точки доступа автомобиля.', 'Під час запуску перевіряє діапазон і повідомляє, чи працює точка доступу лише на 5 ГГц. Діапазон можна вибрати в налаштуваннях точки доступу авто.', '启动时检查热点频段，并报告热点是否仅使用 5 GHz。请在车辆热点设置中调整频段。', '啟動時檢查熱點頻段，並回報熱點是否僅使用 5 GHz。請在車輛熱點設定中調整頻段。'],
+ 'settings_gwm_hotspot_5ghz_now':['Check the hotspot band now', 'التحقق من نطاق نقطة الاتصال الآن', 'Comprobar la banda ahora', 'Verifica la banda ora', '今すぐ帯域を確認', 'Проверить диапазон сейчас', 'Перевірити діапазон зараз', '立即检查热点频段', '立即檢查熱點頻段'],
 }
 for p in STRINGS:
     i=LOCALE_ORDER.index(p.parent.name)
@@ -2736,7 +2731,7 @@ edit(D,
         card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
             val app = applicationContext
             Thread({
-                val result = HotspotBandGuard.ensureFiveGhz(app)
+                val result = HotspotBandGuard.checkBand(app)
                 runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
             }, "hotspot-band-now").start()
         }, matchButton(10, 56))
@@ -3261,7 +3256,7 @@ edit(ui_host,
     ('''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), false) {
             val app = applicationContext
             Thread({
-                val result = HotspotBandGuard.ensureFiveGhz(app)
+                val result = HotspotBandGuard.checkBand(app)
                 runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
             }, "hotspot-band-now").start()
         }, matchButton(10, 56))
@@ -3275,16 +3270,16 @@ edit(ui_host,
     ('    private fun homeConcept(content: LinearLayout) {', '''    private fun gwmHotspotControls(card: LinearLayout) {
         toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
             HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
-        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
+        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { checkHotspotBandNow() }, matchButton(10, 56))
         gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true); setPadding(0, dp(8), 0, 0) }) }
     }
 
-    private fun setHotspotFiveGhzNow() {
+    private fun checkHotspotBandNow() {
         gwmScanResult = getString(R.string.settings_gwm_hotspot_5ghz_working)
         render()
         val app = applicationContext
         Thread({
-            val result = HotspotBandGuard.ensureFiveGhz(app)
+            val result = HotspotBandGuard.checkBand(app)
             runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
         }, "hotspot-band-now").start()
     }
@@ -3293,11 +3288,11 @@ edit(ui_host,
     ('''        panel.addView(homeButton(getString(R.string.choose_iphone), false) { choosePhone() }, matchButton(14, 52))''',
      '''        if (GwmMode.active(this) && HotspotBandGuard.needsHelp()) {
             panel.addView(label(getString(R.string.settings_gwm_hotspot_5ghz_home), 15, WARNING).apply { setPadding(0, dp(12), 0, 0) })
-            panel.addView(homeButton(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(CONTROL_GAP_DP, 52))
+            panel.addView(homeButton(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { checkHotspotBandNow() }, matchButton(CONTROL_GAP_DP, 52))
         }
         panel.addView(homeButton(getString(R.string.choose_iphone), false) { choosePhone() }, matchButton(14, 52))'''))
-_txt={'settings_gwm_hotspot_5ghz_working':['Setting the hotspot to 5 GHz… this takes up to 30 seconds.','جارٍ ضبط نقطة الاتصال على 5 GHz… قد يستغرق ذلك حتى 30 ثانية.','Poniendo el punto de acceso en 5 GHz… tarda hasta 30 segundos.','Imposto l’hotspot su 5 GHz… richiede fino a 30 secondi.','ホットスポットを 5 GHz に設定中…最大 30 秒かかります。','Переключаем точку доступа на 5 ГГц… до 30 секунд.','Перемикаємо точку доступу на 5 ГГц… до 30 секунд.','正在把热点设为 5 GHz…最多需要 30 秒。','正在把熱點設為 5 GHz…最多需要 30 秒。'],
-      'settings_gwm_hotspot_5ghz_home':['The hotspot could not be set to 5 GHz automatically. Turn ADB over network on in the car’s developer options, then press below.','تعذّر ضبط نقطة الاتصال على 5 GHz تلقائيًا. فعّل ADB عبر الشبكة في خيارات المطوّر بالسيارة، ثم اضغط أدناه.','No se pudo poner el punto de acceso en 5 GHz automáticamente. Activa ADB por red en las opciones de desarrollador del coche y pulsa abajo.','Non è stato possibile impostare l’hotspot su 5 GHz automaticamente. Attiva ADB in rete nelle opzioni sviluppatore dell’auto, poi premi sotto.','ホットスポットを自動で 5 GHz にできませんでした。車の開発者オプションでネットワーク経由の ADB をオンにしてから、下を押してください。','Не удалось автоматически переключить точку доступа на 5 ГГц. Включите ADB по сети в параметрах разработчика машины и нажмите ниже.','Не вдалося автоматично перемкнути точку доступу на 5 ГГц. Увімкніть ADB через мережу в параметрах розробника авто й натисніть нижче.','无法自动把热点设为 5 GHz。请在车机开发者选项中开启网络 ADB，然后按下方按钮。','無法自動把熱點設為 5 GHz。請在車機開發者選項中開啟網路 ADB，然後按下方按鈕。']}
+_txt={'settings_gwm_hotspot_5ghz_working':['Checking the hotspot band…', 'جارٍ التحقق من نطاق نقطة الاتصال…', 'Comprobando la banda del punto de acceso…', 'Verifica della banda dell’hotspot…', 'ホットスポットの帯域を確認中…', 'Проверка диапазона точки доступа…', 'Перевірка діапазону точки доступу…', '正在检查热点频段…', '正在檢查熱點頻段…'],
+      'settings_gwm_hotspot_5ghz_home':['5 GHz only could not be confirmed. Check the band in the car’s hotspot settings.', 'تعذّر تأكيد التشغيل على 5 غيغاهرتز فقط. تحقق من النطاق في إعدادات نقطة اتصال السيارة.', 'No se pudo confirmar el uso exclusivo de 5 GHz. Comprueba la banda en los ajustes del punto de acceso del coche.', 'Impossibile confermare l’uso esclusivo di 5 GHz. Controlla la banda nelle impostazioni dell’hotspot dell’auto.', '5 GHz のみで動作していることを確認できませんでした。車のホットスポット設定で帯域を確認してください。', 'Не удалось подтвердить работу только на 5 ГГц. Проверьте диапазон в настройках точки доступа автомобиля.', 'Не вдалося підтвердити роботу лише на 5 ГГц. Перевірте діапазон у налаштуваннях точки доступу авто.', '无法确认热点仅使用 5 GHz。请在车辆热点设置中检查频段。', '無法確認熱點僅使用 5 GHz。請在車輛熱點設定中檢查頻段。']}
 for p in STRINGS:
     i=LOCALE_ORDER.index(p.parent.name)
     edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
@@ -3309,8 +3304,8 @@ edit(aa_java/'aap/AapService.kt',
 edit(D, ('        appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")\n',
          '        appendLine("Bluetooth music during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmBluetoothMedia.last}")\n        appendLine("Car Wi-Fi during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmCarWifi.last}")\n'))
 # Switches for both, beside the 5 GHz controls in Connections.
-edit(ui_host, ('''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
-''', '''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
+edit(ui_host, ('''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { checkHotspotBandNow() }, matchButton(10, 56))
+''', '''        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { checkHotspotBandNow() }, matchButton(10, 56))
         toggle(card, getString(R.string.settings_gwm_wifi_off_during_aa), getString(R.string.settings_gwm_wifi_off_during_aa_description),
             com.andrerinas.openheadunit.gwm.GwmCarWifi.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmCarWifi.setEnabled(this, it) }
         toggle(card, getString(R.string.settings_gwm_bt_music_off_during_aa), getString(R.string.settings_gwm_bt_music_off_during_aa_description),
@@ -3367,6 +3362,11 @@ edit(D, ('''                            }.onFailure { showDiagnosticReport(repor
 # Di-Connect 2.0 Home, phase 1 preview (Nov 2026): a glass home screen opened from Settings >
 # Appearance. It declares no HOME category, so the car's own launcher is untouched.
 (root/'common/src/main/java/com/shilapi/xcertplay/HomeDashboard.kt').write_text(Path('target/_integration/ui/HomeDashboard.kt').read_text())
+# Record the first inbound media payload before decoding, without logging track data.
+edit(aa_java/'aap/AapMessageHandlerType.kt',
+    ('    private val aapNavigation = AapNavigation(context, settings)\n', '    private val aapNavigation = AapNavigation(context, settings)\n    private var loggedMediaPlaybackPayload = false\n'),
+    ('        if (message.channel == Channel.ID_MPB && msgType > 31) {\n            mediaPlayback.process(message)', '        if (message.channel == Channel.ID_MPB && msgType > 31) {\n            if (!loggedMediaPlaybackPayload) {\n                loggedMediaPlaybackPayload = true\n                AppLog.i("Media playback channel received payload type=%d flags=%d bytes=%d",\n                    msgType, flags.toInt(), message.size - message.dataOffset)\n            }\n            mediaPlayback.process(message)'))
+
 # Android Auto now playing in the diagnostic report: whether the phone opened the media status
 # channel and how many metadata and status packets it sent (Home and the cluster show only what arrives).
 edit(aa_java/'gwm/GwmMusicState.kt',

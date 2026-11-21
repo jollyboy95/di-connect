@@ -1482,7 +1482,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     private fun gwmHotspotControls(card: LinearLayout) {
         toggle(card, getString(R.string.settings_gwm_hotspot_5ghz), getString(R.string.settings_gwm_hotspot_5ghz_description),
             HotspotBandGuard.enabled(this)) { HotspotBandGuard.setEnabled(this, it); render() }
-        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(10, 56))
+        card.addView(button(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { checkHotspotBandNow() }, matchButton(10, 56))
         toggle(card, getString(R.string.settings_gwm_wifi_off_during_aa), getString(R.string.settings_gwm_wifi_off_during_aa_description),
             com.andrerinas.openheadunit.gwm.GwmCarWifi.enabled(this)) { com.andrerinas.openheadunit.gwm.GwmCarWifi.setEnabled(this, it) }
         toggle(card, getString(R.string.settings_gwm_bt_music_off_during_aa), getString(R.string.settings_gwm_bt_music_off_during_aa_description),
@@ -1492,12 +1492,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         gwmScanResult?.let { card.addView(label(it, 13, MUTED).apply { setTextIsSelectable(true); setPadding(0, dp(8), 0, 0) }) }
     }
 
-    private fun setHotspotFiveGhzNow() {
+    private fun checkHotspotBandNow() {
         gwmScanResult = getString(R.string.settings_gwm_hotspot_5ghz_working)
         render()
         val app = applicationContext
         Thread({
-            val result = HotspotBandGuard.ensureFiveGhz(app)
+            val result = HotspotBandGuard.checkBand(app)
             runOnUiThread { if (!isFinishing && !isDestroyed) { gwmScanResult = result; render() } }
         }, "hotspot-band-now").start()
     }
@@ -1615,7 +1615,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         if (GwmMode.active(this) && HotspotBandGuard.needsHelp()) {
             panel.addView(label(getString(R.string.settings_gwm_hotspot_5ghz_home), 15, WARNING).apply { setPadding(0, dp(12), 0, 0) })
-            panel.addView(homeButton(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { setHotspotFiveGhzNow() }, matchButton(CONTROL_GAP_DP, 52))
+            panel.addView(homeButton(getString(R.string.settings_gwm_hotspot_5ghz_now), true) { checkHotspotBandNow() }, matchButton(CONTROL_GAP_DP, 52))
         }
         panel.addView(homeButton(getString(R.string.choose_iphone), false) { choosePhone() }, matchButton(14, 52))
         disconnectButton = homeButton(getString(R.string.disconnect), false) {

@@ -1,6 +1,5 @@
 package com.shilapi.xcertplay
 
-import android.view.WindowManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -109,18 +108,10 @@ class BackgroundAutomationTest {
     }
 
     @Test
-    fun curtainNeverTakesTheShellsTapsOrFocus() {
-        val lp = ScreenCurtain.layout()
-        assertEquals(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, lp.type)
-        assertTrue(lp.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE != 0)
-        assertTrue(lp.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE != 0)
-        assertEquals(WindowManager.LayoutParams.MATCH_PARENT, lp.width)
-        assertEquals(WindowManager.LayoutParams.MATCH_PARENT, lp.height)
-    }
-
-    @Test
-    fun emptyScreenshotGivesAPlainCover() {
-        assertNull(ScreenCurtain.decode(""))
-        assertNull(ScreenCurtain.decode("not base64 at all !!"))
+    fun hotspotDiagnosticDistinguishesFiveGhzFromBothAndUnknown() {
+        val single = HotspotBandGuard.parseAp(singleFiveGhz).copy(bridgedRadios = 0)
+        assertTrue(single.diagnostic().startsWith("5 GHz only ("))
+        assertTrue(single.copy(iface = "bridge0", bridgedRadios = 2).diagnostic().contains("(Both)"))
+        assertTrue(single.copy(bridgedRadios = null).diagnostic().startsWith("5 GHz only could not be confirmed"))
     }
 }

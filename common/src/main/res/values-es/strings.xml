@@ -1031,9 +1031,9 @@
     <string name="di_connect_theme_category_concept">Conceptos</string>
     <string name="di_connect_theme_category_pets">Mascotas</string>
     <string name="di_connect_update_wrong_signer">Esta descarga no es una versión de Di-Connect firmada con tu clave, así que no se instaló.</string>
-    <string name="settings_gwm_hotspot_5ghz">Mantener el punto de acceso del coche en 5 GHz (experimental)</string>
-    <string name="settings_gwm_hotspot_5ghz_description">El coche a veces pone su punto de acceso en Ambas, que puede elegir 2,4 GHz y hacer que Android Auto se entrecorte. Al iniciarse, Di-Connect comprueba la banda en segundo plano. Solo si no es 5 GHz, ajusta la banda del AP a 5 GHz en la pantalla del punto de acceso, tras una imagen fija de tu pantalla durante unos segundos.</string>
-    <string name="settings_gwm_hotspot_5ghz_now">Poner ahora el punto de acceso en 5 GHz</string>
+    <string name="settings_gwm_hotspot_5ghz">Comprobar la banda del punto de acceso del coche (experimental)</string>
+    <string name="settings_gwm_hotspot_5ghz_description">Comprueba la banda al iniciar e indica si el punto de acceso funciona solo a 5 GHz. Ajusta la banda en los ajustes del punto de acceso del coche.</string>
+    <string name="settings_gwm_hotspot_5ghz_now">Comprobar la banda ahora</string>
     <string name="settings_gwm_climate_test">Prueba de climatización (experimental)</string>
     <string name="settings_gwm_climate_test_description">Comprueba si Di-Connect puede cambiar la climatización: un grado en el lado del conductor, o encender y apagar el A/C, y vuelve a leerlo. Úsalo con el coche aparcado.</string>
     <string name="settings_gwm_climate_seat_vent">Ventilación asiento</string>
@@ -1068,8 +1068,8 @@
     <string name="settings_appearance_summary">Tema, color de acento e idioma</string>
     <string name="settings_accent">Color de acento</string>
     <string name="settings_accent_description">Colorea botones, interruptores y resaltados en el aspecto nocturno. El diurno conserva su azul.</string>
-    <string name="settings_gwm_hotspot_5ghz_working">Poniendo el punto de acceso en 5 GHz… tarda hasta 30 segundos.</string>
-    <string name="settings_gwm_hotspot_5ghz_home">No se pudo poner el punto de acceso en 5 GHz automáticamente. Activa ADB por red en las opciones de desarrollador del coche y pulsa abajo.</string>
+    <string name="settings_gwm_hotspot_5ghz_working">Comprobando la banda del punto de acceso…</string>
+    <string name="settings_gwm_hotspot_5ghz_home">No se pudo confirmar el uso exclusivo de 5 GHz. Comprueba la banda en los ajustes del punto de acceso del coche.</string>
     <string name="settings_gwm_wifi_off_during_aa">Wi-Fi del coche apagado durante Android Auto</string>
     <string name="settings_gwm_wifi_off_during_aa_description">El Wi-Fi del coche comparte radio con su punto de acceso y usar ambos hace que Android Auto se entrecorte. Vuelve al terminar Android Auto. El punto de acceso sigue activo.</string>
     <string name="settings_gwm_bt_music_off_during_aa">Música Bluetooth apagada durante Android Auto</string>

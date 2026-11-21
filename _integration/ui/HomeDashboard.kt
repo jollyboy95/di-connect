@@ -1048,6 +1048,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val frame = RectF(col.left, col.top + 60f, col.right, col.top + 60f + h)
         hits.add(Pair(RectF(0f, 0f, W, H), closePopover))
         panel(c, frame, 24f)
+        hit(frame) { }
         text(c, "Audio source", frame.left + 24f, frame.top + 40f, 16f, quiet, medium)
         list.forEachIndexed { i, source ->
             r.set(frame.left + 16f, frame.top + 60f + i * 64f, frame.right - 16f, frame.top + 116f + i * 64f)
@@ -1057,7 +1058,6 @@ internal class HomeDashboardView(context: Context) : View(context) {
             if (on) text(c, "Playing", r.right - 20f, r.centerY() + 6f, 15f, accent, medium, Paint.Align.RIGHT)
             hit(RectF(r)) { selectSource(source) }
         }
-        hit(RectF(frame)) { }
     }
 
     /** Opens the app behind Now Playing: the projection, the car's radio or USB player, or an app. */

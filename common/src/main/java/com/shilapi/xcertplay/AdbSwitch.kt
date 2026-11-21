@@ -135,7 +135,7 @@ internal object AdbSwitch {
 
     private fun ensure(app: Context, why: String) {
         val time = java.text.SimpleDateFormat("h:mm:ss a", java.util.Locale.US).format(java.util.Date())
-        if (!canSwitch(app)) { lastAction = "$time $why: no permission yet (turn ADB on once and use the 5 GHz button)"; return }
+        if (!canSwitch(app)) { lastAction = "$time $why: no permission yet (turn ADB on once and run Scan GWM displays and route status)"; return }
         if (enabled(app)) {
             if (reachable(app)) lastAction = "$time $why: ADB already on and answering"
             // At start adbd may simply not be up yet; the later checks restart it if it stays silent.

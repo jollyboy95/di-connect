@@ -1043,9 +1043,9 @@
     <string name="di_connect_theme_category_concept">Концепти</string>
     <string name="di_connect_theme_category_pets">Улюбленці</string>
     <string name="di_connect_update_wrong_signer">Це завантаження не є збіркою Di-Connect, підписаною вашим ключем, тому його не встановлено.</string>
-    <string name="settings_gwm_hotspot_5ghz">Тримати точку доступу авто на 5 ГГц (експериментально)</string>
-    <string name="settings_gwm_hotspot_5ghz_description">Іноді авто ставить точку доступу на «Обидва», і тоді може вибратися 2,4 ГГц, через що Android Auto переривається. Під час запуску Di-Connect перевіряє діапазон у фоні. Лише якщо він не 5 ГГц, Di-Connect ставить діапазон AP на 5 ГГц на екрані точки доступу, за нерухомим знімком вашого екрана на кілька секунд.</string>
-    <string name="settings_gwm_hotspot_5ghz_now">Перемкнути точку доступу на 5 ГГц зараз</string>
+    <string name="settings_gwm_hotspot_5ghz">Перевіряти діапазон точки доступу авто (експериментально)</string>
+    <string name="settings_gwm_hotspot_5ghz_description">Під час запуску перевіряє діапазон і повідомляє, чи працює точка доступу лише на 5 ГГц. Діапазон можна вибрати в налаштуваннях точки доступу авто.</string>
+    <string name="settings_gwm_hotspot_5ghz_now">Перевірити діапазон зараз</string>
     <string name="settings_gwm_climate_test">Перевірка клімату (експериментально)</string>
     <string name="settings_gwm_climate_test_description">Перевіряє, чи може Di-Connect змінювати клімат: один градус з боку водія або вмикання й вимикання A/C, потім зчитує значення. Використовуйте на стоянці.</string>
     <string name="settings_gwm_climate_seat_vent">Вентиляція сидіння</string>
@@ -1080,8 +1080,8 @@
     <string name="settings_appearance_summary">Тема, акцентний колір і мова</string>
     <string name="settings_accent">Акцентний колір</string>
     <string name="settings_accent_description">Змінює колір кнопок, перемикачів і виділень у нічному вигляді. Денний лишається синім.</string>
-    <string name="settings_gwm_hotspot_5ghz_working">Перемикаємо точку доступу на 5 ГГц… до 30 секунд.</string>
-    <string name="settings_gwm_hotspot_5ghz_home">Не вдалося автоматично перемкнути точку доступу на 5 ГГц. Увімкніть ADB через мережу в параметрах розробника авто й натисніть нижче.</string>
+    <string name="settings_gwm_hotspot_5ghz_working">Перевірка діапазону точки доступу…</string>
+    <string name="settings_gwm_hotspot_5ghz_home">Не вдалося підтвердити роботу лише на 5 ГГц. Перевірте діапазон у налаштуваннях точки доступу авто.</string>
     <string name="settings_gwm_wifi_off_during_aa">Wi-Fi авто вимк. під час Android Auto</string>
     <string name="settings_gwm_wifi_off_during_aa_description">Wi-Fi авто ділить радіомодуль із точкою доступу, і разом вони спричиняють заїкання Android Auto. Увімкнеться після Android Auto. Точка доступу лишається.</string>
     <string name="settings_gwm_bt_music_off_during_aa">Музика Bluetooth вимк. під час Android Auto</string>

@@ -1091,9 +1091,9 @@
     <string name="di_connect_theme_category_concept">概念</string>
     <string name="di_connect_theme_category_pets">寵物</string>
     <string name="di_connect_update_wrong_signer">此下載不是用你的金鑰簽署的 Di-Connect 版本，因此未安裝。</string>
-    <string name="settings_gwm_hotspot_5ghz">讓車輛熱點保持 5 GHz（實驗性）</string>
-    <string name="settings_gwm_hotspot_5ghz_description">車輛有時會把熱點設為「雙頻」，可能選到 2.4 GHz，使 Android Auto 卡頓。Di-Connect 啟動時會在背景檢查頻段。只有不是 5 GHz 時，才會在你畫面的靜態影像後面開啟熱點頁面幾秒，把 AP 頻段設為 5 GHz。</string>
-    <string name="settings_gwm_hotspot_5ghz_now">立即將熱點設為 5 GHz</string>
+    <string name="settings_gwm_hotspot_5ghz">檢查車輛熱點頻段（實驗性）</string>
+    <string name="settings_gwm_hotspot_5ghz_description">啟動時檢查熱點頻段，並回報熱點是否僅使用 5 GHz。請在車輛熱點設定中調整頻段。</string>
+    <string name="settings_gwm_hotspot_5ghz_now">立即檢查熱點頻段</string>
     <string name="settings_gwm_climate_test">空調測試（實驗性）</string>
     <string name="settings_gwm_climate_test_description">檢查 Di-Connect 能否調整空調：駕駛側溫度調 1 度，或開關 A/C，然後讀回數值。請在停車時使用。</string>
     <string name="settings_gwm_climate_seat_vent">座椅通風</string>
@@ -1128,8 +1128,8 @@
     <string name="settings_appearance_summary">主題、強調色和語言</string>
     <string name="settings_accent">強調色</string>
     <string name="settings_accent_description">變更夜間外觀中按鈕、開關和強調的顏色。日間外觀保留自己的藍色。</string>
-    <string name="settings_gwm_hotspot_5ghz_working">正在把熱點設為 5 GHz…最多需要 30 秒。</string>
-    <string name="settings_gwm_hotspot_5ghz_home">無法自動把熱點設為 5 GHz。請在車機開發者選項中開啟網路 ADB，然後按下方按鈕。</string>
+    <string name="settings_gwm_hotspot_5ghz_working">正在檢查熱點頻段…</string>
+    <string name="settings_gwm_hotspot_5ghz_home">無法確認熱點僅使用 5 GHz。請在車輛熱點設定中檢查頻段。</string>
     <string name="settings_gwm_wifi_off_during_aa">Android Auto 期間關閉車機 Wi-Fi</string>
     <string name="settings_gwm_wifi_off_during_aa_description">車機 Wi-Fi 與熱點共用一個無線模組，同時使用會讓 Android Auto 卡頓。Android Auto 結束後恢復。熱點保持開啟。</string>
     <string name="settings_gwm_bt_music_off_during_aa">Android Auto 期間關閉藍牙音樂</string>
