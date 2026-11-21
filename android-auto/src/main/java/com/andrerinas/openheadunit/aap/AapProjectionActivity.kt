@@ -1083,11 +1083,18 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         }
         val frame = findViewById<FrameLayout>(R.id.aa_container)
         frame.addView(button, frame.indexOfChild(projectionLayer) + 1,
-            FrameLayout.LayoutParams(dp(48), dp(48), Gravity.TOP or Gravity.LEFT).apply {
-                leftMargin = dp(12)
-                topMargin = dp(12)
-            })
+            FrameLayout.LayoutParams(dp(48), dp(48), Gravity.TOP or Gravity.RIGHT))
         returnToHomeButton = button
+        positionReturnToHomeButton(frame.width, frame.height)
+    }
+
+    private fun positionReturnToHomeButton(width: Int, height: Int) {
+        val button = returnToHomeButton ?: return
+        if (width <= 0 || height <= 0) return
+        // Centre the button in the gap above the microphone on the Haval projection rail.
+        val size = button.layoutParams.width
+        button.translationX = (size / 2f - width * .035f).coerceAtMost(0f)
+        button.translationY = (height * .755f - size / 2f).coerceIn(0f, (height - size).coerceAtLeast(0).toFloat())
     }
 
     private fun showProjectionHome(show: Boolean) {
@@ -1135,6 +1142,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         val w = frame.width
         val h = frame.height
         if (w <= 0 || h <= 0) return
+        positionReturnToHomeButton(w, h)
         val bounds = if (showingProjectionHome) projectionHome?.mapBounds(w, h) else null
         projectionLayer.scaleX = bounds?.let { it.width() / w } ?: 1f
         projectionLayer.scaleY = bounds?.let { it.height() / h } ?: 1f
