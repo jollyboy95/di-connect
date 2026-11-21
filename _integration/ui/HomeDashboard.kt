@@ -134,25 +134,26 @@ internal class HomeDashboardView(context: Context) : View(context) {
     data class Turn(val icon: Int, val distance: String, val road: String, val eta: String?)
     enum class Popover { NONE, PASSENGER_TEMP, DRIVER_TEMP, FAN, APPS, SETTINGS, SOURCES }
 
-    var connected = false; set(v) { field = v; invalidate() }
-    var connectionName = "No phone"; set(v) { field = v; invalidate() }
+    var connected = false; set(v) { if (field != v) { field = v; invalidate() } }
+    var connectionName = "No phone"; set(v) { if (field != v) { field = v; invalidate() } }
     var night = true; set(v) { if (field != v) { field = v; invalidate() } }
-    var rightHandDrive = true; set(v) { field = v; invalidate() }
+    var rightHandDrive = true; set(v) { if (field != v) { field = v; invalidate() } }
     var media = Media("No source", null, null, false, null)
         set(value) {
+            if (field == value) return
             if (field.art !== value.art) albumTint = artworkTint(value.art)
             field = value
             invalidate()
         }
     private var albumTint: Int? = null
     /** Which projection is live; drives the map zone title and what the source list offers. */
-    var projection = HomeSources.Projection.NONE; set(v) { field = v; invalidate() }
+    var projection = HomeSources.Projection.NONE; set(v) { if (field != v) { field = v; invalidate() } }
     /** The source playing now, ticked in the source list; null when nothing is. */
-    var activeSource: HomeSources.Source? = null; set(v) { field = v; invalidate() }
+    var activeSource: HomeSources.Source? = null; set(v) { if (field != v) { field = v; invalidate() } }
     /** Sources that can play right now; a missing one is not shown at all. */
-    var sources: List<HomeSources.Source> = listOf(HomeSources.Source.RADIO); set(v) { field = v; invalidate() }
-    var turn: Turn? = null; set(v) { field = v; invalidate() }
-    var popover = Popover.NONE; set(v) { field = v; invalidate() }
+    var sources: List<HomeSources.Source> = listOf(HomeSources.Source.RADIO); set(v) { if (field != v) { field = v; invalidate() } }
+    var turn: Turn? = null; set(v) { if (field != v) { field = v; invalidate() } }
+    var popover = Popover.NONE; set(v) { if (field != v) { field = v; invalidate() } }
     /** Shown in the map zone; the preview names itself a placeholder, the car says what is coming. */
     var mapNote = "Tap to show Android Auto in Home"
     private var expandProjection: (() -> Unit)? = null
@@ -185,31 +186,31 @@ internal class HomeDashboardView(context: Context) : View(context) {
     var fixedTime: Date? = null
 
     // Climate, as read from the car (gwm_adapter); keys the car does not answer for stay null and hide.
-    var driverTemp: Float? = 22f; set(v) { field = v; invalidate() }
-    var passengerTemp: Float? = 22f; set(v) { field = v; invalidate() }
-    var fan: Int? = 3; set(v) { field = v; invalidate() }
-    var ac: Boolean? = true; set(v) { field = v; invalidate() }
-    var recirculation: HomeRecirculation? = null; set(v) { field = v; invalidate() }
-    var auto: Boolean? = false; set(v) { field = v; invalidate() }
-    var driverSeat: Int? = 0; set(v) { field = v; invalidate() }
-    var passengerSeat: Int? = 0; set(v) { field = v; invalidate() }
-    var frontDemist: Boolean? = false; set(v) { field = v; invalidate() }
-    var rearDemist: Boolean? = false; set(v) { field = v; invalidate() }
+    var driverTemp: Float? = 22f; set(v) { if (field != v) { field = v; invalidate() } }
+    var passengerTemp: Float? = 22f; set(v) { if (field != v) { field = v; invalidate() } }
+    var fan: Int? = 3; set(v) { if (field != v) { field = v; invalidate() } }
+    var ac: Boolean? = true; set(v) { if (field != v) { field = v; invalidate() } }
+    var recirculation: HomeRecirculation? = null; set(v) { if (field != v) { field = v; invalidate() } }
+    var auto: Boolean? = false; set(v) { if (field != v) { field = v; invalidate() } }
+    var driverSeat: Int? = 0; set(v) { if (field != v) { field = v; invalidate() } }
+    var passengerSeat: Int? = 0; set(v) { if (field != v) { field = v; invalidate() } }
+    var frontDemist: Boolean? = false; set(v) { if (field != v) { field = v; invalidate() } }
+    var rearDemist: Boolean? = false; set(v) { if (field != v) { field = v; invalidate() } }
     /** Both zones follow the driver while on; the passenger zone is independent while off. */
-    var sync: Boolean? = false; set(v) { field = v; invalidate() }
-    var eco: Boolean? = null; set(v) { field = v; invalidate() }
+    var sync: Boolean? = false; set(v) { if (field != v) { field = v; invalidate() } }
+    var eco: Boolean? = null; set(v) { if (field != v) { field = v; invalidate() } }
     /** False while the climate system is switched off; the temperatures then show as Off. */
-    var climateOn: Boolean? = null; set(v) { field = v; invalidate() }
+    var climateOn: Boolean? = null; set(v) { if (field != v) { field = v; invalidate() } }
 
     // Vehicle chips along the top; null hides a chip.
-    var outsideTemp: Float? = null; set(v) { field = v; invalidate() }
-    var rangeKm: Float? = null; set(v) { field = v; invalidate() }
-    var hotspotOn: Boolean? = null; set(v) { field = v; invalidate() }
-    var wifiEnabled: Boolean? = null; set(v) { field = v; invalidate() }
-    var bluetoothEnabled: Boolean? = null; set(v) { field = v; invalidate() }
-    var tyrePressure: HomeTyrePressure? = null; set(v) { field = v; invalidate() }
+    var outsideTemp: Float? = null; set(v) { if (field != v) { field = v; invalidate() } }
+    var rangeKm: Float? = null; set(v) { if (field != v) { field = v; invalidate() } }
+    var hotspotOn: Boolean? = null; set(v) { if (field != v) { field = v; invalidate() } }
+    var wifiEnabled: Boolean? = null; set(v) { if (field != v) { field = v; invalidate() } }
+    var bluetoothEnabled: Boolean? = null; set(v) { if (field != v) { field = v; invalidate() } }
+    var tyrePressure: HomeTyrePressure? = null; set(v) { if (field != v) { field = v; invalidate() } }
     /** Moving faster than walking pace: the app grid waits until the car is parked. */
-    var moving = false; set(v) { field = v; invalidate() }
+    var moving = false; set(v) { if (field != v) { field = v; invalidate() } }
 
     // ---- Car wiring (only on a GWM head unit) -------------------------------------------------------
     private val main = Handler(Looper.getMainLooper())
