@@ -200,26 +200,7 @@ class DiConnectUiPreviewTest {
         }
     }
 
-    @Test fun albumArtChangesTheMediaShelfTint() {
-        withDashboard { view, bitmap ->
-            view.night = true
-            val red = Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
-            val blue = Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.BLUE) }
-            try {
-                view.media = view.media.copy(art = red)
-                view.draw(Canvas(bitmap))
-                val redTint = bitmap.getPixel(978, 162)
-                view.media = view.media.copy(art = blue)
-                view.draw(Canvas(bitmap))
-                val blueTint = bitmap.getPixel(978, 162)
-                assertTrue(Color.red(redTint) > Color.red(blueTint))
-                assertTrue(Color.blue(blueTint) > Color.blue(redTint))
-            } finally {
-                red.recycle()
-                blue.recycle()
-            }
-        }
-    }
+    // The album-art media shelf was removed on 22 Nov (Android Auto now runs to the dock), so its tint test went with it.
 
     @Test fun tyrePressureReadsAllFourWheelsInTheFactoryOrder() {
         val tyres = requireNotNull(HomeTyrePressure.parse("car.basic.tpms_status=[256.5, 28, 245.5, 27, 258, 27, 255, 26]"))
