@@ -1122,7 +1122,7 @@
     <string name="di_connect_theme_category_pets">Animali</string>
     <string name="di_connect_update_wrong_signer">Questo download non è una build di Di-Connect firmata con la tua chiave, quindi non è stato installato.</string>
     <string name="settings_gwm_hotspot_5ghz">Mantieni l’hotspot dell’auto a 5 GHz (sperimentale)</string>
-    <string name="settings_gwm_hotspot_5ghz_description">A volte l’auto imposta l’hotspot su Entrambe, che può scegliere 2,4 GHz e far scattare Android Auto. All’avvio Di-Connect apre per qualche secondo la schermata hotspot dell’auto e imposta la banda a 5,0 GHz se non lo è già. L’hotspot si riavvia se cambia. Richiede l’accesso ADB di Di-Connect.</string>
+    <string name="settings_gwm_hotspot_5ghz_description">A volte l’auto imposta l’hotspot su Entrambe, che può scegliere 2,4 GHz e far scattare Android Auto. All’avvio Di-Connect controlla la banda in background. Solo se non è 5 GHz imposta la banda AP a 5 GHz nella schermata dell’hotspot, dietro un’immagine fissa del tuo schermo per pochi secondi.</string>
     <string name="settings_gwm_hotspot_5ghz_now">Imposta ora l’hotspot a 5 GHz</string>
     <string name="settings_gwm_climate_test">Test climatizzazione (sperimentale)</string>
     <string name="settings_gwm_climate_test_description">Verifica se Di-Connect può cambiare il clima: un grado lato guida, oppure A/C acceso e spento, poi rilegge il valore. Usalo a veicolo fermo.</string>
@@ -1170,5 +1170,5 @@
     <string name="settings_home_preview_description">Una nuova schermata home in vetro con clima e dock a destra. Non sostituisce la home dell’auto.</string>
     <string name="settings_start_app">Apri un’app all’avvio</string>
     <string name="settings_start_app_none">Nessuna</string>
-    <string name="settings_start_app_description">Apre l’app scelta in background a ogni avvio di Di-Connect, ad esempio un’app di regolazione audio, poi torna a Di-Connect.</string>
+    <string name="settings_start_app_description">Avvia l’app scelta a ogni avvio di Di-Connect, senza mostrarla, per esempio l’app di regolazione audio dell’auto.</string>
 </resources>

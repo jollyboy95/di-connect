@@ -1092,7 +1092,7 @@
     <string name="di_connect_theme_category_pets">寵物</string>
     <string name="di_connect_update_wrong_signer">此下載不是用你的金鑰簽署的 Di-Connect 版本，因此未安裝。</string>
     <string name="settings_gwm_hotspot_5ghz">讓車輛熱點保持 5 GHz（實驗性）</string>
-    <string name="settings_gwm_hotspot_5ghz_description">車輛有時會把熱點設為「兩者」，可能選用 2.4 GHz，導致 Android Auto 卡頓。Di-Connect 啟動時會開啟車輛熱點畫面幾秒，如果頻段不是 5.0 GHz 就改為 5.0 GHz。變更後熱點會重新啟動。需要 Di-Connect 的 ADB 權限。</string>
+    <string name="settings_gwm_hotspot_5ghz_description">車輛有時會把熱點設為「雙頻」，可能選到 2.4 GHz，使 Android Auto 卡頓。Di-Connect 啟動時會在背景檢查頻段。只有不是 5 GHz 時，才會在你畫面的靜態影像後面開啟熱點頁面幾秒，把 AP 頻段設為 5 GHz。</string>
     <string name="settings_gwm_hotspot_5ghz_now">立即將熱點設為 5 GHz</string>
     <string name="settings_gwm_climate_test">空調測試（實驗性）</string>
     <string name="settings_gwm_climate_test_description">檢查 Di-Connect 能否調整空調：駕駛側溫度調 1 度，或開關 A/C，然後讀回數值。請在停車時使用。</string>
@@ -1140,5 +1140,5 @@
     <string name="settings_home_preview_description">帶空調控制和右側程式塢的全新玻璃風格主畫面。不會取代車輛的主畫面。</string>
     <string name="settings_start_app">啟動時開啟應用程式</string>
     <string name="settings_start_app_none">無</string>
-    <string name="settings_start_app_description">每次 Di-Connect 啟動時在背景開啟所選應用程式（例如音效調整應用程式），然後返回 Di-Connect。</string>
+    <string name="settings_start_app_description">每次 Di-Connect 啟動時啟動所選應用程式，但不顯示它，例如車輛的音訊調校應用程式。</string>
 </resources>

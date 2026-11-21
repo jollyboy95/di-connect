@@ -10,11 +10,20 @@ import java.util.Locale
 
 /**
  * Keeps the H7's hotspot on 5 GHz. The car's own setting falls back to "Both", which lets the car
- * pick 2.4 GHz at some starts, and Android Auto stutters there. Android 9 lets no app set the band
- * (the shell's `cmd wifi` is refused too), and the band lives in the car's hotspot app
- * (com.mak.wifisettings), so this does what the driver does by hand over local ADB: open that
- * screen, read AP Band, and if it is not 5 GHz pick the 5 GHz option. The running frequency comes
- * from `dumpsys wifi` and is logged either way.
+ * pick 2.4 GHz at some starts, and Android Auto stutters there.
+ *
+ * Reading is invisible. On this car "5.0 GHz" and "Both" both save `mApConfig.apBand: 1`; "Both"
+ * runs the hotspot on a bridge over two radios instead of straight on `wlan1`. So the shell's
+ * `dumpsys wifi` (band, running frequency, `mApInterfaceName`) and the bridge's member list in
+ * `/sys/class/net/<iface>/brif` tell whether the hotspot is on 5 GHz alone; then nothing opens.
+ *
+ * Changing it has no background API on this firmware. `WifiManager.setWifiApConfiguration` needs
+ * OVERRIDE_WIFI_CONFIG, which only system apps hold (the shell has NETWORK_SETTINGS and
+ * CONNECTIVITY_INTERNAL, not that one). `wifigwm` (`IWifiGwmManager`) only reads band and channel,
+ * and GWM's `WifiSettingService` is not exported. `com.mak.wifisettings` only opens AOSP Settings.
+ * So when the band is not 5 GHz, local ADB picks 5 GHz in Settings' hotspot page, as the driver
+ * would, behind a [ScreenCurtain] that keeps a still picture of the screen in front of the driver.
+ * The channel is not settable on this Settings page; the car chooses it (149 at survey time).
  */
 internal object HotspotBandGuard {
     private const val TAG = "DiConnect-Hotspot"
@@ -32,6 +41,39 @@ internal object HotspotBandGuard {
     }
 
     fun report(): String = "Hotspot band guard: ${last ?: "not run"}"
+
+    /**
+     * The hotspot as the shell sees it: saved band (-1 any, 0 2.4 GHz, 1 5 GHz or Both on this car),
+     * running frequency, AP interface, and how many radios that interface bridges (null: not read).
+     */
+    internal data class ApState(val band: Int?, val frequency: Int?, val iface: String?, val bridgedRadios: Int? = null) {
+        val channel: Int? get() = frequency?.let { channelOf(it) }
+        /** True only when every signal agrees: saved 5 GHz, running at 5 GHz, on one radio. */
+        val fiveGhzOnly: Boolean get() = band == 1 && (frequency ?: 0) >= 5000 &&
+            iface != null && iface.startsWith("wlan") && bridgedRadios != null && bridgedRadios < 2
+        fun describe() = "band ${when (band) { 1 -> "5 GHz"; 0 -> "2.4 GHz"; -1 -> "any"; null -> "unknown"; else -> "$band" }}, " +
+            (frequency?.let { "running at $it MHz${channel?.let { c -> ", channel $c" } ?: ""}" } ?: "not running") +
+            (iface?.let { " on $it" } ?: "") + (bridgedRadios?.takeIf { it >= 2 }?.let { " bridging $it radios (Both)" } ?: "")
+    }
+
+    internal fun parseAp(dump: String) = ApState(
+        Regex("""mApConfig\.apBand:\s*(-?\d+)""").find(dump)?.groupValues?.get(1)?.toIntOrNull(),
+        Regex("""mReportedFrequency:\s*(\d+)""").find(dump)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it > 0 },
+        Regex("""mApInterfaceName:\s*([A-Za-z0-9_.-]+)""").find(dump)?.groupValues?.get(1),
+    )
+
+    /** Members of `/sys/class/net/<iface>/brif` that are radios; 0 when the interface is not a bridge. */
+    internal fun bridgedRadios(brifListing: String): Int =
+        brifListing.split(Regex("\\s+")).count { it.startsWith("wlan") }
+
+    internal fun safeIface(name: String?) = name?.takeIf { Regex("[A-Za-z0-9_.-]{1,15}").matches(it) }
+
+    internal fun channelOf(mhz: Int): Int? = when (mhz) {
+        2484 -> 14
+        in 2412..2472 -> (mhz - 2407) / 5
+        in 5160..5885 -> (mhz - 5000) / 5
+        else -> null
+    }
 
     /** True when the last check could not get the hotspot to 5 GHz by itself, so Home offers the button. */
     fun needsHelp(): Boolean = last?.let { it.contains("not available") || it.contains("not found") } ?: false
@@ -99,8 +141,15 @@ internal object HotspotBandGuard {
                 fun isFive(text: String) = Regex("""\b5(\.0)?\s*G""", RegexOption.IGNORE_CASE).containsMatchIn(text)
                 fun squash(t: String) = t.lowercase().replace("-", "").replace(" ", "").replace("&", "")
 
-                val before = frequency()
+                // Read first, without opening anything.
+                val read = parseAp(sh("dumpsys wifi | grep -E 'mApConfig.apBand|mReportedFrequency|mApInterfaceName'"))
+                val state = safeIface(read.iface)?.let { read.copy(bridgedRadios = bridgedRadios(sh("ls /sys/class/net/$it/brif 2>/dev/null"))) } ?: read
+                if (state.fiveGhzOnly) return@use "already 5 GHz (${state.describe()}); nothing opened"
+                Log.i(TAG, "hotspot is not on 5 GHz alone (${state.describe()}); fixing in Settings")
+                val before = state.frequency ?: frequency()
                 if (before != null && before < 3000) Log.w(TAG, "hotspot is on 2.4 GHz ($before MHz); switching to 5 GHz")
+                val curtain = ScreenCurtain.show(context, adb)
+                try {
                 // Straight to the hotspot page where the car allows it; otherwise the car's settings app.
                 val direct = listOf("com.android.settings.WIFI_TETHER_SETTINGS", "android.settings.TETHER_SETTINGS")
                 var nodes: List<Node> = emptyList()
@@ -141,10 +190,13 @@ internal object HotspotBandGuard {
                 tap(option); pause(900)
                 screen().firstOrNull { it.text.trim().lowercase() in setOf("ok", "save", "confirm", "apply", "done") }?.let { tap(it); pause(700) }
                 leave()
+                curtain.close()
                 // The hotspot restarts on a band change: wait up to about 20 s for it to report again.
                 var after: Int? = null
                 for (i in 0 until 10) { pause(2000); after = frequency(); if (after != null && after > 0) break }
-                "switched from '$setting' to 5 GHz (was ${before ?: "?"} MHz, now ${after ?: "still restarting"}${if (after != null) " MHz" else ""})"
+                val hidden = if (curtain.shown) "behind a still picture" else "on screen (no overlay permission)"
+                "switched from '$setting' to 5 GHz $hidden (was ${before ?: "?"} MHz, now ${after ?: "still restarting"}${if (after != null) " MHz" else ""})"
+                } finally { curtain.close() }
             }
         } }.getOrElse { "failed: ${it.javaClass.simpleName}" }
         val line = "${SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())} $result"
