@@ -201,7 +201,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val w = width.toFloat(); val h = height.toFloat()
         p.style = Paint.Style.FILL
         p.shader = if (night) LinearGradient(0f, 0f, w, h, Color.rgb(24, 27, 40), Color.rgb(36, 38, 60), Shader.TileMode.CLAMP)
-            else LinearGradient(0f, 0f, w, h, Color.rgb(122, 138, 182), Color.rgb(160, 148, 206), Shader.TileMode.CLAMP)
+            else LinearGradient(0f, 0f, w, h, Color.rgb(104, 120, 170), Color.rgb(146, 130, 196), Shader.TileMode.CLAMP)
         c.drawRect(0f, 0f, w, h, p)
         // Soft light: a misty blue glow upper left and a lavender one lower right.
         fun glow(x: Float, y: Float, rad: Float, color: Int) {
@@ -236,6 +236,21 @@ internal class HomeDashboardView(context: Context) : View(context) {
         p.shader = LinearGradient(0f, rect.top, 0f, rect.bottom, Color.argb(if (night) 70 else 130, 255, 255, 255), Color.argb(if (night) 18 else 40, 255, 255, 255), Shader.TileMode.CLAMP)
         c.drawRoundRect(rect, radius, radius, p)
         p.shader = null
+        p.style = Paint.Style.FILL
+    }
+
+    /** A floating panel over other content: nearly opaque, so what is behind never shows through the words. */
+    private fun panel(c: Canvas, rect: RectF, radius: Float) {
+        p.style = Paint.Style.FILL; p.shader = null
+        p.color = Color.argb(if (night) 110 else 70, 0, 0, 20)
+        c.drawRoundRect(rect.left, rect.top + 8f, rect.right, rect.bottom + 14f, radius, radius, p)
+        p.shader = LinearGradient(0f, rect.top, 0f, rect.bottom,
+            if (night) Color.argb(246, 52, 55, 84) else Color.argb(246, 128, 132, 186),
+            if (night) Color.argb(246, 38, 40, 64) else Color.argb(246, 112, 110, 170), Shader.TileMode.CLAMP)
+        c.drawRoundRect(rect, radius, radius, p)
+        p.shader = null
+        p.style = Paint.Style.STROKE; p.strokeWidth = 1.2f; p.color = Color.argb(if (night) 80 else 140, 255, 255, 255)
+        c.drawRoundRect(rect, radius, radius, p)
         p.style = Paint.Style.FILL
     }
 
@@ -279,10 +294,11 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val left = if (rightHandDrive) 28f else 120f
         text(c, clock, left, 40f, 24f, ink, medium)
         t.textSize = 24f; t.typeface = medium
-        text(c, day, left + t.measureText(clock) + 16f, 40f, 17f, quiet)
+        val dayX = left + t.measureText(clock) + 16f
+        text(c, day, dayX, 40f, 17f, quiet)
         // Connection status, beside the clock.
-        t.textSize = 17f
-        var x = left + t.measureText(clock) + 16f + Paint().apply { textSize = 17f }.measureText(day) + 32f
+        t.textSize = 17f; t.typeface = Typeface.DEFAULT
+        var x = dayX + t.measureText(day) + 24f
         fun chip(label: String, on: Boolean) {
             t.textSize = 15f; t.typeface = medium
             val w = t.measureText(label) + 40f
@@ -516,36 +532,36 @@ internal class HomeDashboardView(context: Context) : View(context) {
         // Passenger on the left and driver on the right in a right-hand-drive car; mirrored otherwise.
         tempGroup(c, mx(146f), cy, false)
         tempGroup(c, mx(1140f), cy, true)
-        seat(c, mx(312f), cy, false)
-        seat(c, mx(976f), cy, true)
+        seat(c, mx(298f), cy, false)
+        seat(c, mx(996f), cy, true)
         // Fan: − and + change it at once; the middle opens the slider.
         fan?.let { level ->
-            circleButton(c, 402f, cy, 22f, "−") { setFan(level - 1) }
-            r.set(436f, cy - 34f, 616f, cy + 34f)
+            circleButton(c, 370f, cy, 22f, "−") { setFan(level - 1) }
+            r.set(400f, cy - 34f, 578f, cy + 34f)
             if (popover == Popover.FAN) glass(c, r, 20f, 2f)
-            icon(c, R.drawable.ic_dc_fan, 462f, cy, 28f, ink)
+            icon(c, R.drawable.ic_dc_fan, 428f, cy, 28f, ink)
             for (i in 1..7) {
                 p.color = if (i <= level) accent else Color.argb(55, 255, 255, 255)
-                val bx = 486f + i * 16f; val bh = 8f + i * 3.4f
+                val bx = 438f + i * 17f; val bh = 8f + i * 3.4f
                 c.drawRoundRect(bx, cy + 14f - bh, bx + 9f, cy + 14f, 3f, 3f, p)
             }
             hit(RectF(r)) { popover = if (popover == Popover.FAN) Popover.NONE else Popover.FAN }
-            circleButton(c, 650f, cy, 22f, "+") { setFan(level + 1) }
+            circleButton(c, 608f, cy, 22f, "+") { setFan(level + 1) }
         }
-        var x = 712f
+        var x = 646f
         fun toggle(label: String, on: Boolean?, action: (Boolean) -> Unit) {
             val state = on ?: return
-            t.textSize = 16f; t.typeface = medium
-            val w = max(56f, t.measureText(label) + 28f)
+            t.textSize = 15f; t.typeface = medium
+            val w = max(52f, t.measureText(label) + 24f)
             r.set(x, cy - 24f, x + w, cy + 24f)
             if (state) glass(c, r, 24f, 2.6f)
-            text(c, label, r.centerX(), cy + 6f, 16f, if (state) ink else quiet, medium, Paint.Align.CENTER)
+            text(c, label, r.centerX(), cy + 5.5f, 15f, if (state) ink else quiet, medium, Paint.Align.CENTER)
             hit(RectF(r)) { action(!state) }
-            x += w + 8f
+            x += w + 6f
         }
         toggle("A/C", ac) { ac = it; write(bar.AC, if (it) 1f else 0f) }
         toggle("AUTO", auto) { auto = it; write(keyAuto, if (it) 1f else 0f) }
-        toggle("Front", frontDemist) { frontDemist = it; write(keyFront, if (it) 1f else 0f) }
+        toggle("Demist", frontDemist) { frontDemist = it; write(keyFront, if (it) 1f else 0f) }
         toggle("Rear", rearDemist) { rearDemist = it; write(keyRear, if (it) 1f else 0f) }
     }
 
@@ -576,11 +592,12 @@ internal class HomeDashboardView(context: Context) : View(context) {
         r.set(cx - 30f, cy - 30f, cx + 30f, cy + 30f)
         if (level > 0) glass(c, r, 18f, 2f)
         // A seat, drawn as its back and cushion.
-        p.style = Paint.Style.STROKE; p.strokeWidth = 2.4f; p.strokeCap = Paint.Cap.ROUND; p.color = ink
-        path.reset()
-        path.moveTo(cx - 9f, cy - 14f); path.lineTo(cx - 5f, cy + 6f); path.lineTo(cx + 11f, cy + 6f)
-        c.drawPath(path, p)
-        p.style = Paint.Style.FILL
+        p.style = Paint.Style.FILL; p.color = ink
+        c.save(); c.rotate(-12f, cx - 6f, cy - 2f)
+        c.drawRoundRect(cx - 11f, cy - 18f, cx - 2f, cy + 6f, 4.5f, 4.5f, p)
+        c.restore()
+        c.drawRoundRect(cx - 7f, cy + 1f, cx + 13f, cy + 9f, 4f, 4f, p)
+        c.drawRoundRect(cx - 14f, cy - 22f, cx - 6f, cy - 16f, 3f, 3f, p)
         for (i in 1..3) {
             p.color = if (i <= level) Color.rgb(140, 200, 255) else Color.argb(60, 255, 255, 255)
             c.drawRoundRect(cx - 12f + (i - 1) * 9f, cy + 13f, cx - 5f + (i - 1) * 9f, cy + 17f, 2f, 2f, p)
@@ -606,7 +623,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val frame = RectF(left, 596f - h, left + w, 584f)
         // Taps outside the popover close it (registered first, so the popover's own hits win).
         hits.add(Pair(RectF(0f, 0f, W, H), closePopover))
-        glass(c, frame, 26f, 2.6f)
+        panel(c, frame, 26f)
         r.set(frame.right - 52f, frame.top + 12f, frame.right - 12f, frame.top + 52f)
         text(c, "×", r.centerX(), r.centerY() + 9f, 28f, quiet, light, Paint.Align.CENTER)
         hit(RectF(r)) { popover = Popover.NONE }
@@ -637,7 +654,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun drawFanPopover(c: Canvas) {
         val level = fan ?: return
-        val f = popoverFrame(c, 526f, 520f, 170f)
+        val f = popoverFrame(c, 489f, 520f, 170f)
         text(c, "Fan speed", f.left + 28f, f.top + 40f, 16f, quiet, medium)
         text(c, level.toString(), f.left + 28f, f.top + 92f, 44f, ink, light)
         val x0 = f.left + 40f; val x1 = f.right - 40f; val ty = f.top + 128f
@@ -661,8 +678,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
             if (rightHandDrive) RectF(20f, 64f, 1168f, 584f) else RectF(112f, 64f, 1260f, 584f)
         }
         hits.add(Pair(RectF(0f, 0f, W, H), closePopover))
-        p.color = Color.argb(if (night) 120 else 70, 10, 12, 24); c.drawRoundRect(frame, 28f, 28f, p)
-        glass(c, frame, 28f, 2f)
+        panel(c, frame, 28f)
         text(c, title, frame.left + 32f, frame.top + 52f, 28f, ink, light)
         r.set(frame.right - 64f, frame.top + 16f, frame.right - 16f, frame.top + 64f)
         text(c, "×", r.centerX(), r.centerY() + 10f, 32f, quiet, light, Paint.Align.CENTER)
