@@ -28,6 +28,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import com.shilapi.xcertplay.host.R
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -122,7 +123,13 @@ internal class HomeDashboardView(context: Context) : View(context) {
     var connectionName = "No phone"; set(v) { field = v; invalidate() }
     var night = homeNightMode(null, localHour()); set(v) { if (field != v) { field = v; invalidate() } }
     var rightHandDrive = true; set(v) { field = v; invalidate() }
-    var media = Media("No source", null, null, false, null); set(v) { field = v; invalidate() }
+    var media = Media("No source", null, null, false, null)
+        set(value) {
+            if (field.art !== value.art) albumTint = artworkTint(value.art)
+            field = value
+            invalidate()
+        }
+    private var albumTint: Int? = null
     /** Which projection is live; drives the map zone title and what the source list offers. */
     var projection = HomeSources.Projection.NONE; set(v) { field = v; invalidate() }
     /** The source playing now, ticked in the source list; null when nothing is. */
@@ -142,12 +149,17 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     fun projectionBounds(width: Int, height: Int): RectF {
+        if (width <= 0 || height <= 0) return RectF()
         val scale = min(width / W, height / H)
         val offsetX = (width - W * scale) / 2f
         val offsetY = (height - H * scale) / 2f
-        return zone.apply {
-            set(left * scale + offsetX, top * scale + offsetY, right * scale + offsetX, bottom * scale + offsetY)
-        }
+        val map = zone
+        val projectionScale = min(map.width() * scale / width, map.height() * scale / height)
+        val centerX = map.centerX() * scale + offsetX
+        val centerY = map.centerY() * scale + offsetY
+        val halfWidth = width * projectionScale / 2f
+        val halfHeight = height * projectionScale / 2f
+        return RectF(centerX - halfWidth, centerY - halfHeight, centerX + halfWidth, centerY + halfHeight)
     }
 
     fun showLiveProjection(): Boolean {
@@ -444,8 +456,10 @@ internal class HomeDashboardView(context: Context) : View(context) {
         oy = (height - H * s) / 2f
         canvas.save()
         if (expandProjection != null) {
+            path.reset()
+            path.addRoundRect(projectionBounds(width, height), 24f * s, 24f * s, Path.Direction.CW)
             @Suppress("DEPRECATION")
-            canvas.clipRect(projectionBounds(width, height), android.graphics.Region.Op.DIFFERENCE)
+            canvas.clipPath(path, android.graphics.Region.Op.DIFFERENCE)
         }
         drawBackdrop(canvas)
         canvas.restore()
@@ -459,6 +473,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
             connected -> drawMapZone(canvas)
             else -> drawLocalZone(canvas)
         }
+        drawMediaShelf(canvas)
         drawMediaCard(canvas)
         drawLowerCard(canvas)
         drawClimateBar(canvas)
@@ -607,9 +622,6 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun drawDock(c: Canvas) {
         val cx = mx(1222f)
-        p.style = Paint.Style.FILL
-        p.color = if (night) Color.argb(112, 14, 19, 35) else Color.argb(55, 52, 65, 91)
-        c.drawRoundRect(cx - 38f, 64f, cx + 38f, 584f, 38f, 38f, p)
         val items = listOf<Triple<Int, String, () -> Unit>>(
             Triple(R.drawable.ic_dp_home, "Home") { popover = Popover.NONE },
             Triple(R.drawable.ic_dp_navigation, "Map") { if (expandProjection != null) expandProjection?.invoke() else if (!showLiveProjection()) openProjection() },
@@ -649,14 +661,12 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun drawMapZone(c: Canvas) {
         val z = zone
-        glass(c, z, 28f, .7f)
-        // No map is drawn: until the phone's map is streamed here, the zone says so plainly.
-        c.save()
-        path.reset(); path.addRoundRect(z, 28f, 28f, Path.Direction.CW); c.clipPath(path)
-        p.shader = LinearGradient(z.left, z.top, z.right, z.bottom, Color.argb(if (night) 60 else 50, 70, 90, 150),
-            Color.argb(if (night) 40 else 30, 120, 90, 190), Shader.TileMode.CLAMP)
-        c.drawRect(z, p); p.shader = null
-        c.restore()
+        p.color = Color.BLACK
+        p.shader = RadialGradient(z.centerX(), z.centerY(), z.width() * .54f,
+            ColorUtils.setAlphaComponent(accent, if (night) 49 else 36),
+            ColorUtils.setAlphaComponent(accent, 0), Shader.TileMode.CLAMP)
+        c.drawRoundRect(z, 42f, 42f, p)
+        p.shader = null
         icon(c, R.drawable.ic_dp_navigation, z.centerX(), z.centerY() - 40f, 64f, accent)
         val carPlay = projection == HomeSources.Projection.CARPLAY
         text(c, if (carPlay) "CarPlay" else "Android Auto", z.centerX(), z.centerY() + 24f, 30f, ink, light, Paint.Align.CENTER)
@@ -686,7 +696,6 @@ internal class HomeDashboardView(context: Context) : View(context) {
     // ---- Local zone (no phone) -------------------------------------------------------------------
     private fun drawLocalZone(c: Canvas) {
         val z = zone
-        glass(c, z, 28f, .7f)
         val now = fixedTime ?: Date()
         val hm = SimpleDateFormat("h:mm", Locale.US).format(now)
         val ampm = SimpleDateFormat("a", Locale.US).format(now)
@@ -723,26 +732,66 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     // ---- Right column: now playing and the next turn or vehicle shortcuts -------------------------
+    private fun artworkTint(art: Bitmap?): Int? {
+        if (art == null || art.isRecycled) return null
+        return runCatching {
+            val samples = listOf(
+                art.getPixel(art.width / 2, art.height / 2),
+                art.getPixel(art.width / 4, art.height / 4),
+                art.getPixel(art.width * 3 / 4, art.height * 3 / 4),
+            )
+            Color.rgb(samples.sumOf { Color.red(it) } / samples.size,
+                samples.sumOf { Color.green(it) } / samples.size,
+                samples.sumOf { Color.blue(it) } / samples.size)
+        }.getOrNull()
+    }
+
+    private fun drawMediaShelf(c: Canvas) {
+        val bounds = column
+        glass(c, bounds, 38f)
+        c.save()
+        path.reset()
+        path.addRoundRect(bounds, 38f, 38f, Path.Direction.CW)
+        c.clipPath(path)
+        val glow = albumTint?.let { ColorUtils.blendARGB(accent, it, .55f) } ?: accent
+        p.color = Color.BLACK
+        p.shader = RadialGradient(bounds.centerX(), bounds.top + 90f, bounds.width() * .77f,
+            ColorUtils.setAlphaComponent(glow, if (night) 75 else 60),
+            ColorUtils.setAlphaComponent(glow, 0), Shader.TileMode.CLAMP)
+        c.drawRect(bounds, p)
+        p.shader = null
+        c.restore()
+
+        p.color = ColorUtils.setAlphaComponent(ink, 40)
+        p.strokeWidth = 1f
+        val y = bounds.top + 342f
+        c.drawLine(bounds.left + 22f, y, bounds.right - 22f, y, p)
+    }
+
     private fun drawMediaCard(c: Canvas) {
         val col = column
-        r.set(col.left, col.top, col.right, col.top + 330f); glass(c, r, 26f)
-        val card = RectF(r)
-        // Source selector.
-        r.set(card.left + 18f, card.top + 18f, card.right - 18f, card.top + 56f); glass(c, r, 19f, 1.5f)
+        val card = RectF(col.left, col.top, col.right, col.top + 330f)
+        r.set(card.left + 18f, card.top + 14f, card.right - 18f, card.top + 56f)
+        if (popover == Popover.SOURCES) glass(c, r, 21f, 1.2f)
         text(c, media.source, r.left + 18f, r.centerY() + 6f, 16f, ink, medium, Paint.Align.LEFT, r.width() - 60f)
         p.style = Paint.Style.STROKE; p.strokeWidth = 2f; p.color = quiet; p.strokeCap = Paint.Cap.ROUND
         c.drawLine(r.right - 28f, r.centerY() - 3f, r.right - 22f, r.centerY() + 3f); c.drawLine(r.right - 22f, r.centerY() + 3f, r.right - 16f, r.centerY() - 3f)
         p.style = Paint.Style.FILL
         hit(r) { popover = if (popover == Popover.SOURCES) Popover.NONE else Popover.SOURCES }
         // Artwork, or a soft tile when there is none.
-        val art = RectF(card.centerX() - 53f, card.top + 67f, card.centerX() + 53f, card.top + 173f)
+        val art = RectF(card.centerX() - 58f, card.top + 61f, card.centerX() + 58f, card.top + 177f)
         val bitmap = media.art?.takeUnless { it.isRecycled }
         if (bitmap != null) {
-            c.save(); path.reset(); path.addRoundRect(art, 16f, 16f, Path.Direction.CW); c.clipPath(path)
+            c.save(); path.reset(); path.addRoundRect(art, 24f, 24f, Path.Direction.CW); c.clipPath(path)
             c.drawBitmap(bitmap, null, art, p); c.restore()
         } else {
-            glass(c, art, 25f, 2.5f)
-            icon(c, R.drawable.ic_dp_audio, art.centerX(), art.centerY(), 39f, accent)
+            p.color = Color.BLACK
+            p.shader = LinearGradient(art.left, art.top, art.right, art.bottom,
+                ColorUtils.setAlphaComponent(accent, 105),
+                ColorUtils.setAlphaComponent(accent, 30), Shader.TileMode.CLAMP)
+            c.drawRoundRect(art, 34f, 34f, p)
+            p.shader = null
+            icon(c, R.drawable.ic_dp_audio, art.centerX(), art.centerY(), 39f, ink)
         }
         val titleWidth = card.width() - 36f
         text(c, media.title ?: "Nothing playing", card.centerX(), card.top + 199f, 21f, ink, medium,
@@ -786,8 +835,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun drawLowerCard(c: Canvas) {
         val col = column
-        r.set(col.left, col.top + 346f, col.right, col.bottom); glass(c, r, 26f)
-        val card = RectF(r)
+        val card = RectF(col.left, col.top + 346f, col.right, col.bottom)
         val next = turn
         if (connected && next != null) {
             text(c, "NEXT TURN", card.left + 22f, card.top + 34f, 13f, quiet, medium)

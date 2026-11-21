@@ -156,6 +156,35 @@ class DiConnectUiPreviewTest {
         }
     }
 
+    @Test fun liveMapViewportKeepsTheProjectionAspectRatio() {
+        withDashboard { view, _ ->
+            val bounds = view.projectionBounds(1200, 720)
+            assertEquals(1200f / 720f, bounds.width() / bounds.height(), .001f)
+            assertTrue(view.projectionBounds(0, 720).isEmpty)
+        }
+    }
+
+    @Test fun albumArtChangesTheMediaShelfTint() {
+        withDashboard { view, bitmap ->
+            view.night = true
+            val red = Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
+            val blue = Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.BLUE) }
+            try {
+                view.media = view.media.copy(art = red)
+                view.draw(Canvas(bitmap))
+                val redTint = bitmap.getPixel(910, 162)
+                view.media = view.media.copy(art = blue)
+                view.draw(Canvas(bitmap))
+                val blueTint = bitmap.getPixel(910, 162)
+                assertTrue(Color.red(redTint) > Color.red(blueTint))
+                assertTrue(Color.blue(blueTint) > Color.blue(redTint))
+            } finally {
+                red.recycle()
+                blue.recycle()
+            }
+        }
+    }
+
     @Test fun settingsMenuCoversTheLiveProjection() {
         withDashboard { view, bitmap ->
             view.useLiveProjection { }
