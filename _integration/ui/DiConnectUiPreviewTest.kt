@@ -6,9 +6,12 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Rect
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ScrollView
+import android.widget.TextView
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,6 +61,20 @@ class DiConnectUiPreviewTest {
         ReflectionHelpers.setField(it, "settingsCategory", SettingsCategory.APPEARANCE)
     }
 
+    @Test fun defaultHomeInAppearanceFullLargeFont() = captureDefaultHomeInAppearance("full")
+
+    @Test
+    @Config(qualifiers = "ar-rSA-ldrtl-w600dp-h360dp-land-xhdpi")
+    fun defaultHomeInAppearanceCompactArabicLargeFont() = captureDefaultHomeInAppearance("compact-ar")
+
+    private fun captureDefaultHomeInAppearance(size: String) {
+        org.robolectric.RuntimeEnvironment.setFontScale(1.5f)
+        capture("settings-appearance-default-home-$size", scrollTo = com.shilapi.xcertplay.host.R.string.settings_home_default_app) {
+            ReflectionHelpers.setField(it, "page", "settings")
+            ReflectionHelpers.setField(it, "settingsCategory", SettingsCategory.APPEARANCE)
+        }
+    }
+
     @Test fun themes() = capture("themes") { ReflectionHelpers.setField(it, "page", "themes") }
 
     // Di-Connect 2.0 Home preview (phase 1): drawn directly at the head unit's 1920x1080.
@@ -77,6 +94,7 @@ class DiConnectUiPreviewTest {
     }
 
     private fun HomeDashboardView.sample() {
+        night = true
         connected = true
         connectionName = "Android Auto · Galaxy"
         mapNote = "Preview placeholder · the phone's live map is shown here"
@@ -183,8 +201,22 @@ class DiConnectUiPreviewTest {
                 view.draw(Canvas(bitmap))
                 return Color.red(bitmap.getPixel(8, 8))
             }
-            assertTrue(backdropRed(false) - backdropRed(true) > 100)
+            val day = backdropRed(false)
+            assertTrue(day - backdropRed(true) > 65)
+            assertTrue(day < 185)
         }
+    }
+
+    @Test fun headlightsOverrideTheTimeOfDay() {
+        assertFalse(homeNightMode(0, 23))
+        assertTrue(homeNightMode(1, 12))
+    }
+
+    @Test fun missingOrUnsupportedHeadlightSignalUsesLocalTime() {
+        assertTrue(homeNightMode(null, 5))
+        assertFalse(homeNightMode(null, 6))
+        assertFalse(homeNightMode(-1, 18))
+        assertTrue(homeNightMode(2, 19))
     }
 
     @Test fun home2LiveNightGlass() = home2("home2-live-night-glass") {
@@ -218,7 +250,7 @@ class DiConnectUiPreviewTest {
         return try { view.onTouchEvent(event) } finally { event.recycle() }
     }
 
-    private fun capture(name: String, open: (DiPlayActivity) -> Unit) {
+    private fun capture(name: String, scrollTo: Int? = null, open: (DiPlayActivity) -> Unit) {
         val controller = Robolectric.buildActivity(DiPlayActivity::class.java).setup()
         val activity = controller.get()
         try {
@@ -233,6 +265,22 @@ class DiConnectUiPreviewTest {
             root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
             root.layout(0, 0, width, height)
+            scrollTo?.let { label ->
+                fun find(view: View, text: String): TextView? {
+                    if (view is TextView && view.text.toString() == text) return view
+                    if (view is ViewGroup) {
+                        return (0 until view.childCount).firstNotNullOfOrNull { find(view.getChildAt(it), text) }
+                    }
+                    return null
+                }
+                val row = requireNotNull(find(root, activity.getString(label)))
+                val scroll = generateSequence(row.parent) { it.parent }.filterIsInstance<ScrollView>().first()
+                val rect = Rect(0, 0, row.width, row.height)
+                scroll.offsetDescendantRectToMyCoords(row, rect)
+                scroll.scrollTo(0, (rect.bottom - scroll.height + scroll.paddingBottom).coerceAtLeast(0))
+                assertTrue(rect.top >= scroll.scrollY)
+                assertTrue(rect.bottom <= scroll.scrollY + scroll.height)
+            }
             val image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             try {
                 root.draw(Canvas(image))

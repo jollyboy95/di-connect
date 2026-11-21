@@ -3417,6 +3417,14 @@ edit(D, ('''            accentPicker(card)
             card.addView(button(getString(R.string.settings_home_preview), false) {
                 startActivity(android.content.Intent(this, HomeDashboardActivity::class.java))
             }, matchButton(CONTROL_GAP_DP, 52))
+            card.addView(label(getString(R.string.settings_home_default_app_description), 14, MUTED).apply {
+                setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
+            })
+            card.addView(button(getString(R.string.settings_home_default_app), false) {
+                if (!HomeDashboardActivity.openDefaultHomePicker(this)) {
+                    runCatching { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) }
+                }
+            }, matchButton(CONTROL_GAP_DP, 52))
         }
 '''))
 _txt={'settings_home_preview':['Preview Di-Connect 2.0 Home (experimental)','معاينة الشاشة الرئيسية Di-Connect 2.0 (تجريبي)','Vista previa de Di-Connect 2.0 Home (experimental)','Anteprima Di-Connect 2.0 Home (sperimentale)','Di-Connect 2.0 ホームのプレビュー（実験的機能）','Предпросмотр Di-Connect 2.0 Home (экспериментально)','Попередній перегляд Di-Connect 2.0 Home (експериментально)','预览 Di-Connect 2.0 主屏幕（实验性）','預覽 Di-Connect 2.0 主畫面（實驗性）'],

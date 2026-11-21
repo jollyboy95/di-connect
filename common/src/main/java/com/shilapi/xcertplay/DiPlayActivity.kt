@@ -2984,6 +2984,14 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             card.addView(button(getString(R.string.settings_home_preview), false) {
                 startActivity(android.content.Intent(this, HomeDashboardActivity::class.java))
             }, matchButton(CONTROL_GAP_DP, 52))
+            card.addView(label(getString(R.string.settings_home_default_app_description), 14, MUTED).apply {
+                setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
+            })
+            card.addView(button(getString(R.string.settings_home_default_app), false) {
+                if (!HomeDashboardActivity.openDefaultHomePicker(this)) {
+                    runCatching { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) }
+                }
+            }, matchButton(CONTROL_GAP_DP, 52))
         }
         filteredSection(content, SettingsSection.CLIMATE_STRIP,
             getString(R.string.settings_climate), R.drawable.ic_dc_fan) { card ->

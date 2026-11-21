@@ -5,7 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.Configuration
+import android.database.ContentObserver
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -22,6 +22,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.provider.Settings
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -29,6 +30,7 @@ import android.view.WindowManager
 import androidx.core.content.ContextCompat
 import com.shilapi.xcertplay.host.R
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
@@ -87,6 +89,25 @@ class HomeDashboardActivity : Activity() {
         view.stop()
         super.onPause()
     }
+
+    companion object {
+        fun openDefaultHomePicker(context: Context): Boolean = runCatching {
+            val alias = ComponentName(context.packageName, "com.shilapi.xcertplay.HomeLauncher")
+            context.packageManager.setComponentEnabledSetting(
+                alias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP
+            )
+            context.startActivity(Intent(Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }.isSuccess
+    }
+}
+
+private const val HEADLIGHT_MODE = "car_mode"
+
+/** Head units that publish the illumination signal use 0 for day and 1 for night. */
+internal fun homeNightMode(carMode: Int?, hourOfDay: Int): Boolean = when (carMode) {
+    0 -> false
+    1 -> true
+    else -> hourOfDay >= 19 || hourOfDay < 6
 }
 
 internal class HomeDashboardView(context: Context) : View(context) {
@@ -99,7 +120,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     var connected = false; set(v) { field = v; invalidate() }
     var connectionName = "No phone"; set(v) { field = v; invalidate() }
-    var night = isNight(context.resources.configuration); set(v) { field = v; invalidate() }
+    var night = homeNightMode(null, localHour()); set(v) { if (field != v) { field = v; invalidate() } }
     var rightHandDrive = true; set(v) { field = v; invalidate() }
     var media = Media("No source", null, null, false, null); set(v) { field = v; invalidate() }
     /** Which projection is live; drives the map zone title and what the source list offers. */
@@ -161,10 +182,15 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     // ---- Car wiring (only on a GWM head unit) -------------------------------------------------------
     private val main = Handler(Looper.getMainLooper())
+    private val headlightModeObserver = object : ContentObserver(main) {
+        override fun onChange(selfChange: Boolean) {
+            if (running) refreshTheme()
+        }
+    }
     private var stopMusic: (() -> Unit)? = null
     private var running = false
     private val tick = object : Runnable {
-        override fun run() { invalidate(); readHotspot(); main.postDelayed(this, 15_000) }
+        override fun run() { refreshTheme(); invalidate(); readHotspot(); main.postDelayed(this, 15_000) }
     }
     private val mediaPoll = object : Runnable {
         override fun run() { readFactoryMedia(); if (running) main.postDelayed(this, 2_000) }
@@ -196,6 +222,10 @@ internal class HomeDashboardView(context: Context) : View(context) {
     fun start() {
         if (running) return
         running = true
+        runCatching {
+            context.contentResolver.registerContentObserver(Settings.System.getUriFor(HEADLIGHT_MODE), false, headlightModeObserver)
+        }
+        refreshTheme()
         main.removeCallbacks(tick); main.post(tick)
         main.removeCallbacks(mediaPoll); main.post(mediaPoll)
         main.removeCallbacks(projectionPoll); main.post(projectionPoll)
@@ -222,7 +252,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     fun stop() {
+        if (!running) return
         running = false
+        runCatching { context.contentResolver.unregisterContentObserver(headlightModeObserver) }
         main.removeCallbacks(tick)
         main.removeCallbacks(mediaPoll)
         main.removeCallbacks(projectionPoll)
@@ -375,13 +407,12 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        night = isNight(newConfig)
-    }
+    private fun localHour() = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
-    private fun isNight(config: Configuration): Boolean =
-        config.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_NO
+    private fun refreshTheme() {
+        val carMode = runCatching { Settings.System.getInt(context.contentResolver, HEADLIGHT_MODE, -1) }.getOrNull()
+        night = homeNightMode(carMode, localHour())
+    }
 
     // ---- Look --------------------------------------------------------------------------------------
     private val W = 1280f
@@ -398,9 +429,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private val hits = ArrayList<Pair<RectF, () -> Unit>>()
     private val icons = HashMap<Int, Drawable?>()
 
-    private val ink get() = if (night) Color.rgb(242, 247, 255) else Color.rgb(21, 34, 61)
-    private val quiet get() = if (night) Color.rgb(175, 191, 218) else Color.rgb(67, 83, 116)
-    private val accent get() = if (night) Color.rgb(187, 177, 255) else Color.rgb(77, 67, 167)
+    private val ink get() = if (night) Color.rgb(242, 247, 255) else Color.rgb(22, 36, 54)
+    private val quiet get() = if (night) Color.rgb(175, 191, 218) else Color.rgb(48, 67, 91)
+    private val accent get() = if (night) Color.rgb(187, 177, 255) else Color.rgb(50, 63, 126)
 
     // Mirror a horizontal position for left-hand drive: positions move, drawing never flips.
     private fun mx(x: Float): Float = if (rightHandDrive) x else W - x
@@ -449,8 +480,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
         p.style = Paint.Style.FILL
         p.color = Color.BLACK
         p.shader = LinearGradient(0f, 0f, w, h,
-            if (night) Color.rgb(10, 17, 32) else Color.rgb(210, 229, 244),
-            if (night) Color.rgb(21, 19, 41) else Color.rgb(226, 218, 248), Shader.TileMode.CLAMP)
+            if (night) Color.rgb(10, 17, 32) else Color.rgb(122, 150, 171),
+            if (night) Color.rgb(21, 19, 41) else Color.rgb(133, 140, 168), Shader.TileMode.CLAMP)
         c.drawRect(0f, 0f, w, h, p)
 
         fun glow(x: Float, y: Float, radius: Float, color: Int) {
@@ -459,33 +490,33 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
         val extent = max(w, h)
         glow(w * .16f, h * .14f, extent * .48f,
-            if (night) Color.argb(150, 46, 87, 152) else Color.argb(180, 244, 252, 255))
+            if (night) Color.argb(150, 46, 87, 152) else Color.argb(110, 184, 209, 226))
         glow(w * .86f, h * .34f, extent * .38f,
-            if (night) Color.argb(135, 89, 62, 150) else Color.argb(150, 195, 182, 242))
+            if (night) Color.argb(135, 89, 62, 150) else Color.argb(115, 165, 155, 195))
         glow(w * .57f, h * .98f, extent * .40f,
-            if (night) Color.argb(100, 37, 99, 145) else Color.argb(130, 184, 222, 241))
+            if (night) Color.argb(100, 37, 99, 145) else Color.argb(90, 113, 169, 183))
         p.shader = null
     }
 
     /** Thin specular edge and a translucent, tinted body. */
     private fun glass(c: Canvas, rect: RectF, radius: Float, strength: Float = 1f) {
         p.style = Paint.Style.FILL
-        p.color = Color.argb(if (night) 38 else 23, 11, 15, 40)
+        p.color = Color.argb(if (night) 27 else 21, 11, 15, 40)
         c.drawRoundRect(rect.left, rect.top + 3f, rect.right, rect.bottom + 5f, radius, radius, p)
         p.color = Color.BLACK
         val intensity = strength.coerceAtMost(3f)
-        val highlight = (if (night) 36 else 122) + (intensity * 18).toInt()
-        val shade = (if (night) 14 else 60) + (intensity * 9).toInt()
+        val highlight = (if (night) 29 else 91) + (intensity * 18).toInt()
+        val shade = (if (night) 16 else 49) + (intensity * 9).toInt()
         p.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom,
-            Color.argb(highlight, 244, 249, 255),
-            Color.argb(shade, if (night) 141 else 245, if (night) 155 else 248, 255),
+            Color.argb(highlight, if (night) 244 else 202, if (night) 249 else 221, 238),
+            Color.argb(shade, if (night) 141 else 158, if (night) 155 else 179, if (night) 255 else 210),
             Shader.TileMode.CLAMP)
         c.drawRoundRect(rect, radius, radius, p)
         p.style = Paint.Style.STROKE
         p.strokeWidth = 1f
         p.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom,
-            Color.argb(if (night) 83 else 224, 250, 253, 255),
-            Color.argb(if (night) 16 else 105, 250, 253, 255), Shader.TileMode.CLAMP)
+            Color.argb(if (night) 64 else 128, 220, 239, 255),
+            Color.argb(if (night) 5 else 34, 220, 239, 255), Shader.TileMode.CLAMP)
         c.drawRoundRect(rect, radius, radius, p)
         p.shader = null
         p.style = Paint.Style.FILL
@@ -498,13 +529,13 @@ internal class HomeDashboardView(context: Context) : View(context) {
         c.drawRoundRect(rect.left, rect.top + 6f, rect.right, rect.bottom + 10f, radius, radius, p)
         p.color = Color.BLACK
         p.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom,
-            if (night) Color.rgb(40, 49, 75) else Color.rgb(239, 246, 255),
-            if (night) Color.rgb(25, 29, 53) else Color.rgb(224, 221, 251), Shader.TileMode.CLAMP)
+            if (night) Color.rgb(40, 49, 75) else Color.rgb(174, 196, 214),
+            if (night) Color.rgb(25, 29, 53) else Color.rgb(162, 172, 197), Shader.TileMode.CLAMP)
         c.drawRoundRect(rect, radius, radius, p)
         p.shader = null
         p.style = Paint.Style.STROKE
         p.strokeWidth = 1f
-        p.color = Color.argb(if (night) 82 else 240, 249, 251, 255)
+        p.color = Color.argb(if (night) 70 else 135, 224, 239, 250)
         c.drawRoundRect(rect, radius, radius, p)
         p.style = Paint.Style.FILL
     }
@@ -576,8 +607,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun drawDock(c: Canvas) {
         val cx = mx(1222f)
-        r.set(cx - 38f, 64f, cx + 38f, 584f)
-        glass(c, r, 30f)
+        p.style = Paint.Style.FILL
+        p.color = if (night) Color.argb(112, 14, 19, 35) else Color.argb(55, 52, 65, 91)
+        c.drawRoundRect(cx - 38f, 64f, cx + 38f, 584f, 38f, 38f, p)
         val items = listOf<Triple<Int, String, () -> Unit>>(
             Triple(R.drawable.ic_dp_home, "Home") { popover = Popover.NONE },
             Triple(R.drawable.ic_dp_navigation, "Map") { if (expandProjection != null) expandProjection?.invoke() else if (!showLiveProjection()) openProjection() },
@@ -591,7 +623,10 @@ internal class HomeDashboardView(context: Context) : View(context) {
             val cy = 64f + step * (i + .5f)
             val active = (i == 0 && popover == Popover.NONE) || (label == "Apps" && popover == Popover.APPS) ||
                 (label == "Settings" && popover == Popover.SETTINGS)
-            if (active) { r.set(cx - 30f, cy - 36f, cx + 30f, cy + 36f); glass(c, r, 22f, 2.2f) }
+            if (active) {
+                r.set(cx - 25f, cy - 35f, cx + 25f, cy + 10f)
+                glass(c, r, 23f, 2f)
+            }
             if (res == 0) drawGridIcon(c, cx, cy - 9f, 26f, ink) else icon(c, res, cx, cy - 9f, 28f, ink)
             text(c, label, cx, cy + 22f, 12.5f, if (active) ink else quiet, medium, Paint.Align.CENTER)
             hit(RectF(cx - 38f, cy - step / 2, cx + 38f, cy + step / 2), action)
@@ -765,7 +800,12 @@ internal class HomeDashboardView(context: Context) : View(context) {
             text(c, "VEHICLE", card.left + 22f, card.top + 34f, 13f, quiet, medium)
             val rows = listOf("Vehicle settings", "System settings")
             rows.forEachIndexed { i, label ->
-                r.set(card.left + 18f, card.top + 50f + i * 58f, card.right - 18f, card.top + 98f + i * 58f); glass(c, r, 16f, 1.4f)
+                r.set(card.left + 18f, card.top + 50f + i * 58f, card.right - 18f, card.top + 98f + i * 58f)
+                if (i > 0) {
+                    p.color = if (night) Color.argb(45, 230, 239, 255) else Color.argb(55, 46, 67, 94)
+                    p.strokeWidth = 1f
+                    c.drawLine(r.left + 4f, r.top - 5f, r.right - 4f, r.top - 5f, p)
+                }
                 text(c, label, r.left + 18f, r.centerY() + 6f, 17f, ink, medium)
                 text(c, "›", r.right - 20f, r.centerY() + 7f, 22f, quiet, null, Paint.Align.CENTER)
                 hit(r) { if (i == 0) openVehicle() else openSystemSettings() }
@@ -1151,11 +1191,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     private fun chooseDefaultHome() {
-        val alias = ComponentName(context.packageName, "com.shilapi.xcertplay.HomeLauncher")
-        context.packageManager.setComponentEnabledSetting(
-            alias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP
-        )
-        if (!start(Intent(android.provider.Settings.ACTION_HOME_SETTINGS))) openAndroidSettings()
+        if (!HomeDashboardActivity.openDefaultHomePicker(context)) openAndroidSettings()
     }
 
     private fun openFactoryHome() {
