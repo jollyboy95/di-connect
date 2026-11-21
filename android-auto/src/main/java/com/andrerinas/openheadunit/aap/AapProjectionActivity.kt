@@ -1136,11 +1136,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         val h = frame.height
         if (w <= 0 || h <= 0) return
         val bounds = if (showingProjectionHome) projectionHome?.mapBounds(w, h) else null
-        val scale = bounds?.let { minOf(it.width() / w, it.height() / h) } ?: 1f
-        projectionLayer.scaleX = scale
-        projectionLayer.scaleY = scale
-        projectionLayer.translationX = bounds?.let { it.centerX() - w * scale / 2 } ?: 0f
-        projectionLayer.translationY = bounds?.let { it.centerY() - h * scale / 2 } ?: 0f
+        projectionLayer.scaleX = bounds?.let { it.width() / w } ?: 1f
+        projectionLayer.scaleY = bounds?.let { it.height() / h } ?: 1f
+        projectionLayer.translationX = bounds?.left ?: 0f
+        projectionLayer.translationY = bounds?.top ?: 0f
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

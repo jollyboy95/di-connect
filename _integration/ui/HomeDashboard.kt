@@ -178,8 +178,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val projectionScale = min(map.width() * scale / width, map.height() * scale / height)
         val centerX = map.centerX() * scale + offsetX
         val bottom = map.bottom * scale + offsetY
-        val halfWidth = width * projectionScale / 2f
-        val halfHeight = height * projectionScale / 2f
+        // Fill modest aspect differences while limiting distortion on unusually wide displays.
+        val halfWidth = min(map.width() * scale, width * projectionScale * 1.10f) / 2f
+        val halfHeight = min(map.height() * scale, height * projectionScale * 1.10f) / 2f
         return RectF(centerX - halfWidth, bottom - 2 * halfHeight, centerX + halfWidth, bottom)
     }
 
@@ -677,14 +678,14 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun hit(rect: RectF, action: () -> Unit) { hits.add(Pair(RectF(rect), action)) }
 
-    private fun circleButton(c: Canvas, cx: Float, cy: Float, radius: Float, label: String, action: () -> Unit) {
+    private fun circleButton(c: Canvas, cx: Float, cy: Float, radius: Float, label: String, touchRadius: Float = radius + 6f, action: () -> Unit) {
         p.style = Paint.Style.FILL
         p.color = Color.argb(if (night) 30 else 55, 255, 255, 255)
         c.drawCircle(cx, cy, radius, p)
         p.style = Paint.Style.STROKE; p.strokeWidth = 1.2f; p.color = Color.argb(if (night) 60 else 110, 255, 255, 255)
         c.drawCircle(cx, cy, radius, p); p.style = Paint.Style.FILL
         text(c, label, cx, cy + radius * .36f, radius * 1.05f, ink, light, Paint.Align.CENTER)
-        hit(RectF(cx - radius - 6, cy - radius - 6, cx + radius + 6, cy + radius + 6), action)
+        hit(RectF(cx - touchRadius, cy - touchRadius, cx + touchRadius, cy + touchRadius), action)
     }
 
     // ---- Top bar and dock ------------------------------------------------------------------------
@@ -1071,7 +1072,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
     }
 
-    private val climateTop = 638f
+    private val climateTop = 664f
     private val barRect = RectF(0f, climateTop, W, H)
 
     private fun drawClimateBar(c: Canvas) {
@@ -1091,36 +1092,36 @@ internal class HomeDashboardView(context: Context) : View(context) {
         seat(c, mx(996f), cy, true)
         // Fan: − and + change it at once; the middle opens the slider.
         fan?.let { level ->
-            circleButton(c, 370f, cy, 22f, "−") { setFan(level - 1) }
-            r.set(400f, cy - 34f, 578f, cy + 34f)
+            circleButton(c, 370f, cy, 16f, "−", 28f) { setFan(level - 1) }
+            r.set(400f, cy - 24f, 578f, cy + 24f)
             if (popover == Popover.FAN) glass(c, r, 20f, 2f)
-            icon(c, R.drawable.ic_dc_fan, 428f, cy, 28f, ink)
+            icon(c, R.drawable.ic_dc_fan, 428f, cy, 22f, ink)
             for (i in 1..7) {
                 p.color = if (i <= level) accent else Color.argb(55, 255, 255, 255)
-                val bx = 438f + i * 17f; val bh = 8f + i * 3.4f
-                c.drawRoundRect(bx, cy + 14f - bh, bx + 9f, cy + 14f, 3f, 3f, p)
+                val bx = 438f + i * 17f; val bh = 6f + i * 2.6f
+                c.drawRoundRect(bx, cy + 11f - bh, bx + 8f, cy + 11f, 3f, 3f, p)
             }
             hit(RectF(r)) { popover = if (popover == Popover.FAN) Popover.NONE else Popover.FAN }
-            circleButton(c, 608f, cy, 22f, "+") { setFan(level + 1) }
+            circleButton(c, 608f, cy, 16f, "+", 28f) { setFan(level + 1) }
         }
         var x = 646f
         fun toggle(label: String, on: Boolean?, action: (Boolean) -> Unit) {
             val state = on ?: return
             t.textSize = 15f; t.typeface = medium
             val w = max(52f, t.measureText(label) + 24f)
-            r.set(x, cy - 24f, x + w, cy + 24f)
+            r.set(x, cy - 17f, x + w, cy + 17f)
             if (state) glass(c, r, 24f, 2.6f)
             text(c, label, r.centerX(), cy + 5.5f, 15f, if (state) ink else quiet, medium, Paint.Align.CENTER)
-            hit(RectF(r)) { action(!state) }
+            hit(RectF(x, barRect.top, x + w, barRect.bottom)) { action(!state) }
             x += w + 6f
         }
         toggle("A/C", ac) { ac = it; write(bar.AC, if (it) 1f else 0f) }
         recirculation?.let { mode ->
             val width = 48f
-            r.set(x, cy - 25f, x + width, cy + 25f)
+            r.set(x, cy - 17f, x + width, cy + 17f)
             if (mode != HomeRecirculation.FRESH) glass(c, r, 25f, 1.8f)
             drawRecirculationIcon(c, r.centerX(), cy, mode)
-            hit(r) {
+            hit(RectF(x, barRect.top, x + width, barRect.bottom)) {
                 val next = mode.toggle()
                 recirculation = next
                 write(HomeFactoryTargets.CLIMATE_CYCLE_MODE, next.value)
@@ -1165,16 +1166,16 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun tempGroup(c: Canvas, cx: Float, cy: Float, driver: Boolean) {
         val v = (if (driver) driverTemp else passengerTemp) ?: return
-        circleButton(c, cx - 86f, cy, 24f, "−") { setZoneTemp(driver, v - .5f) }
-        circleButton(c, cx + 86f, cy, 24f, "+") { setZoneTemp(driver, v + .5f) }
-        r.set(cx - 56f, cy - 40f, cx + 56f, cy + 40f)
+        circleButton(c, cx - 86f, cy, 17f, "−", 28f) { setZoneTemp(driver, v - .5f) }
+        circleButton(c, cx + 86f, cy, 17f, "+", 28f) { setZoneTemp(driver, v + .5f) }
+        r.set(cx - 56f, barRect.top, cx + 56f, barRect.bottom)
         val open = popover == if (driver) Popover.DRIVER_TEMP else Popover.PASSENGER_TEMP
         if (open) glass(c, r, 20f, 2f)
         val zone = if (driver) "DRIVER" else "PASSENGER"
         val label = if (!driver && sync == true) "$zone · SYNC" else zone
-        text(c, label, cx, cy - 16f, 11.5f, quiet, medium, Paint.Align.CENTER)
-        if (climateOn == false) text(c, "Off", cx, cy + 22f, 30f, quiet, light, Paint.Align.CENTER)
-        else text(c, String.format(Locale.US, "%.1f°", v), cx, cy + 22f, 34f, tempColor(v), light, Paint.Align.CENTER)
+        text(c, label, cx, cy - 7f, 10.5f, quiet, medium, Paint.Align.CENTER)
+        if (climateOn == false) text(c, "Off", cx, cy + 17f, 23f, quiet, light, Paint.Align.CENTER)
+        else text(c, String.format(Locale.US, "%.1f°", v), cx, cy + 17f, 25f, tempColor(v), light, Paint.Align.CENTER)
         hit(RectF(r)) {
             val mine = if (driver) Popover.DRIVER_TEMP else Popover.PASSENGER_TEMP
             popover = if (popover == mine) Popover.NONE else mine
@@ -1184,7 +1185,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private fun seat(c: Canvas, cx: Float, cy: Float, driver: Boolean) {
         val level = (if (driver) driverSeat else passengerSeat) ?: return
         val key = if (driver) bar.DRIVER_VENT else bar.PASS_VENT
-        r.set(cx - 30f, cy - 30f, cx + 30f, cy + 30f)
+        r.set(cx - 30f, barRect.top, cx + 30f, barRect.bottom)
+        c.save()
+        c.scale(.76f, .76f, cx, cy)
         if (level > 0) glass(c, r, 18f, 2f)
         // A seat, drawn as its back and cushion.
         p.style = Paint.Style.FILL; p.color = ink
@@ -1197,6 +1200,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
             p.color = if (i <= level) Color.rgb(140, 200, 255) else Color.argb(60, 255, 255, 255)
             c.drawRoundRect(cx - 12f + (i - 1) * 9f, cy + 13f, cx - 5f + (i - 1) * 9f, cy + 17f, 2f, 2f, p)
         }
+        c.restore()
         hit(RectF(r)) {
             val next = if (level >= 3 || level < 0) 0 else level + 1
             if (driver) driverSeat = next else passengerSeat = next

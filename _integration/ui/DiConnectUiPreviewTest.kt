@@ -137,9 +137,10 @@ class DiConnectUiPreviewTest {
             view.draw(Canvas(bitmap))
             val bounds = view.projectionBounds(1280, 720)
             assertFalse(touch(view, MotionEvent.ACTION_DOWN, bounds.centerX(), bounds.centerY()))
-            assertEquals(64f, bounds.top, 1f)
+            assertEquals(64f, bounds.top, .01f)
+            assertEquals(56f, bitmap.height - bounds.bottom, .01f)
             val expandX = bounds.right - 26
-            val expandY = bounds.top - 30f
+            val expandY = 34f
             assertTrue(touch(view, MotionEvent.ACTION_DOWN, expandX, expandY))
             assertTrue(touch(view, MotionEvent.ACTION_UP, expandX, expandY))
             assertEquals(1, expansions)
@@ -188,13 +189,13 @@ class DiConnectUiPreviewTest {
         }
     }
 
-    @Test fun liveMapViewportKeepsTheProjectionAspectRatio() {
+    @Test fun liveMapViewportFillsAvailableHeightAndLimitsAspectChange() {
         withDashboard { view, _ ->
             val bounds = view.projectionBounds(1200, 720)
-            assertEquals(1200f / 720f, bounds.width() / bounds.height(), .001f)
+            assertTrue(bounds.width() / bounds.height() in (1200f / 720f / 1.101f)..(1200f / 720f * 1.101f))
             val full = view.projectionBounds(1920, 1080)
             assertTrue(full.width() >= 1380f)
-            assertEquals(957f, full.bottom, .01f)
+            assertEquals(996f, full.bottom, .01f)
             assertTrue(view.projectionBounds(0, 720).isEmpty)
         }
     }
