@@ -476,6 +476,8 @@ internal class AapControlGateway(
                 .setStatus(Common.MessageStatus.STATUS_SUCCESS)
                 .build())
         aapTransport.send(msg)
+        // Now playing reaches the car only if the phone opens this channel; say so in the report.
+        if (channel == Channel.ID_MPB) com.andrerinas.openheadunit.utils.AppLog.i("Media playback status channel opened by the phone")
 
         if (channel == Channel.ID_NAV && com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterReady) {
             aapTransport.send(AapMessage(Channel.ID_NAV,

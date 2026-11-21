@@ -62,6 +62,9 @@ object DiConnectViews {
         observer(Music(s.title, s.artist, s.album, s.artwork, s.durationMillis, s.positionNow(), s.playing))
     }
 
+    /** What the phone sent on the now-playing channel this session, for the diagnostic report. */
+    fun musicReport(): String = GwmMusicState.report()
+
     internal fun from(guidance: BydGuidance?): Guidance? = guidance?.let {
         Guidance(it.clusterIcon, it.roundaboutExit, it.distanceMeters, it.road, it.remainingMeters, it.remainingSeconds, it.arrivalText, it.roundaboutImage?.toByteArray(), it.turnImage?.toByteArray())
     }

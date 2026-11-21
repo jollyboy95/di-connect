@@ -29,10 +29,15 @@ internal object HomeMediaSessions {
     val FACTORY_SOURCES = mapOf(
         "com.gwm.app.media.server.radio" to "Radio",
         "com.gwm.app.media.server.usbmusic" to "USB",
-        "com.gwm.app.media.server.bluetooth" to "Bluetooth audio",
         "com.gwm.app.media.server.usbvideo" to "USB video",
         "com.gwm.app.media.union" to "Media",
     )
+
+    /**
+     * Never shown: the car's Bluetooth music is kept off on purpose (it made the projections' audio
+     * stutter), so a stale Bluetooth session must not appear as a source.
+     */
+    val IGNORED = setOf("com.gwm.app.media.server.bluetooth", "com.android.bluetooth")
 
     data class NowPlaying(val packageName: String, val source: String, val title: String?, val artist: String?,
         val playing: Boolean, val progress: Float?, val art: Bitmap?)
@@ -48,7 +53,7 @@ internal object HomeMediaSessions {
         if (!allowed(context)) return null
         val msm = context.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return null
         val sessions = runCatching { msm.getActiveSessions(ComponentName(context, HomeMediaListener::class.java)) }
-            .getOrNull().orEmpty().filter { it.packageName != context.packageName }
+            .getOrNull().orEmpty().filter { it.packageName != context.packageName && it.packageName !in IGNORED }
         val pick = sessions.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
             ?: sessions.firstOrNull { !it.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE).isNullOrBlank() }
             ?: return null

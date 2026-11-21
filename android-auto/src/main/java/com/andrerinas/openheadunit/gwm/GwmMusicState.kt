@@ -47,6 +47,12 @@ internal object GwmMusicState {
     private val decoder = Executors.newSingleThreadExecutor { r -> Thread(r, "diauto-gwm-artwork").apply { isDaemon = true } }
     private val observers = CopyOnWriteArraySet<(Snapshot) -> Unit>()
     @Volatile private var generation = 0
+    /** Packets the phone sent this session, for the diagnostic report (Di-Connect, Nov 2026). */
+    @Volatile var metadataPackets = 0
+        private set
+    @Volatile var statusPackets = 0
+        private set
+    fun report(): String = "metadata $metadataPackets, status $statusPackets, track ${if (current.hasTrack) "yes" else "no"}, playing ${current.playing}"
 
     /** Observers run on the main thread. Returns a function that stops observing. */
     fun observe(observer: (Snapshot) -> Unit): () -> Unit {
@@ -56,6 +62,7 @@ internal object GwmMusicState {
     }
 
     fun onMetadata(meta: MediaPlayback.MediaMetaData) {
+        if (metadataPackets++ == 0) com.andrerinas.openheadunit.utils.AppLog.i("GwmMusicState: first now-playing metadata from the phone this session")
         val track = ++generation
         val title = meta.song.takeIf { meta.hasSong() && it.isNotBlank() }
         val sameTrack = title == current.title && meta.artist == current.artist
@@ -77,6 +84,7 @@ internal object GwmMusicState {
     }
 
     fun onStatus(status: MediaPlayback.MediaPlaybackStatus) {
+        if (statusPackets++ == 0) com.andrerinas.openheadunit.utils.AppLog.i("GwmMusicState: first playback status from the phone this session")
         val playing = if (status.hasState()) status.state == MediaPlayback.MediaPlaybackStatus.State.PLAYING else current.playing
         val position = if (status.hasPlaybackSeconds()) status.playbackSeconds.protoUint32ToLong() * 1000L else current.positionMillis
         publish(current.copy(playing = playing, positionMillis = position, positionAt = SystemClock.elapsedRealtime()))
@@ -85,6 +93,7 @@ internal object GwmMusicState {
     /** The phone disconnected: nothing it reported still applies. */
     fun clear() {
         generation++
+        metadataPackets = 0; statusPackets = 0
         publish(Snapshot())
     }
 

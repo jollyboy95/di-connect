@@ -71,13 +71,19 @@ internal class HomeDashboardView(context: Context) : View(context) {
     data class Media(val source: String, val title: String?, val artist: String?, val playing: Boolean,
         val progress: Float?, val art: Bitmap? = null, val pkg: String? = null)
     data class Turn(val icon: Int, val distance: String, val road: String, val eta: String?)
-    enum class Popover { NONE, PASSENGER_TEMP, DRIVER_TEMP, FAN, APPS, SETTINGS }
+    enum class Popover { NONE, PASSENGER_TEMP, DRIVER_TEMP, FAN, APPS, SETTINGS, SOURCES }
 
     var connected = false; set(v) { field = v; invalidate() }
     var connectionName = "No phone"; set(v) { field = v; invalidate() }
     var night = true; set(v) { field = v; invalidate() }
     var rightHandDrive = true; set(v) { field = v; invalidate() }
-    var media = Media("Bluetooth audio", null, null, false, null); set(v) { field = v; invalidate() }
+    var media = Media("No source", null, null, false, null); set(v) { field = v; invalidate() }
+    /** Which projection is live; drives the map zone title and what the source list offers. */
+    var projection = HomeSources.Projection.NONE; set(v) { field = v; invalidate() }
+    /** The source playing now, ticked in the source list; null when nothing is. */
+    var activeSource: HomeSources.Source? = null; set(v) { field = v; invalidate() }
+    /** Sources that can play right now; a missing one is not shown at all. */
+    var sources: List<HomeSources.Source> = listOf(HomeSources.Source.RADIO); set(v) { field = v; invalidate() }
     var turn: Turn? = null; set(v) { field = v; invalidate() }
     var popover = Popover.NONE; set(v) { field = v; invalidate() }
     /** Shown in the map zone; the preview names itself a placeholder, the car says what is coming. */
@@ -124,9 +130,15 @@ internal class HomeDashboardView(context: Context) : View(context) {
             moving = (snap?.speedKph ?: 0f) > 3f
         }
     }
-    private var projectionMedia: Media? = null
+    private var carPlayMedia: Media? = null
+    private var androidAutoMusic: com.andrerinas.openheadunit.DiConnectViews.Music? = null
     private var factoryMedia: Media? = null
-    private val idleMedia = Media("Bluetooth audio", null, null, false, null)
+    private var stopAndroidAutoMusic: (() -> Unit)? = null
+    private var usbMounted = false
+    /** Every second while Home shows: the projection state comes from Di-Connect's own session state. */
+    private val projectionPoll = object : Runnable {
+        override fun run() { refreshProjection(); if (running) main.postDelayed(this, 1_000) }
+    }
     private val bar get() = com.andrerinas.openheadunit.gwm.GwmClimateBar
     private val keyAuto = "car.hvac.auto_enable"
     private val keyFront = "car.hvac.front_defrost_enable"
@@ -140,16 +152,22 @@ internal class HomeDashboardView(context: Context) : View(context) {
         running = true
         main.removeCallbacks(tick); main.post(tick)
         main.removeCallbacks(mediaPoll); main.post(mediaPoll)
+        main.removeCallbacks(projectionPoll); main.post(projectionPoll)
         stopMusic?.invoke()
+        // CarPlay's now playing (CarPlayMediaKeys publishes it here).
         stopMusic = ClusterMusicState.observe { snap ->
             val info = snap.info
-            val hasTrack = !info.title.isNullOrBlank()
-            connected = hasTrack || connected
-            projectionMedia = if (hasTrack) Media(info.sourceApp?.takeIf { it.isNotBlank() } ?: "Phone", info.title, info.artist, info.playing,
+            carPlayMedia = if (!info.title.isNullOrBlank()) Media(info.sourceApp?.takeIf { it.isNotBlank() }?.let { "$it · CarPlay" } ?: "CarPlay",
+                info.title, info.artist, info.playing,
                 info.durationMillis?.takeIf { it > 0 }?.let { d -> ((info.elapsedMillis ?: 0L).toFloat() / d).coerceIn(0f, 1f) }, snap.artwork)
             else null
             refreshMedia()
         }
+        // Android Auto's now playing straight from the phone's media channel, cluster layer or not.
+        stopAndroidAutoMusic?.invoke()
+        stopAndroidAutoMusic = runCatching {
+            com.andrerinas.openheadunit.DiConnectViews.observeMusic { music -> main.post { androidAutoMusic = music; refreshMedia() } }
+        }.getOrNull()
         if (onCar) {
             readClimate()
             GwmVehicleData.addListener(context, vehicleListener)
@@ -161,12 +179,79 @@ internal class HomeDashboardView(context: Context) : View(context) {
         running = false
         main.removeCallbacks(tick)
         main.removeCallbacks(mediaPoll)
+        main.removeCallbacks(projectionPoll)
         stopMusic?.invoke(); stopMusic = null
+        stopAndroidAutoMusic?.invoke(); stopAndroidAutoMusic = null
         GwmVehicleData.removeListener(vehicleListener)
     }
 
-    /** The projection's own music wins; otherwise the car's (or an app's) media session. */
-    private fun refreshMedia() { media = projectionMedia ?: factoryMedia ?: idleMedia }
+    /** Reads the live projection from Di-Connect's session state, never from Bluetooth. */
+    private fun refreshProjection() {
+        val aa = runCatching { com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(context) }.getOrDefault(false)
+        val next = HomeSources.projection(aa, CarPlayBackgroundSession.active, CarPlayBackgroundSession.hasSession())
+        val phone = if (next == HomeSources.Projection.ANDROID_AUTO)
+            runCatching { com.andrerinas.openheadunit.DiConnectAndroidAuto.phoneName(context) }.getOrNull() else null
+        if (next != projection) projection = next
+        connected = HomeSources.connected(next)
+        connectionName = HomeSources.connectionLabel(next, phone)
+        mapNote = when (next) {
+            HomeSources.Projection.CARPLAY -> "Tap to open CarPlay · the live map on this screen comes in a later build"
+            else -> "Tap to open Android Auto · the live map on this screen comes in a later build"
+        }
+        usbMounted = usbDriveMounted()
+        refreshMedia()
+    }
+
+    /** True while Android Auto's own audio is playing; the phone does not always send a play state. */
+    private fun androidAutoAudioPlaying(): Boolean {
+        androidAutoMusic?.takeIf { !it.title.isNullOrBlank() }?.let { return it.playing }
+        val audio = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return false
+        return runCatching { audio.isMusicActive }.getOrDefault(false)
+    }
+
+    /**
+     * What the music card shows: the live projection's music, a playing car source, or the
+     * projection connected with nothing reported. The phone sometimes sends no song details; then
+     * the card says so instead of claiming nothing is playing.
+     */
+    private fun refreshMedia() {
+        val p = projection
+        val aaPlaying = p == HomeSources.Projection.ANDROID_AUTO && androidAutoAudioPlaying()
+        val cpPlaying = p == HomeSources.Projection.CARPLAY && carPlayMedia?.playing == true
+        val factory = factoryMedia
+        val active = HomeSources.active(p, aaPlaying || cpPlaying, factory?.pkg, factory?.playing == true)
+        activeSource = active
+        sources = HomeSources.available(p, radioInstalled(), usbMounted)
+        media = when (active) {
+            HomeSources.Source.ANDROID_AUTO -> androidAutoMedia(aaPlaying)
+            HomeSources.Source.CARPLAY -> carPlayMedia ?: Media("CarPlay", null, "CarPlay", false, null)
+            HomeSources.Source.RADIO, HomeSources.Source.USB -> factory ?: Media(active.label, null, null, false, null)
+            null -> factory ?: Media("No source", null, null, false, null)
+        }
+    }
+
+    private fun androidAutoMedia(playing: Boolean): Media {
+        val m = androidAutoMusic
+        if (m != null && !m.title.isNullOrBlank()) {
+            val progress = m.durationMillis?.takeIf { it > 0 }?.let { d -> ((m.positionMillis ?: 0L).toFloat() / d).coerceIn(0f, 1f) }
+            return Media("Android Auto", m.title, m.artist ?: m.album, m.playing, progress, m.artwork)
+        }
+        return if (playing) Media("Android Auto", "Playing on Android Auto", "The phone has not sent the song details", true, null)
+        else Media("Android Auto", null, "Android Auto", false, null)
+    }
+
+    private val radioFitted: Boolean by lazy {
+        HomeFactoryTargets.candidates(HomeFactoryTargets.Target.RADIO).any { (pkg, cls) ->
+            cls != null && runCatching { context.packageManager.resolveActivity(Intent().setClassName(pkg, cls), 0) != null }.getOrDefault(false)
+        }
+    }
+    private fun radioInstalled(): Boolean = radioFitted
+
+    /** A removable drive (USB stick) mounted now; without one the USB player has nothing to play. */
+    private fun usbDriveMounted(): Boolean = runCatching {
+        val sm = context.getSystemService(Context.STORAGE_SERVICE) as android.os.storage.StorageManager
+        sm.storageVolumes.any { it.isRemovable && it.state == android.os.Environment.MEDIA_MOUNTED }
+    }.getOrDefault(false)
 
     private fun readFactoryMedia() {
         val app = context.applicationContext
@@ -288,6 +373,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
             Popover.FAN -> drawFanPopover(canvas)
             Popover.APPS -> drawApps(canvas)
             Popover.SETTINGS -> drawSettings(canvas)
+            Popover.SOURCES -> drawSources(canvas)
             Popover.NONE -> Unit
         }
         canvas.restore()
@@ -467,14 +553,15 @@ internal class HomeDashboardView(context: Context) : View(context) {
         c.drawRect(z, p); p.shader = null
         c.restore()
         icon(c, R.drawable.ic_dp_navigation, z.centerX(), z.centerY() - 40f, 64f, Color.argb(200, 255, 255, 255))
-        text(c, "Android Auto", z.centerX(), z.centerY() + 24f, 30f, ink, light, Paint.Align.CENTER)
+        val carPlay = projection == HomeSources.Projection.CARPLAY
+        text(c, if (carPlay) "CarPlay" else "Android Auto", z.centerX(), z.centerY() + 24f, 30f, ink, light, Paint.Align.CENTER)
         text(c, mapNote, z.centerX(), z.centerY() + 56f, 16f, quiet, null, Paint.Align.CENTER, z.width() - 80f)
-        hit(z) { openDiConnect() }
+        hit(z) { openProjection() }
         // Search goes to the real search inside Android Auto.
         r.set(z.left + 20f, z.top + 20f, z.left + 360f, z.top + 72f); glass(c, r, 26f, 2.4f)
         icon(c, R.drawable.ic_dp_search, r.left + 30f, r.centerY(), 24f, ink)
-        text(c, "Search in Google Maps", r.left + 54f, r.centerY() + 6.5f, 18f, ink)
-        hit(r) { openDiConnect() }
+        text(c, if (carPlay) "Search in Maps" else "Search in Google Maps", r.left + 54f, r.centerY() + 6.5f, 18f, ink)
+        hit(r) { openProjection() }
         // Full screen projection.
         r.set(z.right - 72f, z.top + 20f, z.right - 20f, z.top + 72f); glass(c, r, 26f, 2.4f)
         p.style = Paint.Style.STROKE; p.strokeWidth = 2.4f; p.color = ink; p.strokeCap = Paint.Cap.ROUND
@@ -484,7 +571,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         c.drawLine(ex + e - 6, ey - e, ex + e, ey - e); c.drawLine(ex + e, ey - e, ex + e, ey - e + 6)
         c.drawLine(ex - e, ey + e - 6, ex - e, ey + e); c.drawLine(ex - e, ey + e, ex - e + 6, ey + e)
         p.style = Paint.Style.FILL
-        hit(r) { openDiConnect() }
+        hit(r) { openProjection() }
     }
 
     private fun Canvas.drawLine(x0: Float, y0: Float, x1: Float, y1: Float) = drawLine(x0, y0, x1, y1, p)
@@ -501,7 +588,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         text(c, ampm, z.left + 52f + t.measureText(hm), z.top + 150f, 30f, quiet, light)
         text(c, SimpleDateFormat("EEEE d MMMM", Locale.getDefault()).format(now), z.left + 48f, z.top + 194f, 22f, quiet)
         text(c, "No phone connected", z.left + 48f, z.top + 262f, 26f, ink, medium)
-        text(c, "Radio, Bluetooth, USB, your apps and climate all work without a phone.", z.left + 48f, z.top + 294f, 16f, quiet, null,
+        text(c, "Radio, USB, your apps and climate all work without a phone.", z.left + 48f, z.top + 294f, 16f, quiet, null,
             Paint.Align.LEFT, z.width() - 96f)
         // Connect buttons.
         fun pill(x: Float, label: String, primary: Boolean, action: () -> Unit): Float {
@@ -515,13 +602,16 @@ internal class HomeDashboardView(context: Context) : View(context) {
         x = pill(x, "Connect Android Auto", true) { openDiConnect() }
         pill(x, "CarPlay", false) { openDiConnect() }
         // Local sources along the foot of the zone.
-        val sources = listOf("FM / DAB radio", "Bluetooth", "USB", "All apps")
+        // Only sources that can play now; the car's Bluetooth audio is never offered.
+        val local = sources.filter { it == HomeSources.Source.RADIO || it == HomeSources.Source.USB }
+        val tiles = local.map { it.label } + "All apps"
         val tw = (z.width() - 48f * 2 - 14f * 3) / 4f
-        sources.forEachIndexed { i, label ->
+        tiles.forEachIndexed { i, label ->
             r.set(z.left + 48f + i * (tw + 14f), z.bottom - 112f, z.left + 48f + i * (tw + 14f) + tw, z.bottom - 40f)
             glass(c, r, 20f, 1.4f)
             text(c, label, r.centerX(), r.centerY() + 6.5f, 18f, ink, medium, Paint.Align.CENTER)
-            hit(r) { if (label == "All apps") showApps() else openSource(label) }
+            val source = local.getOrNull(i)
+            hit(r) { if (source == null) showApps() else selectSource(source) }
         }
     }
 
@@ -536,7 +626,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         p.style = Paint.Style.STROKE; p.strokeWidth = 2f; p.color = quiet; p.strokeCap = Paint.Cap.ROUND
         c.drawLine(r.right - 28f, r.centerY() - 3f, r.right - 22f, r.centerY() + 3f); c.drawLine(r.right - 22f, r.centerY() + 3f, r.right - 16f, r.centerY() - 3f)
         p.style = Paint.Style.FILL
-        hit(r) { openMediaSource() }
+        hit(r) { popover = if (popover == Popover.SOURCES) Popover.NONE else Popover.SOURCES }
         // Artwork, or a soft tile when there is none.
         val art = RectF(card.left + 18f, card.top + 72f, card.left + 110f, card.top + 164f)
         val bitmap = media.art?.takeUnless { it.isRecycled }
@@ -927,14 +1017,58 @@ internal class HomeDashboardView(context: Context) : View(context) {
         if (!openFactory(HomeFactoryTargets.Target.ANDROID_SETTINGS)) start(Intent(android.provider.Settings.ACTION_SETTINGS))
     }
 
-    private fun openSource(label: String) {
-        val found = when (label) {
-            "FM / DAB radio" -> openFactory(HomeFactoryTargets.Target.RADIO) || openByLabel("radio", "fm")
-            "Bluetooth" -> openFactory(HomeFactoryTargets.Target.MEDIA) || openByLabel("bluetooth music", "bt music", "bluetooth")
-            "USB" -> openFactory(HomeFactoryTargets.Target.USB_MUSIC) || openByLabel("usb", "music")
-            else -> false
+    /** Plays the chosen source: the projection opens, the car's radio or USB player opens. */
+    private fun selectSource(source: HomeSources.Source) {
+        popover = Popover.NONE
+        when (source) {
+            HomeSources.Source.ANDROID_AUTO, HomeSources.Source.CARPLAY -> openProjection()
+            HomeSources.Source.RADIO -> if (!openFactory(HomeFactoryTargets.Target.RADIO) && !openByLabel("radio", "fm")) showApps()
+            HomeSources.Source.USB -> if (!openFactory(HomeFactoryTargets.Target.USB_MUSIC) && !openByLabel("usb", "music")) showApps()
         }
-        if (!found) showApps()
+    }
+
+    /** Brings the live projection forward; with none, Di-Connect's own screen to connect one. */
+    private fun openProjection() {
+        when (projection) {
+            HomeSources.Projection.ANDROID_AUTO -> {
+                val activity = context as? Activity
+                if (activity == null || runCatching { com.andrerinas.openheadunit.DiConnectAndroidAuto.connect(activity) }.isFailure) openDiConnect()
+            }
+            HomeSources.Projection.CARPLAY, HomeSources.Projection.CARPLAY_STARTING ->
+                if (!start(Intent(context, CarPlayHostActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))) openDiConnect()
+            HomeSources.Projection.NONE -> openDiConnect()
+        }
+    }
+
+    /** The source list: what plays now is ticked, and only sources that can play are listed. */
+    private fun drawSources(c: Canvas) {
+        val list = sources
+        val col = column
+        val h = 76f + list.size * 64f
+        val frame = RectF(col.left, col.top + 60f, col.right, col.top + 60f + h)
+        hits.add(Pair(RectF(0f, 0f, W, H), closePopover))
+        panel(c, frame, 24f)
+        text(c, "Audio source", frame.left + 24f, frame.top + 40f, 16f, quiet, medium)
+        list.forEachIndexed { i, source ->
+            r.set(frame.left + 16f, frame.top + 60f + i * 64f, frame.right - 16f, frame.top + 116f + i * 64f)
+            val on = source == activeSource
+            glass(c, r, 18f, if (on) 3f else 1.3f)
+            text(c, source.label, r.left + 20f, r.centerY() + 6.5f, 18f, ink, medium)
+            if (on) text(c, "Playing", r.right - 20f, r.centerY() + 6f, 15f, accent, medium, Paint.Align.RIGHT)
+            hit(RectF(r)) { selectSource(source) }
+        }
+        hit(RectF(frame)) { }
+    }
+
+    /** Opens the app behind Now Playing: the projection, the car's radio or USB player, or an app. */
+    private fun openMediaSource() {
+        when (activeSource) {
+            HomeSources.Source.ANDROID_AUTO, HomeSources.Source.CARPLAY -> return openProjection()
+            HomeSources.Source.RADIO, HomeSources.Source.USB -> return selectSource(activeSource!!)
+            null -> Unit
+        }
+        val pkg = media.pkg ?: return run { openDiConnect() }
+        if (!launch(pkg)) openDiConnect()
     }
 
     private fun openFactoryHome() {
@@ -943,17 +1077,6 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val homes = pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), 0)
         val factory = homes.firstOrNull { it.activityInfo.packageName != context.packageName }?.activityInfo ?: return
         start(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setClassName(factory.packageName, factory.name))
-    }
-
-    /** Opens the app behind Now Playing: the car's source, an app, or Di-Connect for the projection. */
-    private fun openMediaSource() {
-        val pkg = media.pkg ?: return run { openDiConnect() }
-        val target = when (pkg) {
-            "com.gwm.app.media.server.radio" -> HomeFactoryTargets.Target.RADIO
-            "com.gwm.app.media.server.usbmusic" -> HomeFactoryTargets.Target.USB_MUSIC
-            else -> HomeFactoryTargets.Target.MEDIA
-        }
-        if (!launch(pkg) && !openFactory(target)) openDiConnect()
     }
 
     /** Controls the session Home shows; the projection and unknown sources get a media key. */
@@ -992,13 +1115,71 @@ internal class HomeDashboardView(context: Context) : View(context) {
 }
 
 /**
+ * Which phone projection is live and which audio sources Home may offer, decided from the same
+ * state the rest of Di-Connect trusts: [com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected]
+ * and [CarPlayBackgroundSession]. Nothing here guesses from Bluetooth. The car's own Bluetooth audio
+ * is deliberately never offered: Di-Connect keeps it off because it fought with the projections.
+ */
+internal object HomeSources {
+    enum class Projection { NONE, ANDROID_AUTO, CARPLAY, CARPLAY_STARTING }
+    enum class Source(val label: String) { ANDROID_AUTO("Android Auto"), CARPLAY("CarPlay"), RADIO("FM / DAB radio"), USB("USB") }
+
+    /** CarPlay wins while it is actually streaming; a CarPlay session still starting does not hide Android Auto. */
+    fun projection(androidAutoConnected: Boolean, carPlayActive: Boolean, carPlaySession: Boolean): Projection = when {
+        carPlayActive -> Projection.CARPLAY
+        androidAutoConnected -> Projection.ANDROID_AUTO
+        carPlaySession -> Projection.CARPLAY_STARTING
+        else -> Projection.NONE
+    }
+
+    fun connected(p: Projection): Boolean = p == Projection.ANDROID_AUTO || p == Projection.CARPLAY
+
+    fun connectionLabel(p: Projection, androidAutoPhone: String?): String = when (p) {
+        Projection.ANDROID_AUTO -> androidAutoPhone?.takeIf { it.isNotBlank() }?.let { "Android Auto · $it" } ?: "Android Auto"
+        Projection.CARPLAY -> "CarPlay"
+        Projection.CARPLAY_STARTING -> "CarPlay connecting"
+        Projection.NONE -> "No phone"
+    }
+
+    /** Only sources that can play right now: the live projection, the radio if fitted, USB while a drive is mounted. */
+    fun available(p: Projection, radioInstalled: Boolean, usbMounted: Boolean): List<Source> = buildList {
+        if (p == Projection.ANDROID_AUTO) add(Source.ANDROID_AUTO)
+        if (p == Projection.CARPLAY) add(Source.CARPLAY)
+        if (radioInstalled) add(Source.RADIO)
+        if (usbMounted) add(Source.USB)
+    }
+
+    /** The car's own media session packages and the source each one is. */
+    fun factorySource(pkg: String?): Source? = when (pkg) {
+        "com.gwm.app.media.server.radio" -> Source.RADIO
+        "com.gwm.app.media.server.usbmusic" -> Source.USB
+        else -> null
+    }
+
+    /**
+     * What is playing: the projection while its audio plays, else a playing car source, else the
+     * projection that is connected. Null when nothing is connected or playing.
+     */
+    fun active(p: Projection, projectionPlaying: Boolean, factoryPkg: String?, factoryPlaying: Boolean): Source? {
+        val projection = when (p) { Projection.ANDROID_AUTO -> Source.ANDROID_AUTO; Projection.CARPLAY -> Source.CARPLAY; else -> null }
+        val factory = factorySource(factoryPkg)
+        return when {
+            projection != null && projectionPlaying -> projection
+            factory != null && factoryPlaying -> factory
+            projection != null -> projection
+            else -> factory
+        }
+    }
+}
+
+/**
  * The car's own screens that Home opens, by component, as found on a Haval H7 (build
  * GW35OVBPU1G091203B11; see docs/haval-h7/HEAD_UNIT_SURVEY.md). Components come first because the
  * labels mislead: the H7 calls Vehicle Settings "Car", and both settings apps "Settings". A car
  * without a component falls back to label matching in [HomeDashboardView].
  */
 internal object HomeFactoryTargets {
-    enum class Target { VEHICLE, SYSTEM_SETTINGS, ANDROID_SETTINGS, FACTORY_HOME, RADIO, USB_MUSIC, MEDIA }
+    enum class Target { VEHICLE, SYSTEM_SETTINGS, ANDROID_SETTINGS, FACTORY_HOME, RADIO, USB_MUSIC }
 
     /** Package and activity in order of preference; a null activity means the package's launcher entry. */
     fun candidates(target: Target): List<Pair<String, String?>> = when (target) {
@@ -1008,8 +1189,8 @@ internal object HomeFactoryTargets {
         Target.FACTORY_HOME -> listOf("com.gwm.app.launcher" to "com.gwm.app.launcher.view.HomeActivity")
         Target.RADIO -> listOf("com.gwm.app.mediatunerovs" to "com.gwm.app.mediatunerovs.ui.HomeActivity")
         Target.USB_MUSIC -> listOf("com.gwm.overseas.localmusic" to null)
-        // Media Center opens the car's current source; the H7 has no separate Bluetooth music app.
-        Target.MEDIA -> listOf("com.gwm.app.car.media" to "com.android.car.media.MediaDispatcherActivity")
+        // No Media Center target: on the H7 it hands over to the car's Bluetooth audio, which
+        // Di-Connect keeps off on purpose (it made the projections' audio stutter).
     }
 
     /**

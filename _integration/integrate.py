@@ -1055,6 +1055,9 @@ object DiConnectViews {
         observer(Music(s.title, s.artist, s.album, s.artwork, s.durationMillis, s.positionNow(), s.playing))
     }
 
+    /** What the phone sent on the now-playing channel this session, for the diagnostic report. */
+    fun musicReport(): String = GwmMusicState.report()
+
     internal fun from(guidance: BydGuidance?): Guidance? = guidance?.let {
         Guidance(it.clusterIcon, it.roundaboutExit, it.distanceMeters, it.road, it.remainingMeters, it.remainingSeconds)
     }
@@ -3357,10 +3360,23 @@ edit(D, ('''                            }.onFailure { showDiagnosticReport(repor
 # Di-Connect 2.0 Home, phase 1 preview (Nov 2026): a glass home screen opened from Settings >
 # Appearance. It declares no HOME category, so the car's own launcher is untouched.
 (root/'common/src/main/java/com/shilapi/xcertplay/HomeDashboard.kt').write_text(Path('target/_integration/ui/HomeDashboard.kt').read_text())
+# Android Auto now playing in the diagnostic report: whether the phone opened the media status
+# channel and how many metadata and status packets it sent (Home and the cluster show only what arrives).
+edit(aa_java/'gwm/GwmMusicState.kt',
+    ('    @Volatile private var generation = 0\n', '    @Volatile private var generation = 0\n    /** Packets the phone sent this session, for the diagnostic report (Di-Connect, Nov 2026). */\n    @Volatile var metadataPackets = 0\n        private set\n    @Volatile var statusPackets = 0\n        private set\n    fun report(): String = "metadata $metadataPackets, status $statusPackets, track ${if (current.hasTrack) "yes" else "no"}, playing ${current.playing}"\n'),
+    ('    fun onMetadata(meta: MediaPlayback.MediaMetaData) {\n        val track = ++generation\n', '    fun onMetadata(meta: MediaPlayback.MediaMetaData) {\n        if (metadataPackets++ == 0) com.andrerinas.openheadunit.utils.AppLog.i("GwmMusicState: first now-playing metadata from the phone this session")\n        val track = ++generation\n'),
+    ('    fun onStatus(status: MediaPlayback.MediaPlaybackStatus) {\n', '    fun onStatus(status: MediaPlayback.MediaPlaybackStatus) {\n        if (statusPackets++ == 0) com.andrerinas.openheadunit.utils.AppLog.i("GwmMusicState: first playback status from the phone this session")\n'),
+    ('    fun clear() {\n        generation++\n', '    fun clear() {\n        generation++\n        metadataPackets = 0; statusPackets = 0\n'))
+edit(aa_java/'aap/AapControl.kt',
+    ('        aapTransport.send(msg)\n\n        if (channel == Channel.ID_NAV && com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterReady) {', '        aapTransport.send(msg)\n        // Now playing reaches the car only if the phone opens this channel; say so in the report.\n        if (channel == Channel.ID_MPB) com.andrerinas.openheadunit.utils.AppLog.i("Media playback status channel opened by the phone")\n\n        if (channel == Channel.ID_NAV && com.andrerinas.openheadunit.gwm.GwmMapExperiments.sessionClusterReady) {'))
+edit(D,
+    ('        appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")\n', '        appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")\n        appendLine("Android Auto now playing from the phone: ${com.andrerinas.openheadunit.DiConnectViews.musicReport()}")\n'))
+
 # Home's factory media sessions (needs notification access) and the read-only car signals for automation.
 for _n in ('HomeMediaListener.kt','CarAutomationSignals.kt'):
     (root/'common/src/main/java/com/shilapi/xcertplay'/_n).write_text(Path('target/_integration/ui/'+_n).read_text())
 (root/'common/src/test/java/com/shilapi/xcertplay/HomeFactoryTargetsTest.kt').write_text(Path('target/_integration/ui/HomeFactoryTargetsTest.kt').read_text())
+(root/'common/src/test/java/com/shilapi/xcertplay/HomeSourcesTest.kt').write_text(Path('target/_integration/ui/HomeSourcesTest.kt').read_text())
 edit(root/'common/src/main/AndroidManifest.xml', ('''        <activity android:name="com.shilapi.xcertplay.DiPlayActivity"''',
     '''        <!-- Di-Connect 2.0 Home preview. Deliberately NOT a Home app: no HOME category. -->
         <activity android:name="com.shilapi.xcertplay.HomeDashboardActivity"
