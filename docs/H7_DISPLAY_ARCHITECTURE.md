@@ -3,24 +3,25 @@
 Target: 2026 Haval H7 Vanta (B11, AU), NOBO IN9.0-OS head unit, Android 9,
 Qualcomm SA8155.
 
-## Logical displays (UNVERIFIED — enumerate on the car)
+## Logical displays (verified on the car, 21 Nov 2026)
 
 Android exposes displays through `DisplayManager.getDisplays()`. Each has a logical
 `displayId` and a reported size. The **physical** SurfaceFlinger tokens are separate
 and differ per boot — do not hard-code them.
 
-Working hypothesis for the H7 (to be confirmed by `GwmDisplayAdapter.dump()`):
+Verified with `dumpsys display` and `dumpsys window` on build `GW35OVBPU1G091203B11`
+(full survey: [haval-h7/HEAD_UNIT_SURVEY.md](haval-h7/HEAD_UNIT_SURVEY.md)):
 
-| Logical ID | Role (hypothesis) | Size (hypothesis) |
-|-----------:|-------------------|-------------------|
-| 0 | Centre infotainment | 1920 × 1080 |
-| 1 | Projection / AA map layer | 1920 × 720 |
-| 2 | Gauge / cluster layer | 1920 × 720 |
-| 3 | HUD | 480 × 240 |
+| Logical ID | Role | Size | Density |
+|-----------:|------|------|--------:|
+| 0 | Centre infotainment (built-in, touch) | 1920 × 1080 | 160 |
+| 1 | HDMI presentation; nothing draws on it on this car | 1920 × 720 | 213 |
+| 2 | Instrument cluster (GWMMultiDisplay and Di-Connect overlays) | 1920 × 720 | 213 |
+| 3 | HUD (GWMMultiDisplay presentation and Di-Connect overlay) | 480 × 240 | 71 |
 
-**These IDs are a starting guess, not fact.** The first on-car task is to run the
-adapter's `dump()` and record the real IDs and sizes. The mapping above only exists
-so the code has named constants to replace.
+Displays 1–3 are `FLAG_PRESENTATION`, `FLAG_SECURE` and own-content-only. Logical IDs
+were stable across this boot. Keep the IDs as settings, in case a firmware update
+reorders them.
 
 ## Why a window on display 2 is not automatically "the map on the cluster"
 
