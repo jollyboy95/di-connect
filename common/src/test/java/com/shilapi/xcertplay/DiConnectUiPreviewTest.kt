@@ -137,6 +137,7 @@ class DiConnectUiPreviewTest {
             view.draw(Canvas(bitmap))
             val bounds = view.projectionBounds(1280, 720)
             assertFalse(touch(view, MotionEvent.ACTION_DOWN, bounds.centerX(), bounds.centerY()))
+            assertEquals(64f, bounds.top, 1f)
             val expandX = bounds.right - 26
             val expandY = bounds.top - 30f
             assertTrue(touch(view, MotionEvent.ACTION_DOWN, expandX, expandY))
@@ -257,7 +258,7 @@ class DiConnectUiPreviewTest {
         withDashboard { view, bitmap ->
             view.night = true
             val canvas = Canvas(bitmap)
-            val centers = listOf(1068 to 41, 1108 to 33, 1148 to 33)
+            val centers = listOf(1198 to 24, 1228 to 18, 1258 to 18)
             fun render(enabled: Boolean): List<Int> {
                 view.wifiEnabled = enabled
                 view.hotspotOn = enabled

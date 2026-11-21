@@ -510,7 +510,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private val H = 720f
     private val bodyTop = 64f
     private val bodyBottom = 594f
-    private val mapEnd = 942f
+    private val mapEnd get() = if (expandProjection != null) 1028f else 942f
     private var s = 1f
     private var ox = 0f
     private var oy = 0f
@@ -549,10 +549,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         canvas.translate(ox, oy)
         canvas.scale(s, s)
         if (expandProjection != null) drawProjectionHeader(canvas)
-        canvas.save()
-        canvas.translate(0f, projectionHeaderOffset())
         drawTopBar(canvas)
-        canvas.restore()
         drawConnectivityIcons(canvas)
         drawDock(canvas)
         when {
@@ -721,7 +718,10 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     private fun drawConnectivityIcons(c: Canvas) {
-        val y = 33f
+        c.save()
+        c.translate(W - 82f, 18f)
+        c.scale(.75f, .75f)
+        val y = 0f
         val itemWidth = 40f
 
         fun signal(cx: Float, enabled: Boolean, hotspot: Boolean) {
@@ -743,7 +743,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
             c.drawCircle(cx, if (hotspot) y else y + 8f, 2.1f, p)
         }
 
-        val wifiX = 1068f
+        val wifiX = 0f
         wifiEnabled?.let { signal(wifiX, it, hotspot = false) }
         hotspotOn?.let { signal(wifiX + itemWidth, it, hotspot = true) }
         bluetoothEnabled?.let { enabled ->
@@ -763,6 +763,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
             c.drawPath(path, p)
             p.style = Paint.Style.FILL
         }
+        c.restore()
     }
 
     private fun connectivityInk(enabled: Boolean): Int =
@@ -809,17 +810,12 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     // ---- Map zone (phone connected) -------------------------------------------------------------
-    private val zone get() = bodyBounds(20f, mapEnd, climateTop)
-    private val column get() = bodyBounds(mapEnd + 14f, 1172f)
+    private val zone get() = bodyBounds(if (expandProjection != null) 8f else 20f, mapEnd, climateTop)
+    private val column get() = if (expandProjection != null) bodyBounds(mapEnd + 4f, 1194f) else bodyBounds(mapEnd + 14f, 1172f)
 
     private fun bodyBounds(left: Float, right: Float, bottom: Float = bodyBottom): RectF =
         if (rightHandDrive) RectF(left, bodyTop, right, bottom)
         else RectF(W - right, bodyTop, W - left, bottom)
-
-    private fun projectionHeaderOffset(): Float {
-        if (expandProjection == null || s <= 0f) return 0f
-        return ((projectionBounds(width, height).top - oy) / s - bodyTop).coerceAtLeast(0f)
-    }
 
     private fun drawProjectionHeader(c: Canvas) {
         val topEdge = (projectionBounds(width, height).top - oy) / s
@@ -849,8 +845,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     private fun projectionExpandBounds(): RectF = zone.let {
-        val offset = projectionHeaderOffset()
-        RectF(it.right - 52f, 8f + offset, it.right, 60f + offset)
+        val right = if (rightHandDrive) it.right else min(it.right, W - 120f)
+        RectF(right - 52f, 8f, right, 60f)
     }
 
     private fun drawProjectionExpand(c: Canvas) {
@@ -990,8 +986,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
         // Controls: previous, play or pause, next.
         val cy = card.top + 298f
-        circleButton(c, card.centerX() - 75f, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_PREVIOUS) }
-        skip(c, card.centerX() - 75f, cy, false)
+        val skipOffset = min(75f, (card.width() - 48f) / 2f)
+        circleButton(c, card.centerX() - skipOffset, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_PREVIOUS) }
+        skip(c, card.centerX() - skipOffset, cy, false)
         r.set(card.centerX() - 32f, cy - 32f, card.centerX() + 32f, cy + 32f); glass(c, r, 32f, 3f)
         p.color = ink
         if (media.playing) {
@@ -1002,8 +999,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
             c.drawPath(path, p)
         }
         hit(r) { transport(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) }
-        circleButton(c, card.centerX() + 75f, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_NEXT) }
-        skip(c, card.centerX() + 75f, cy, true)
+        circleButton(c, card.centerX() + skipOffset, cy, 26f, "") { transport(KeyEvent.KEYCODE_MEDIA_NEXT) }
+        skip(c, card.centerX() + skipOffset, cy, true)
     }
 
     /** A previous or next symbol: a triangle and a bar. */
@@ -1036,8 +1033,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
                     p.strokeWidth = 1f
                     c.drawLine(r.left + 4f, r.top - 5f, r.right - 4f, r.top - 5f, p)
                 }
-                text(c, label, r.left + 18f, r.centerY() + 6f, 17f, ink, medium)
-                text(c, "›", r.right - 20f, r.centerY() + 7f, 22f, quiet, null, Paint.Align.CENTER)
+                text(c, label, r.left + 3f, r.centerY() + 6f, 16f, ink, medium, maxWidth = r.width() - 18f)
+                text(c, "›", r.right - 5f, r.centerY() + 7f, 22f, quiet, null, Paint.Align.CENTER)
                 hit(r) { if (i == 0) openVehicle() else openSystemSettings() }
             }
         }
