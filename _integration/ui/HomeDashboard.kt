@@ -640,8 +640,13 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val cx = mx(1222f)
         val items = listOf<Triple<Int, String, () -> Unit>>(
             Triple(R.drawable.ic_dp_home, "Home") { popover = Popover.NONE },
-            Triple(R.drawable.ic_dp_navigation, "Map") { if (expandProjection != null) expandProjection?.invoke() else if (!showLiveProjection()) openProjection() },
-            Triple(R.drawable.ic_dp_audio, "Music") { openDiConnect() },
+            Triple(R.drawable.ic_dp_navigation, "Map") {
+                if (expandProjection != null) popover = Popover.NONE
+                else if (!showLiveProjection()) openProjection()
+            },
+            Triple(R.drawable.ic_dp_audio, "Music") {
+                popover = if (popover == Popover.SOURCES) Popover.NONE else Popover.SOURCES
+            },
             Triple(0, "Apps") { popover = if (popover == Popover.APPS) Popover.NONE else Popover.APPS },
             Triple(R.drawable.ic_dp_car, "Vehicle") { openVehicle() },
             Triple(R.drawable.ic_dp_advanced, "Settings") { popover = if (popover == Popover.SETTINGS) Popover.NONE else Popover.SETTINGS },
@@ -650,7 +655,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         items.forEachIndexed { i, (res, label, action) ->
             val cy = bodyTop + step * (i + .5f)
             val active = (i == 0 && popover == Popover.NONE) || (label == "Apps" && popover == Popover.APPS) ||
-                (label == "Settings" && popover == Popover.SETTINGS)
+                (label == "Settings" && popover == Popover.SETTINGS) || (label == "Music" && popover == Popover.SOURCES)
             if (active) {
                 p.color = ColorUtils.setAlphaComponent(accent, if (night) 51 else 66)
                 c.drawCircle(cx, cy - 12f, 27f, p)

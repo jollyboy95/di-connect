@@ -142,6 +142,23 @@ class DiConnectUiPreviewTest {
         }
     }
 
+    @Test fun dockMusicOpensSourcesAndMapReturnsToTheEmbeddedView() {
+        var expansions = 0
+        withDashboard { view, bitmap ->
+            val canvas = Canvas(bitmap)
+            view.useLiveProjection { expansions++ }
+            view.draw(canvas)
+            touch(view, MotionEvent.ACTION_UP, 1222f, 285f)
+            assertEquals(HomeDashboardView.Popover.SOURCES, view.popover)
+            view.draw(canvas)
+            touch(view, MotionEvent.ACTION_UP, 1222f, 196f)
+            assertEquals(HomeDashboardView.Popover.NONE, view.popover)
+            view.draw(canvas)
+            touch(view, MotionEvent.ACTION_UP, 1222f, 196f)
+            assertEquals(0, expansions)
+        }
+    }
+
     @Test fun liveMapHasATransparentViewportInBothThemes() {
         withDashboard { view, bitmap ->
             view.useLiveProjection { }
