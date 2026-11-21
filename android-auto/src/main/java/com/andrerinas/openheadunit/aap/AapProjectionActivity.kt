@@ -1044,6 +1044,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             val wasHomeFlow = returnToProjectionHome
             returnToProjectionHome = false
             showProjectionHome(false)
+            syncReturnToHomeButton()
             if (wasHomeFlow) setFullscreen()
         }
     }
@@ -1052,6 +1053,38 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private var projectionHome: com.andrerinas.openheadunit.DiConnectViews.ProjectionHome? = null
     private var showingProjectionHome = false
     private var returnToProjectionHome = false
+    private var returnToHomeButton: View? = null
+
+    private fun syncReturnToHomeButton() {
+        val visible = returnToProjectionHome && !showingProjectionHome && !App.isPiPActive
+        if (!visible) {
+            returnToHomeButton?.visibility = View.GONE
+            return
+        }
+        returnToHomeButton?.let { it.visibility = View.VISIBLE; return }
+
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density + .5f).toInt()
+        val button = android.widget.ImageButton(this).apply {
+            contentDescription = getString(R.string.aa_key_home)
+            setImageResource(R.drawable.aa_ic_home)
+            setColorFilter(Color.WHITE)
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(Color.argb(220, 22, 33, 49))
+            }
+            setOnClickListener { showProjectionHome(true) }
+        }
+        val frame = findViewById<FrameLayout>(R.id.aa_container)
+        frame.addView(button, frame.indexOfChild(projectionLayer) + 1,
+            FrameLayout.LayoutParams(dp(48), dp(48), Gravity.TOP or Gravity.LEFT).apply {
+                leftMargin = dp(12)
+                topMargin = dp(12)
+            })
+        returnToHomeButton = button
+    }
 
     private fun showProjectionHome(show: Boolean) {
         if (!::projectionLayer.isInitialized || show == showingProjectionHome) return
@@ -1076,6 +1109,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             if (!returnToProjectionHome && isForeground && !App.isPiPActive) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
         }
         layoutProjectionHome()
+        syncReturnToHomeButton()
         if (enteringHomeFlow) setFullscreen()
         AppLog.i("Home projection: showingHome=$show surfaceReady=$isSurfaceSet")
     }
@@ -1526,6 +1560,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: android.content.res.Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         App.isPiPActive = isInPictureInPictureMode
+        syncReturnToHomeButton()
         if (isInPictureInPictureMode) {
             showProjectionHome(false)
             // Hide UI elements during PiP (like FPS counter, loading overlay)
