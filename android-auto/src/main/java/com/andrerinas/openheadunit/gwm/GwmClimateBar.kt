@@ -43,6 +43,9 @@ object GwmClimateBar {
     /** The bottom inset Android Auto keeps its controls above, or 0 when the strip is off. */
     fun insetFraction(context: Context) = if (GwmMode.active(context) && enabled(context)) HEIGHT_FRACTION else 0f
 
+    fun contentBottomInset(context: Context, videoHeight: Int, marginHeight: Int): Int =
+        ((videoHeight - 2 * marginHeight).coerceAtLeast(0) * insetFraction(context)).toInt()
+
     private var view: BarView? = null
 
     /**

@@ -751,6 +751,18 @@ class CommManager(
             mutableListOf(Triple(0, 0, 0))))
     }
 
+    fun sendProjectionClimateInset(contentBottom: Int) {
+        if (_connectionState.value !is ConnectionState.TransportStarted) return
+        send(com.andrerinas.openheadunit.aap.protocol.messages.UpdateUiConfigRequest(
+            com.andrerinas.openheadunit.utils.HeadUnitScreenConfig.getLeftMargin(),
+            com.andrerinas.openheadunit.utils.HeadUnitScreenConfig.getTopMargin(),
+            com.andrerinas.openheadunit.utils.HeadUnitScreenConfig.getRightMargin(),
+            com.andrerinas.openheadunit.utils.HeadUnitScreenConfig.getBottomMargin(),
+            contentBottom,
+        ))
+        AppLog.i("Projection climate inset: $contentBottom px")
+    }
+
     fun sendUpdateUiConfigRequest(left: Int, top: Int, right: Int, bottom: Int) {
         val request = com.andrerinas.openheadunit.aap.protocol.messages.UpdateUiConfigRequest(left, top, right, bottom)
         AppLog.i("[UI_DEBUG_FIX] TX UpdateUiConfigRequest: L=$left T=$top R=$right B=$bottom")

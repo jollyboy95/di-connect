@@ -10,17 +10,15 @@ import com.google.protobuf.Message
  * (margins, insets, theme) without a full session reconnect.
  */
 class UpdateUiConfigRequest(
-    left: Int, top: Int, right: Int, bottom: Int
+    left: Int, top: Int, right: Int, bottom: Int, contentBottom: Int? = null
 ) : AapMessage(
     Channel.ID_VID,
     Media.MsgType.MEDIA_MESSAGE_UPDATE_UI_CONFIG_REQUEST_VALUE,
-    makeProto(left, top, right, bottom)
+    makeProto(left, top, right, bottom, contentBottom)
 ) {
 
     companion object {
-        private fun makeProto(left: Int, top: Int, right: Int, bottom: Int): Message {
-            // Protocol-correct: UiConfig with ONLY margins set.
-            // No content_insets, no stable_content_insets, no ui_theme.
+        private fun makeProto(left: Int, top: Int, right: Int, bottom: Int, contentBottom: Int?): Message {
             val insets = Media.Insets.newBuilder()
                 .setLeft(left)
                 .setTop(top)
@@ -28,9 +26,11 @@ class UpdateUiConfigRequest(
                 .setBottom(bottom)
                 .build()
 
-            val uiConfig = Media.UiConfig.newBuilder()
-                .setMargins(insets)
-                .build()
+            val uiConfig = Media.UiConfig.newBuilder().setMargins(insets)
+            contentBottom?.let {
+                val content = Media.Insets.newBuilder().setLeft(0).setTop(0).setRight(0).setBottom(it).build()
+                uiConfig.setContentInsets(content).setStableContentInsets(content)
+            }
 
             return Media.UpdateUiConfigRequest.newBuilder()
                 .setUiConfig(uiConfig)

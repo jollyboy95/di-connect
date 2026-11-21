@@ -133,7 +133,7 @@ class DiConnectUiPreviewTest {
             val bounds = view.projectionBounds(1280, 720)
             assertFalse(touch(view, MotionEvent.ACTION_DOWN, bounds.centerX(), bounds.centerY()))
             val expandX = bounds.right - 26
-            val expandY = 34f
+            val expandY = bounds.top - 30f
             assertTrue(touch(view, MotionEvent.ACTION_DOWN, expandX, expandY))
             assertTrue(touch(view, MotionEvent.ACTION_UP, expandX, expandY))
             assertEquals(1, expansions)

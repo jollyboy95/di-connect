@@ -486,7 +486,10 @@ internal class HomeDashboardView(context: Context) : View(context) {
         canvas.translate(ox, oy)
         canvas.scale(s, s)
         if (expandProjection != null) drawProjectionHeader(canvas)
+        canvas.save()
+        canvas.translate(0f, projectionHeaderOffset())
         drawTopBar(canvas)
+        canvas.restore()
         drawDock(canvas)
         when {
             expandProjection != null -> drawProjectionExpand(canvas)
@@ -684,6 +687,11 @@ internal class HomeDashboardView(context: Context) : View(context) {
         if (rightHandDrive) RectF(left, bodyTop, right, bottom)
         else RectF(W - right, bodyTop, W - left, bottom)
 
+    private fun projectionHeaderOffset(): Float {
+        if (expandProjection == null || s <= 0f) return 0f
+        return ((projectionBounds(width, height).top - oy) / s - bodyTop).coerceAtLeast(0f)
+    }
+
     private fun drawProjectionHeader(c: Canvas) {
         val topEdge = (projectionBounds(width, height).top - oy) / s
         val bottom = topEdge + 7f
@@ -712,7 +720,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     private fun projectionExpandBounds(): RectF = zone.let {
-        RectF(it.right - 52f, 8f, it.right, 60f)
+        val offset = projectionHeaderOffset()
+        RectF(it.right - 52f, 8f + offset, it.right, 60f + offset)
     }
 
     private fun drawProjectionExpand(c: Canvas) {

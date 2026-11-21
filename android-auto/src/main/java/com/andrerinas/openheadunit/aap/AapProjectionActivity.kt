@@ -857,6 +857,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                         }
                         is CommManager.ConnectionState.TransportStarted -> {
                             watchdogHandler.removeCallbacks(exitRunnable)
+                            syncProjectionClimateInset()
                         }
                         else -> {}
                     }
@@ -1045,7 +1046,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             returnToProjectionHome = false
             showProjectionHome(false)
             syncReturnToHomeButton()
-            if (wasHomeFlow) setFullscreen()
+            if (wasHomeFlow) {
+                setFullscreen()
+                syncProjectionClimateInset()
+            }
         }
     }
 
@@ -1110,8 +1114,20 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         }
         layoutProjectionHome()
         syncReturnToHomeButton()
-        if (enteringHomeFlow) setFullscreen()
+        if (enteringHomeFlow) {
+            setFullscreen()
+            syncProjectionClimateInset()
+        }
         AppLog.i("Home projection: showingHome=$show surfaceReady=$isSurfaceSet")
+    }
+
+    private fun syncProjectionClimateInset() {
+        val bottom = com.andrerinas.openheadunit.gwm.GwmClimateBar.contentBottomInset(
+            this, HeadUnitScreenConfig.getNegotiatedHeight(), HeadUnitScreenConfig.getHeightMargin()
+        )
+        if (returnToProjectionHome || bottom > 0) {
+            commManager.sendProjectionClimateInset(if (returnToProjectionHome) 0 else bottom)
+        }
     }
 
     private fun layoutProjectionHome() {
@@ -1675,7 +1691,9 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             settings.cachedSurfaceHeight = height
             settings.cachedSurfaceSettingsHash = HeadUnitScreenConfig.computeSettingsHash(settings)
 
-            if (commManager.connectionState.value is CommManager.ConnectionState.TransportStarted) {
+            if (commManager.connectionState.value is CommManager.ConnectionState.TransportStarted && returnToProjectionHome) {
+                syncProjectionClimateInset()
+            } else if (commManager.connectionState.value is CommManager.ConnectionState.TransportStarted) {
                 // AA is already running → send corrected per-side margins dynamically
                 commManager.sendUpdateUiConfigRequest(
                     HeadUnitScreenConfig.getLeftMargin(),
