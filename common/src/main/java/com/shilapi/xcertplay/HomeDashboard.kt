@@ -104,6 +104,18 @@ class HomeDashboardActivity : Activity() {
 
 private const val HEADLIGHT_MODE = "car_mode"
 
+internal object HomeTheme {
+    private const val PREFS = "di_connect_home"
+    private const val FOLLOW_HEADLIGHTS = "follow_headlights"
+
+    fun followsHeadlights(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(FOLLOW_HEADLIGHTS, false)
+
+    fun saveFollowsHeadlights(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(FOLLOW_HEADLIGHTS, enabled).apply()
+    }
+}
+
 /** Head units that publish the illumination signal use 0 for day and 1 for night. */
 internal fun homeNightMode(carMode: Int?, hourOfDay: Int): Boolean = when (carMode) {
     0 -> false
@@ -121,7 +133,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     var connected = false; set(v) { field = v; invalidate() }
     var connectionName = "No phone"; set(v) { field = v; invalidate() }
-    var night = homeNightMode(null, localHour()); set(v) { if (field != v) { field = v; invalidate() } }
+    var night = true; set(v) { if (field != v) { field = v; invalidate() } }
     var rightHandDrive = true; set(v) { field = v; invalidate() }
     var media = Media("No source", null, null, false, null)
         set(value) {
@@ -156,10 +168,10 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val map = zone
         val projectionScale = min(map.width() * scale / width, map.height() * scale / height)
         val centerX = map.centerX() * scale + offsetX
-        val centerY = map.centerY() * scale + offsetY
+        val bottom = map.bottom * scale + offsetY
         val halfWidth = width * projectionScale / 2f
         val halfHeight = height * projectionScale / 2f
-        return RectF(centerX - halfWidth, centerY - halfHeight, centerX + halfWidth, centerY + halfHeight)
+        return RectF(centerX - halfWidth, bottom - 2 * halfHeight, centerX + halfWidth, bottom)
     }
 
     fun showLiveProjection(): Boolean {
@@ -422,8 +434,12 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private fun localHour() = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
     private fun refreshTheme() {
-        val carMode = runCatching { Settings.System.getInt(context.contentResolver, HEADLIGHT_MODE, -1) }.getOrNull()
-        night = homeNightMode(carMode, localHour())
+        night = if (HomeTheme.followsHeadlights(context)) {
+            val carMode = runCatching { Settings.System.getInt(context.contentResolver, HEADLIGHT_MODE, -1) }.getOrNull()
+            homeNightMode(carMode, localHour())
+        } else {
+            true
+        }
     }
 
     // ---- Look --------------------------------------------------------------------------------------
@@ -431,7 +447,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private val H = 720f
     private val bodyTop = 64f
     private val bodyBottom = 594f
-    private val mapEnd = 900f
+    private val mapEnd = 942f
     private var s = 1f
     private var ox = 0f
     private var oy = 0f
@@ -469,6 +485,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         canvas.save()
         canvas.translate(ox, oy)
         canvas.scale(s, s)
+        if (expandProjection != null) drawProjectionHeader(canvas)
         drawTopBar(canvas)
         drawDock(canvas)
         when {
@@ -655,12 +672,23 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     // ---- Map zone (phone connected) -------------------------------------------------------------
-    private val zone get() = bodyBounds(20f, mapEnd)
+    private val zone get() = bodyBounds(20f, mapEnd, climateTop)
     private val column get() = bodyBounds(mapEnd + 14f, 1172f)
 
-    private fun bodyBounds(left: Float, right: Float): RectF =
-        if (rightHandDrive) RectF(left, bodyTop, right, bodyBottom)
-        else RectF(W - right, bodyTop, W - left, bodyBottom)
+    private fun bodyBounds(left: Float, right: Float, bottom: Float = bodyBottom): RectF =
+        if (rightHandDrive) RectF(left, bodyTop, right, bottom)
+        else RectF(W - right, bodyTop, W - left, bottom)
+
+    private fun drawProjectionHeader(c: Canvas) {
+        val topEdge = (projectionBounds(width, height).top - oy) / s
+        val bottom = topEdge + 7f
+        p.color = Color.BLACK
+        p.shader = LinearGradient(0f, 0f, 0f, bottom,
+            ColorUtils.setAlphaComponent(if (night) Color.rgb(138, 171, 212) else Color.rgb(196, 218, 236), 74),
+            Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, W, bottom, p)
+        p.shader = null
+    }
 
     private fun drawMapZone(c: Canvas) {
         val z = zone
@@ -679,7 +707,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     private fun projectionExpandBounds(): RectF = zone.let {
-        RectF(it.right - 72f, it.top + 20f, it.right - 20f, it.top + 72f)
+        RectF(it.right - 52f, 8f, it.right, 60f)
     }
 
     private fun drawProjectionExpand(c: Canvas) {
@@ -877,7 +905,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
     }
 
-    private val barRect = RectF(20f, 610f, 1260f, 704f)
+    private val climateTop = 610f
+    private val barRect = RectF(20f, climateTop, 1260f, 704f)
 
     private fun drawClimateBar(c: Canvas) {
         p.color = Color.BLACK

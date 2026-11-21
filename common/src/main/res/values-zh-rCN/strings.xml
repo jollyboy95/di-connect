@@ -1143,4 +1143,8 @@
     <string name="settings_start_app_description">每次 Di-Connect 启动时启动所选应用，但不显示它，例如车辆的音频调校应用。</string>
     <string name="settings_home_default_app">默认主屏幕应用</string>
     <string name="settings_home_default_app_description">选择 Di-Connect Home 或原厂启动器。</string>
+    <string name="settings_home_theme">主屏幕主题</string>
+    <string name="settings_home_theme_night">夜间</string>
+    <string name="settings_home_theme_headlights">跟随车灯</string>
+    <string name="settings_home_theme_description">如果车辆未报告车灯状态，此选项会在 19:00 至 06:00 使用夜间主题。</string>
 </resources>

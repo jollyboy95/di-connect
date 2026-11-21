@@ -1173,4 +1173,8 @@
     <string name="settings_start_app_description">Avvia l’app scelta a ogni avvio di Di-Connect, senza mostrarla, per esempio l’app di regolazione audio dell’auto.</string>
     <string name="settings_home_default_app">App Home predefinita</string>
     <string name="settings_home_default_app_description">Scegli Di-Connect Home o il launcher di fabbrica.</string>
+    <string name="settings_home_theme">Tema Home</string>
+    <string name="settings_home_theme_night">Notte</string>
+    <string name="settings_home_theme_headlights">Segui i fari</string>
+    <string name="settings_home_theme_description">Se l’auto non comunica lo stato dei fari, questa opzione usa il tema notturno dalle 19:00 alle 06:00.</string>
 </resources>

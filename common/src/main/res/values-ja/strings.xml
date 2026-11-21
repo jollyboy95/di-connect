@@ -1185,4 +1185,8 @@
     <string name="settings_start_app_description">Di-Connect の起動時に、選んだアプリを画面に出さずに起動します（車のオーディオ調整アプリなど）。</string>
     <string name="settings_home_default_app">デフォルトのホームアプリ</string>
     <string name="settings_home_default_app_description">Di-Connect Home または車両標準のホームを選択します。</string>
+    <string name="settings_home_theme">ホームのテーマ</string>
+    <string name="settings_home_theme_night">夜間</string>
+    <string name="settings_home_theme_headlights">ヘッドライトに連動</string>
+    <string name="settings_home_theme_description">車両がヘッドライトの状態を通知しない場合、この設定では19:00から06:00まで夜間テーマを使います。</string>
 </resources>

@@ -3417,6 +3417,14 @@ edit(D, ('''            accentPicker(card)
             card.addView(button(getString(R.string.settings_home_preview), false) {
                 startActivity(android.content.Intent(this, HomeDashboardActivity::class.java))
             }, matchButton(CONTROL_GAP_DP, 52))
+            choice(
+                card,
+                getString(R.string.settings_home_theme),
+                listOf(getString(R.string.settings_home_theme_night), getString(R.string.settings_home_theme_headlights)),
+                if (HomeTheme.followsHeadlights(this)) 1 else 0,
+                reconnects = false,
+            ) { index -> HomeTheme.saveFollowsHeadlights(this, index == 1) }
+            card.addView(label(getString(R.string.settings_home_theme_description), 14, MUTED))
             card.addView(label(getString(R.string.settings_home_default_app_description), 14, MUTED).apply {
                 setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
             })
@@ -3501,3 +3509,8 @@ _home_launcher_strings = {'settings_home_default_app': ['Default Home app', 'ت�
 for p in STRINGS:
     i = LOCALE_ORDER.index(p.parent.name)
     edit(p, ('</resources>', ''.join(f'    <string name="{key}">{values[i]}</string>\n' for key, values in _home_launcher_strings.items()) + '</resources>'))
+
+_home_theme_strings = {'settings_home_theme': ['Home theme', 'سمة الشاشة الرئيسية', 'Tema de inicio', 'Tema Home', 'ホームのテーマ', 'Тема главного экрана', 'Тема головного екрана', '主屏幕主题', '主畫面主題'], 'settings_home_theme_night': ['Night', 'ليلي', 'Noche', 'Notte', '夜間', 'Ночь', 'Ніч', '夜间', '夜間'], 'settings_home_theme_headlights': ['Follow headlights', 'اتباع المصابيح الأمامية', 'Seguir los faros', 'Segui i fari', 'ヘッドライトに連動', 'По состоянию фар', 'За станом фар', '跟随车灯', '跟隨車燈'], 'settings_home_theme_description': ['Follow headlights switches Home to night from 7 pm to 6 am when the car does not report headlight state.', 'عندما لا ترسل السيارة حالة المصابيح الأمامية، يستخدم هذا الخيار السمة الليلية من ٧ مساءً إلى ٦ صباحًا.', 'Si el coche no informa del estado de los faros, esta opción activa el tema nocturno de 19:00 a 06:00.', 'Se l’auto non comunica lo stato dei fari, questa opzione usa il tema notturno dalle 19:00 alle 06:00.', '車両がヘッドライトの状態を通知しない場合、この設定では19:00から06:00まで夜間テーマを使います。', 'Если автомобиль не передаёт состояние фар, этот режим включает ночную тему с 19:00 до 06:00.', 'Якщо авто не передає стан фар, цей режим вмикає нічну тему з 19:00 до 06:00.', '如果车辆未报告车灯状态，此选项会在 19:00 至 06:00 使用夜间主题。', '如果車輛未回報車燈狀態，此選項會在 19:00 至 06:00 使用夜間主題。']}
+for p in STRINGS:
+    i = LOCALE_ORDER.index(p.parent.name)
+    edit(p, ('</resources>', ''.join(f'    <string name="{key}">{values[i]}</string>\n' for key, values in _home_theme_strings.items()) + '</resources>'))

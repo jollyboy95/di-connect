@@ -132,8 +132,8 @@ class DiConnectUiPreviewTest {
             view.draw(Canvas(bitmap))
             val bounds = view.projectionBounds(1280, 720)
             assertFalse(touch(view, MotionEvent.ACTION_DOWN, bounds.centerX(), bounds.centerY()))
-            val expandX = bounds.right - 30
-            val expandY = bounds.top + 40
+            val expandX = bounds.right - 26
+            val expandY = 34f
             assertTrue(touch(view, MotionEvent.ACTION_DOWN, expandX, expandY))
             assertTrue(touch(view, MotionEvent.ACTION_UP, expandX, expandY))
             assertEquals(1, expansions)
@@ -160,6 +160,9 @@ class DiConnectUiPreviewTest {
         withDashboard { view, _ ->
             val bounds = view.projectionBounds(1200, 720)
             assertEquals(1200f / 720f, bounds.width() / bounds.height(), .001f)
+            val full = view.projectionBounds(1920, 1080)
+            assertTrue(full.width() >= 1380f)
+            assertEquals(915f, full.bottom, .01f)
             assertTrue(view.projectionBounds(0, 720).isEmpty)
         }
     }
@@ -172,10 +175,10 @@ class DiConnectUiPreviewTest {
             try {
                 view.media = view.media.copy(art = red)
                 view.draw(Canvas(bitmap))
-                val redTint = bitmap.getPixel(954, 162)
+                val redTint = bitmap.getPixel(978, 162)
                 view.media = view.media.copy(art = blue)
                 view.draw(Canvas(bitmap))
-                val blueTint = bitmap.getPixel(954, 162)
+                val blueTint = bitmap.getPixel(978, 162)
                 assertTrue(Color.red(redTint) > Color.red(blueTint))
                 assertTrue(Color.blue(blueTint) > Color.blue(redTint))
             } finally {
@@ -234,6 +237,15 @@ class DiConnectUiPreviewTest {
             assertTrue(day - backdropRed(true) > 65)
             assertTrue(day < 185)
         }
+    }
+
+    @Test fun nightIsTheDefaultAndTheHeadlightChoicePersists() {
+        val context = org.robolectric.RuntimeEnvironment.getApplication()
+        assertFalse(HomeTheme.followsHeadlights(context))
+        HomeTheme.saveFollowsHeadlights(context, true)
+        assertTrue(HomeTheme.followsHeadlights(context))
+        HomeTheme.saveFollowsHeadlights(context, false)
+        assertFalse(HomeTheme.followsHeadlights(context))
     }
 
     @Test fun headlightsOverrideTheTimeOfDay() {

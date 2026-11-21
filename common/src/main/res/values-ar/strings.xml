@@ -1132,4 +1132,8 @@
     <string name="settings_start_app_description">يشغّل التطبيق المختار في كل مرة يبدأ فيها Di-Connect دون أن يظهر، مثل تطبيق ضبط الصوت في السيارة.</string>
     <string name="settings_home_default_app">تطبيق الشاشة الرئيسية الافتراضي</string>
     <string name="settings_home_default_app_description">اختر Di-Connect Home أو مشغّل السيارة الأصلي.</string>
+    <string name="settings_home_theme">سمة الشاشة الرئيسية</string>
+    <string name="settings_home_theme_night">ليلي</string>
+    <string name="settings_home_theme_headlights">اتباع المصابيح الأمامية</string>
+    <string name="settings_home_theme_description">عندما لا ترسل السيارة حالة المصابيح الأمامية، يستخدم هذا الخيار السمة الليلية من ٧ مساءً إلى ٦ صباحًا.</string>
 </resources>

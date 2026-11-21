@@ -1186,4 +1186,8 @@
     <string name="settings_start_app_description">Starts the chosen app each time Di-Connect starts, without showing it, for example the car’s audio tuning app.</string>
     <string name="settings_home_default_app">Default Home app</string>
     <string name="settings_home_default_app_description">Choose Di-Connect Home or the factory launcher.</string>
+    <string name="settings_home_theme">Home theme</string>
+    <string name="settings_home_theme_night">Night</string>
+    <string name="settings_home_theme_headlights">Follow headlights</string>
+    <string name="settings_home_theme_description">Follow headlights switches Home to night from 7 pm to 6 am when the car does not report headlight state.</string>
 </resources>

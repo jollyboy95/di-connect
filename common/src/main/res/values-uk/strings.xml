@@ -1095,4 +1095,8 @@
     <string name="settings_start_app_description">Запускає вибраний застосунок під час кожного запуску Di-Connect, не показуючи його, наприклад застосунок налаштування звуку авто.</string>
     <string name="settings_home_default_app">Головний екран за замовчуванням</string>
     <string name="settings_home_default_app_description">Виберіть Di-Connect Home або заводську програму запуску.</string>
+    <string name="settings_home_theme">Тема головного екрана</string>
+    <string name="settings_home_theme_night">Ніч</string>
+    <string name="settings_home_theme_headlights">За станом фар</string>
+    <string name="settings_home_theme_description">Якщо авто не передає стан фар, цей режим вмикає нічну тему з 19:00 до 06:00.</string>
 </resources>

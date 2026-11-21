@@ -2984,6 +2984,14 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             card.addView(button(getString(R.string.settings_home_preview), false) {
                 startActivity(android.content.Intent(this, HomeDashboardActivity::class.java))
             }, matchButton(CONTROL_GAP_DP, 52))
+            choice(
+                card,
+                getString(R.string.settings_home_theme),
+                listOf(getString(R.string.settings_home_theme_night), getString(R.string.settings_home_theme_headlights)),
+                if (HomeTheme.followsHeadlights(this)) 1 else 0,
+                reconnects = false,
+            ) { index -> HomeTheme.saveFollowsHeadlights(this, index == 1) }
+            card.addView(label(getString(R.string.settings_home_theme_description), 14, MUTED))
             card.addView(label(getString(R.string.settings_home_default_app_description), 14, MUTED).apply {
                 setPadding(0, dp(SETTINGS_BLOCK_GAP_DP), 0, 0)
             })
