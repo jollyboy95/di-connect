@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay
 
 import android.app.Activity
+import android.bluetooth.BluetoothManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -18,6 +19,8 @@ import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.media.AudioManager
+import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -186,6 +189,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     var passengerTemp: Float? = 22f; set(v) { field = v; invalidate() }
     var fan: Int? = 3; set(v) { field = v; invalidate() }
     var ac: Boolean? = true; set(v) { field = v; invalidate() }
+    var recirculation: HomeRecirculation? = null; set(v) { field = v; invalidate() }
     var auto: Boolean? = false; set(v) { field = v; invalidate() }
     var driverSeat: Int? = 0; set(v) { field = v; invalidate() }
     var passengerSeat: Int? = 0; set(v) { field = v; invalidate() }
@@ -201,6 +205,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
     var outsideTemp: Float? = null; set(v) { field = v; invalidate() }
     var rangeKm: Float? = null; set(v) { field = v; invalidate() }
     var hotspotOn: Boolean? = null; set(v) { field = v; invalidate() }
+    var wifiEnabled: Boolean? = null; set(v) { field = v; invalidate() }
+    var bluetoothEnabled: Boolean? = null; set(v) { field = v; invalidate() }
     /** Moving faster than walking pace: the app grid waits until the car is parked. */
     var moving = false; set(v) { field = v; invalidate() }
 
@@ -214,7 +220,13 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private var stopMusic: (() -> Unit)? = null
     private var running = false
     private val tick = object : Runnable {
-        override fun run() { refreshTheme(); invalidate(); readHotspot(); main.postDelayed(this, 15_000) }
+        override fun run() {
+            refreshTheme()
+            invalidate()
+            readConnectivity()
+            if (onCar) readClimate()
+            main.postDelayed(this, 15_000)
+        }
     }
     private val mediaPoll = object : Runnable {
         override fun run() { readFactoryMedia(); if (running) main.postDelayed(this, 2_000) }
@@ -269,7 +281,6 @@ internal class HomeDashboardView(context: Context) : View(context) {
             com.andrerinas.openheadunit.DiConnectViews.observeMusic { music -> main.post { androidAutoMusic = music; refreshMedia() } }
         }.getOrNull()
         if (onCar) {
-            readClimate()
             GwmVehicleData.addListener(context, vehicleListener)
         } else { driverTemp = null; passengerTemp = null; fan = null; ac = null; auto = null
             driverSeat = null; passengerSeat = null; frontDemist = null; rearDemist = null; sync = null; eco = null }
@@ -366,19 +377,28 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }, "home-media-read").start()
     }
 
-    private fun readHotspot() {
-        if (!onCar) return
+    private fun readConnectivity() {
         val app = context.applicationContext
         Thread({
-            val state = runCatching { com.andrerinas.openheadunit.utils.SoftApStateReader.read(app) }.getOrNull()
-            main.post {
-                hotspotOn = when (state) {
-                    com.andrerinas.openheadunit.aap.SoftApState.ENABLED -> true
-                    com.andrerinas.openheadunit.aap.SoftApState.NOT_ENABLED -> false
-                    else -> null
-                }
+            val wifi = runCatching { app.getSystemService(WifiManager::class.java)?.isWifiEnabled }.getOrNull()
+            val canReadBluetooth = Build.VERSION.SDK_INT < 31 || ContextCompat.checkSelfPermission(
+                app, android.Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED
+            val bluetooth = if (canReadBluetooth) {
+                runCatching { app.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled }.getOrNull()
+            } else null
+            val hotspot = when (com.andrerinas.openheadunit.utils.SoftApStateReader.read(app)) {
+                com.andrerinas.openheadunit.aap.SoftApState.ENABLED -> true
+                com.andrerinas.openheadunit.aap.SoftApState.NOT_ENABLED -> false
+                else -> null
             }
-        }, "home-hotspot-read").start()
+            main.post {
+                if (!running) return@post
+                wifiEnabled = wifi
+                bluetoothEnabled = bluetooth
+                hotspotOn = hotspot
+            }
+        }, "home-connectivity-read").start()
     }
 
     private fun readClimate(delay: Long = 0) {
@@ -386,7 +406,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         Thread({
             if (delay > 0) runCatching { Thread.sleep(delay) }
             val keys = arrayOf(bar.DRIVER_TEMP, bar.PASS_TEMP, bar.FAN, bar.AC, keyAuto, bar.DRIVER_VENT, bar.PASS_VENT, keyFront, keyRear,
-                keySync, keyEco, keyPower)
+                keySync, keyEco, keyPower, HomeFactoryTargets.CLIMATE_CYCLE_MODE)
             val v = runCatching { bar.readKeys(app, keys) }.getOrDefault(emptyMap())
             main.post {
                 driverTemp = v[bar.DRIVER_TEMP]; passengerTemp = v[bar.PASS_TEMP]; fan = v[bar.FAN]?.toInt()
@@ -395,6 +415,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
                 frontDemist = v[keyFront]?.let { it.toInt() == 1 }; rearDemist = v[keyRear]?.let { it.toInt() == 1 }
                 sync = v[keySync]?.let { it.toInt() == 1 }; eco = v[keyEco]?.let { it.toInt() == 1 }
                 climateOn = v[keyPower]?.let { it.toInt() != 0 }
+                recirculation = HomeRecirculation.fromValue(v[HomeFactoryTargets.CLIMATE_CYCLE_MODE])
             }
         }, "home-climate-read").start()
     }
@@ -490,6 +511,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         canvas.translate(0f, projectionHeaderOffset())
         drawTopBar(canvas)
         canvas.restore()
+        drawConnectivityIcons(canvas)
         drawDock(canvas)
         when {
             expandProjection != null -> drawProjectionExpand(canvas)
@@ -636,8 +658,55 @@ internal class HomeDashboardView(context: Context) : View(context) {
         // Car readings, each shown only while the car answers for it.
         outsideTemp?.let { chip(String.format(Locale.US, "%.0f° outside", it), true) }
         rangeKm?.let { chip(String.format(Locale.US, "%.0f km", it), true) }
-        hotspotOn?.let { chip(if (it) "Hotspot on" else "Hotspot off", it) }
     }
+
+    private fun drawConnectivityIcons(c: Canvas) {
+        val y = 33f
+        val itemWidth = 40f
+
+        fun signal(cx: Float, enabled: Boolean, hotspot: Boolean) {
+            p.color = connectivityInk(enabled)
+            p.style = Paint.Style.STROKE
+            p.strokeWidth = 2.2f
+            p.strokeCap = Paint.Cap.ROUND
+            if (hotspot) {
+                for (radius in listOf(7f, 12f)) {
+                    c.drawArc(cx - radius, y - radius, cx + radius, y + radius, 139f, 82f, false, p)
+                    c.drawArc(cx - radius, y - radius, cx + radius, y + radius, -41f, 82f, false, p)
+                }
+            } else {
+                for (radius in listOf(7f, 12f, 17f)) {
+                    c.drawArc(cx - radius, y + 8f - radius, cx + radius, y + 8f + radius, 226f, 88f, false, p)
+                }
+            }
+            p.style = Paint.Style.FILL
+            c.drawCircle(cx, if (hotspot) y else y + 8f, 2.1f, p)
+        }
+
+        val wifiX = 1068f
+        wifiEnabled?.let { signal(wifiX, it, hotspot = false) }
+        hotspotOn?.let { signal(wifiX + itemWidth, it, hotspot = true) }
+        bluetoothEnabled?.let { enabled ->
+            val x = wifiX + itemWidth * 2
+            p.color = connectivityInk(enabled)
+            p.style = Paint.Style.STROKE
+            p.strokeWidth = 2.2f
+            p.strokeCap = Paint.Cap.ROUND
+            p.strokeJoin = Paint.Join.ROUND
+            path.reset()
+            path.moveTo(x - 7f, y - 7f)
+            path.lineTo(x + 7f, y + 7f)
+            path.lineTo(x, y + 13f)
+            path.lineTo(x, y - 13f)
+            path.lineTo(x + 7f, y - 7f)
+            path.lineTo(x - 7f, y + 7f)
+            c.drawPath(path, p)
+            p.style = Paint.Style.FILL
+        }
+    }
+
+    private fun connectivityInk(enabled: Boolean): Int =
+        if (enabled) ink else ColorUtils.setAlphaComponent(ink, 90)
 
     private fun drawDock(c: Canvas) {
         val cx = mx(1222f)
@@ -785,20 +854,34 @@ internal class HomeDashboardView(context: Context) : View(context) {
                 art.getPixel(art.width / 4, art.height / 4),
                 art.getPixel(art.width * 3 / 4, art.height * 3 / 4),
             )
-            Color.rgb(samples.sumOf { Color.red(it) } / samples.size,
+            val color = Color.rgb(samples.sumOf { Color.red(it) } / samples.size,
                 samples.sumOf { Color.green(it) } / samples.size,
                 samples.sumOf { Color.blue(it) } / samples.size)
+            val hsv = FloatArray(3)
+            Color.colorToHSV(color, hsv)
+            if (hsv[1] < .12f) return null
+            hsv[1] = hsv[1].coerceIn(.45f, .86f)
+            hsv[2] = hsv[2].coerceAtLeast(.8f)
+            Color.HSVToColor(hsv)
         }.getOrNull()
     }
 
     private fun drawMediaGlow(c: Canvas) {
         val bounds = column
-        val glow = albumTint?.let { ColorUtils.blendARGB(accent, it, .55f) } ?: accent
+        val glow = albumTint ?: accent
         p.color = Color.BLACK
-        p.shader = RadialGradient(bounds.centerX(), bounds.top + 119f, bounds.width() * .59f,
-            ColorUtils.setAlphaComponent(glow, if (night) 115 else 94),
-            ColorUtils.setAlphaComponent(glow, 0), Shader.TileMode.CLAMP)
-        c.drawRoundRect(bounds, 52f, 52f, p)
+        val radius = bounds.width() * .64f
+        val centerX = bounds.centerX()
+        val centerY = bounds.top + 119f
+        p.shader = RadialGradient(centerX, centerY, radius,
+            intArrayOf(ColorUtils.setAlphaComponent(glow, if (night) 179 else 128),
+                ColorUtils.setAlphaComponent(glow, if (night) 114 else 76),
+                ColorUtils.setAlphaComponent(glow, 0)),
+            floatArrayOf(0f, .53f, 1f), Shader.TileMode.CLAMP)
+        c.save()
+        c.scale(.77f, 1f, centerX, centerY)
+        c.drawCircle(centerX, centerY, radius, p)
+        c.restore()
         p.shader = null
 
         p.color = ColorUtils.setAlphaComponent(ink, 30)
@@ -919,15 +1002,17 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
     }
 
-    private val climateTop = 610f
-    private val barRect = RectF(20f, climateTop, 1260f, 704f)
+    private val climateTop = 638f
+    private val barRect = RectF(0f, climateTop, W, H)
 
     private fun drawClimateBar(c: Canvas) {
         p.color = Color.BLACK
         p.shader = LinearGradient(barRect.left, barRect.top, barRect.right, barRect.bottom,
             ColorUtils.setAlphaComponent(ink, if (night) 37 else 28),
             ColorUtils.setAlphaComponent(ink, if (night) 13 else 18), Shader.TileMode.CLAMP)
-        c.drawRoundRect(barRect, 47f, 47f, p)
+        path.reset()
+        path.addRoundRect(barRect, floatArrayOf(28f, 28f, 28f, 28f, 0f, 0f, 0f, 0f), Path.Direction.CW)
+        c.drawPath(path, p)
         p.shader = null
         val cy = barRect.centerY()
         // Passenger on the left and driver on the right in a right-hand-drive car; mirrored otherwise.
@@ -961,9 +1046,52 @@ internal class HomeDashboardView(context: Context) : View(context) {
             x += w + 6f
         }
         toggle("A/C", ac) { ac = it; write(bar.AC, if (it) 1f else 0f) }
+        recirculation?.let { mode ->
+            val width = 48f
+            r.set(x, cy - 25f, x + width, cy + 25f)
+            if (mode != HomeRecirculation.FRESH) glass(c, r, 25f, 1.8f)
+            drawRecirculationIcon(c, r.centerX(), cy, mode)
+            hit(r) {
+                val next = mode.toggle()
+                recirculation = next
+                write(HomeFactoryTargets.CLIMATE_CYCLE_MODE, next.value)
+            }
+            x += width + 6f
+        }
         toggle("AUTO", auto) { auto = it; write(keyAuto, if (it) 1f else 0f) }
         toggle("Demist", frontDemist) { frontDemist = it; write(keyFront, if (it) 1f else 0f) }
         toggle("Rear", rearDemist) { rearDemist = it; write(keyRear, if (it) 1f else 0f) }
+    }
+
+    private fun drawRecirculationIcon(c: Canvas, cx: Float, cy: Float, mode: HomeRecirculation) {
+        c.save()
+        c.translate(cx, cy)
+        p.color = if (mode == HomeRecirculation.RECIRCULATE) accent else ink
+        p.style = Paint.Style.STROKE
+        p.strokeWidth = 1.8f
+        p.strokeCap = Paint.Cap.ROUND
+        p.strokeJoin = Paint.Join.ROUND
+        path.reset()
+        path.moveTo(-13f, 6f)
+        path.lineTo(-15f, 4f)
+        path.lineTo(-15f, 0f)
+        path.quadTo(-14f, -5f, -9f, -5f)
+        path.quadTo(-1f, -14f, 8f, -9f)
+        path.quadTo(15f, -7f, 15f, -2f)
+        path.lineTo(15f, 5f)
+        path.lineTo(11f, 7f)
+        path.moveTo(-9f, 7f)
+        path.lineTo(7f, 7f)
+        c.drawPath(path, p)
+        if (mode == HomeRecirculation.AUTO) {
+            text(c, "A", 1f, 4f, 11f, quiet, medium, Paint.Align.CENTER)
+        } else {
+            c.drawArc(-6f, -5f, 7f, 4f, 30f, 277f, false, p)
+            c.drawLine(5f, -4f, 7f, -1f, p)
+            c.drawLine(7f, -1f, 3f, 0f, p)
+        }
+        p.style = Paint.Style.FILL
+        c.restore()
     }
 
     private fun tempGroup(c: Canvas, cx: Float, cy: Float, driver: Boolean) {
@@ -1388,6 +1516,16 @@ internal object HomeSources {
     }
 }
 
+internal enum class HomeRecirculation(val value: Float) {
+    RECIRCULATE(0f), FRESH(1f), AUTO(2f);
+
+    fun toggle(): HomeRecirculation = if (this == RECIRCULATE) FRESH else RECIRCULATE
+
+    companion object {
+        fun fromValue(value: Float?): HomeRecirculation? = entries.find { it.value == value }
+    }
+}
+
 /**
  * The car's own screens that Home opens, by component, as found on a Haval H7 (build
  * GW35OVBPU1G091203B11; see docs/haval-h7/HEAD_UNIT_SURVEY.md). Components come first because the
@@ -1431,6 +1569,7 @@ internal object HomeFactoryTargets {
 
     const val CLIMATE_SYNC = "car.hvac.sync_enable"
     const val CLIMATE_ECO = "car.hvac.eco_enable"
+    const val CLIMATE_CYCLE_MODE = "car.hvac.cycle_mode"
 
     /**
      * The only gwm_adapter keys Home writes: cabin climate and seat ventilation. Anything else
@@ -1438,7 +1577,7 @@ internal object HomeFactoryTargets {
      */
     private val CLIMATE_WRITABLE = setOf(
         "car.hvac.driver_temperature", "car.hvac.pass_temperature", "car.hvac.fan_speed", "car.hvac.ac_enable",
-        "car.hvac.auto_enable", "car.hvac.front_defrost_enable", "car.hvac.rear_defrost_enable", CLIMATE_SYNC, CLIMATE_ECO,
+        "car.hvac.auto_enable", "car.hvac.front_defrost_enable", "car.hvac.rear_defrost_enable", CLIMATE_SYNC, CLIMATE_ECO, CLIMATE_CYCLE_MODE,
         "car.comfort_setting.driver_seat_ventilation_level_nine", "car.comfort_setting.passenger_seat_ventilation_level_nine",
     )
 

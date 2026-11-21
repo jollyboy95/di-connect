@@ -97,6 +97,10 @@ class DiConnectUiPreviewTest {
         night = true
         connected = true
         connectionName = "Android Auto · Galaxy"
+        wifiEnabled = true
+        hotspotOn = true
+        bluetoothEnabled = true
+        recirculation = HomeRecirculation.RECIRCULATE
         mapNote = "Preview placeholder · the phone's live map is shown here"
         media = HomeDashboardView.Media("Spotify · Android Auto", "Song title", "Artist name", true, .42f)
         turn = HomeDashboardView.Turn(com.shilapi.xcertplay.host.R.drawable.ic_turn_card_turn_left, "300 m", "Hunter St", "Arrive 12:58 PM · 6.2 km")
@@ -188,7 +192,7 @@ class DiConnectUiPreviewTest {
             assertEquals(1200f / 720f, bounds.width() / bounds.height(), .001f)
             val full = view.projectionBounds(1920, 1080)
             assertTrue(full.width() >= 1380f)
-            assertEquals(915f, full.bottom, .01f)
+            assertEquals(957f, full.bottom, .01f)
             assertTrue(view.projectionBounds(0, 720).isEmpty)
         }
     }
@@ -211,6 +215,35 @@ class DiConnectUiPreviewTest {
                 red.recycle()
                 blue.recycle()
             }
+        }
+    }
+
+    @Test fun recirculationUsesTheFactoryValuesAndOnlyTogglesKnownModes() {
+        assertEquals(HomeRecirculation.RECIRCULATE, HomeRecirculation.fromValue(0f))
+        assertEquals(HomeRecirculation.FRESH, HomeRecirculation.fromValue(1f))
+        assertEquals(HomeRecirculation.AUTO, HomeRecirculation.fromValue(2f))
+        assertEquals(null, HomeRecirculation.fromValue(null))
+        assertEquals(null, HomeRecirculation.fromValue(-1001f))
+        assertEquals(HomeRecirculation.FRESH, HomeRecirculation.RECIRCULATE.toggle())
+        assertEquals(HomeRecirculation.RECIRCULATE, HomeRecirculation.AUTO.toggle())
+        assertTrue(HomeFactoryTargets.climateWritable(HomeFactoryTargets.CLIMATE_CYCLE_MODE))
+    }
+
+    @Test fun connectivityIndicatorsAreVisibleAndHaveAnOffState() {
+        withDashboard { view, bitmap ->
+            view.night = true
+            val canvas = Canvas(bitmap)
+            val centers = listOf(1068 to 41, 1108 to 33, 1148 to 33)
+            fun render(enabled: Boolean): List<Int> {
+                view.wifiEnabled = enabled
+                view.hotspotOn = enabled
+                view.bluetoothEnabled = enabled
+                view.draw(canvas)
+                return centers.map { (x, y) -> Color.red(bitmap.getPixel(x, y)) }
+            }
+            val off = render(false)
+            val on = render(true)
+            assertTrue(on.zip(off).all { (bright, dim) -> bright > dim })
         }
     }
 
