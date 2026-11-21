@@ -142,6 +142,15 @@ class DiConnectUiPreviewTest {
         }
     }
 
+    @Test fun settingsCloseButtonClosesItsPanel() {
+        withDashboard { view, bitmap ->
+            view.popover = HomeDashboardView.Popover.SETTINGS
+            view.draw(Canvas(bitmap))
+            touch(view, MotionEvent.ACTION_UP, 1128f, 104f)
+            assertEquals(HomeDashboardView.Popover.NONE, view.popover)
+        }
+    }
+
     @Test fun dockMusicOpensSourcesAndMapReturnsToTheEmbeddedView() {
         var expansions = 0
         withDashboard { view, bitmap ->

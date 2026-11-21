@@ -1083,8 +1083,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
         text(c, title, frame.left + 32f, frame.top + 52f, 28f, ink, light)
         r.set(frame.right - 64f, frame.top + 16f, frame.right - 16f, frame.top + 64f)
         text(c, "×", r.centerX(), r.centerY() + 10f, 32f, quiet, light, Paint.Align.CENTER)
-        hit(RectF(r)) { popover = Popover.NONE }
-        hit(RectF(frame)) { }
+        hit(frame) { }
+        hit(r) { popover = Popover.NONE }
         return frame
     }
 
