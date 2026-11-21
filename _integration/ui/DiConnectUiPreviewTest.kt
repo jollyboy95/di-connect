@@ -53,6 +53,38 @@ class DiConnectUiPreviewTest {
 
     @Test fun themes() = capture("themes") { ReflectionHelpers.setField(it, "page", "themes") }
 
+    // Di-Connect 2.0 Home preview (phase 1): drawn directly at the head unit's 1920x1080.
+    private fun home2(name: String, setup: (HomeDashboardView) -> Unit) {
+        val view = HomeDashboardView(org.robolectric.RuntimeEnvironment.getApplication())
+        view.fixedTime = java.util.GregorianCalendar(2026, 10, 21, 12, 41).time
+        setup(view)
+        view.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, 1920, 1080)
+        val image = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888)
+        try {
+            view.draw(Canvas(image))
+            val file = File("build/reports/di-connect-ui/$name.png")
+            file.parentFile.mkdirs()
+            file.outputStream().use { assertTrue(image.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+        } finally { image.recycle() }
+    }
+
+    private fun HomeDashboardView.sample() {
+        connected = true
+        connectionName = "Android Auto · Galaxy"
+        mapNote = "Preview placeholder · the phone's live map is shown here"
+        media = HomeDashboardView.Media("Spotify · Android Auto", "Song title", "Artist name", true, .42f)
+        turn = HomeDashboardView.Turn(com.shilapi.xcertplay.host.R.drawable.ic_turn_card_turn_left, "300 m", "Hunter St", "Arrive 12:58 PM · 6.2 km")
+    }
+
+    @Test fun home2Connected() = home2("home2-connected") { it.sample() }
+    @Test fun home2ConnectedDay() = home2("home2-connected-day") { it.sample(); it.night = false }
+    @Test fun home2Offline() = home2("home2-offline") { it.media = HomeDashboardView.Media("FM radio", "Radio", "Choose a station", false, null) }
+    @Test fun home2DriverTemperature() = home2("home2-climate-driver") { it.sample(); it.driverTemp = 24.5f; it.popover = HomeDashboardView.Popover.DRIVER_TEMP }
+    @Test fun home2Fan() = home2("home2-climate-fan") { it.sample(); it.popover = HomeDashboardView.Popover.FAN }
+    @Test fun home2Settings() = home2("home2-settings") { it.sample(); it.popover = HomeDashboardView.Popover.SETTINGS }
+    @Test fun home2LeftHandDrive() = home2("home2-lhd") { it.sample(); it.rightHandDrive = false }
+
     private fun capture(name: String, open: (DiPlayActivity) -> Unit) {
         val controller = Robolectric.buildActivity(DiPlayActivity::class.java).setup()
         val activity = controller.get()

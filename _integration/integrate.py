@@ -3354,6 +3354,30 @@ edit(D, ('''                            }.onFailure { showDiagnosticReport(repor
                         }
 '''))
 
+# Di-Connect 2.0 Home, phase 1 preview (Nov 2026): a glass home screen opened from Settings >
+# Appearance. It declares no HOME category, so the car's own launcher is untouched.
+(root/'common/src/main/java/com/shilapi/xcertplay/HomeDashboard.kt').write_text(Path('target/_integration/ui/HomeDashboard.kt').read_text())
+edit(root/'common/src/main/AndroidManifest.xml', ('''        <activity android:name="com.shilapi.xcertplay.DiPlayActivity"''',
+    '''        <!-- Di-Connect 2.0 Home preview. Deliberately NOT a Home app: no HOME category. -->
+        <activity android:name="com.shilapi.xcertplay.HomeDashboardActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
+        <activity android:name="com.shilapi.xcertplay.DiPlayActivity"'''))
+edit(D, ('''            accentPicker(card)
+        }
+''', '''            accentPicker(card)
+            card.addView(label(getString(R.string.settings_home_preview_description), 14, MUTED).apply { setPadding(0, dp(14), 0, 0) })
+            card.addView(button(getString(R.string.settings_home_preview), false) {
+                startActivity(android.content.Intent(this, HomeDashboardActivity::class.java))
+            }, matchButton(CONTROL_GAP_DP, 52))
+        }
+'''))
+_txt={'settings_home_preview':['Preview Di-Connect 2.0 Home (experimental)','معاينة الشاشة الرئيسية Di-Connect 2.0 (تجريبي)','Vista previa de Di-Connect 2.0 Home (experimental)','Anteprima Di-Connect 2.0 Home (sperimentale)','Di-Connect 2.0 ホームのプレビュー（実験的機能）','Предпросмотр Di-Connect 2.0 Home (экспериментально)','Попередній перегляд Di-Connect 2.0 Home (експериментально)','预览 Di-Connect 2.0 主屏幕（实验性）','預覽 Di-Connect 2.0 主畫面（實驗性）'],
+ 'settings_home_preview_description':['A new glass home screen with climate controls and a dock on the right. It does not replace the car’s home screen.','شاشة رئيسية زجاجية جديدة مع أزرار المناخ وشريط على اليمين. لا تستبدل الشاشة الرئيسية للسيارة.','Una nueva pantalla de inicio de cristal con climatización y un dock a la derecha. No sustituye la pantalla de inicio del coche.','Una nuova schermata home in vetro con clima e dock a destra. Non sostituisce la home dell’auto.','右側にドックと空調操作がある新しいガラス調ホーム画面です。車のホーム画面は置き換えません。','Новый стеклянный главный экран с климатом и панелью справа. Не заменяет главный экран машины.','Новий скляний головний екран з кліматом і панеллю праворуч. Не замінює головний екран авто.','带空调控制和右侧程序坞的全新玻璃风格主屏幕。不会替换车辆的主屏幕。','帶空調控制和右側程式塢的全新玻璃風格主畫面。不會取代車輛的主畫面。']}
+for p_ in STRINGS:
+    i=LOCALE_ORDER.index(p_.parent.name)
+    edit(p_,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
+
 # An app of the driver's choice (for example an audio tuning app) opened in the background at start.
 (root/'common/src/main/java/com/shilapi/xcertplay/DiConnectStartApp.kt').write_text(Path('target/_integration/ui/DiConnectStartApp.kt').read_text())
 edit(root/'shared/src/main/AndroidManifest.xml',

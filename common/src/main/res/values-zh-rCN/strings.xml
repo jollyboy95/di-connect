@@ -1136,6 +1136,8 @@
     <string name="settings_gwm_bt_music_off_during_aa_description">防止车机蓝牙播放器与 Android Auto 冲突。通话仍走蓝牙。Android Auto 结束后恢复。</string>
     <string name="settings_gwm_voice_key">方向盘语音键打开手机助手</string>
     <string name="settings_gwm_voice_key_description">Android Auto 期间，方向盘语音键打开手机上的 Google 助理，而不是车机助手。其他时候照常使用。</string>
+    <string name="settings_home_preview">预览 Di-Connect 2.0 主屏幕（实验性）</string>
+    <string name="settings_home_preview_description">带空调控制和右侧程序坞的全新玻璃风格主屏幕。不会替换车辆的主屏幕。</string>
     <string name="settings_start_app">启动时打开应用</string>
     <string name="settings_start_app_none">无</string>
     <string name="settings_start_app_description">每次 Di-Connect 启动时在后台打开所选应用（例如音效调节应用），然后返回 Di-Connect。</string>

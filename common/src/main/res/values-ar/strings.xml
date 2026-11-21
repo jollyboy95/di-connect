@@ -1125,6 +1125,8 @@
     <string name="settings_gwm_bt_music_off_during_aa_description">يمنع مشغّل البلوتوث في السيارة من منافسة Android Auto. تبقى المكالمات عبر البلوتوث. يُسمح به مجددًا عند انتهاء Android Auto.</string>
     <string name="settings_gwm_voice_key">زر الصوت في المقود يفتح مساعد الهاتف</string>
     <string name="settings_gwm_voice_key_description">أثناء Android Auto يفتح زر الصوت في المقود مساعد Google على الهاتف بدل مساعد السيارة. خارج Android Auto يعمل كالمعتاد.</string>
+    <string name="settings_home_preview">معاينة الشاشة الرئيسية Di-Connect 2.0 (تجريبي)</string>
+    <string name="settings_home_preview_description">شاشة رئيسية زجاجية جديدة مع أزرار المناخ وشريط على اليمين. لا تستبدل الشاشة الرئيسية للسيارة.</string>
     <string name="settings_start_app">فتح تطبيق عند البدء</string>
     <string name="settings_start_app_none">لا شيء</string>
     <string name="settings_start_app_description">يفتح التطبيق المختار في الخلفية عند كل بدء لـ Di-Connect، مثل تطبيق ضبط الصوت، ثم يعود إلى Di-Connect.</string>

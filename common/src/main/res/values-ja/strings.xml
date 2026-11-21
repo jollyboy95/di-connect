@@ -1178,6 +1178,8 @@
     <string name="settings_gwm_bt_music_off_during_aa_description">車の Bluetooth プレーヤーが Android Auto と競合しないようにします。通話は Bluetooth のままです。Android Auto 終了時に戻ります。</string>
     <string name="settings_gwm_voice_key">ハンドルの音声ボタンでスマホのアシスタントを起動</string>
     <string name="settings_gwm_voice_key_description">Android Auto 中は、ハンドルの音声ボタンで車のアシスタントではなくスマホの Google アシスタントを起動します。それ以外は従来どおりです。</string>
+    <string name="settings_home_preview">Di-Connect 2.0 ホームのプレビュー（実験的機能）</string>
+    <string name="settings_home_preview_description">右側にドックと空調操作がある新しいガラス調ホーム画面です。車のホーム画面は置き換えません。</string>
     <string name="settings_start_app">起動時にアプリを開く</string>
     <string name="settings_start_app_none">なし</string>
     <string name="settings_start_app_description">Di-Connect の起動ごとに選んだアプリ（音響調整アプリなど）をバックグラウンドで開き、Di-Connect に戻ります。</string>

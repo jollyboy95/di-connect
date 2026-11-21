@@ -1076,6 +1076,8 @@
     <string name="settings_gwm_bt_music_off_during_aa_description">Не даёт Bluetooth-плееру машины мешать Android Auto. Звонки остаются на Bluetooth. Вернётся после Android Auto.</string>
     <string name="settings_gwm_voice_key">Кнопка голоса на руле открывает ассистента телефона</string>
     <string name="settings_gwm_voice_key_description">Во время Android Auto кнопка голоса на руле открывает Google Ассистент на телефоне вместо ассистента машины. Вне Android Auto всё как раньше.</string>
+    <string name="settings_home_preview">Предпросмотр Di-Connect 2.0 Home (экспериментально)</string>
+    <string name="settings_home_preview_description">Новый стеклянный главный экран с климатом и панелью справа. Не заменяет главный экран машины.</string>
     <string name="settings_start_app">Открывать приложение при запуске</string>
     <string name="settings_start_app_none">Нет</string>
     <string name="settings_start_app_description">Открывает выбранное приложение в фоне при каждом запуске Di-Connect, например настройку звука, и возвращается в Di-Connect.</string>

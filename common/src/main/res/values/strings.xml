@@ -1179,6 +1179,8 @@
     <string name="settings_gwm_bt_music_off_during_aa_description">Stops the car’s Bluetooth player competing with Android Auto. Calls stay on Bluetooth. Allowed again when Android Auto ends.</string>
     <string name="settings_gwm_voice_key">Wheel voice button opens the phone’s assistant</string>
     <string name="settings_gwm_voice_key_description">During Android Auto the steering wheel voice button opens Google Assistant on the phone instead of the car’s assistant. Outside Android Auto it works as before.</string>
+    <string name="settings_home_preview">Preview Di-Connect 2.0 Home (experimental)</string>
+    <string name="settings_home_preview_description">A new glass home screen with climate controls and a dock on the right. It does not replace the car’s home screen.</string>
     <string name="settings_start_app">Open an app at start</string>
     <string name="settings_start_app_none">None</string>
     <string name="settings_start_app_description">Opens the chosen app in the background each time Di-Connect starts, for example an audio tuning app, then returns to Di-Connect.</string>

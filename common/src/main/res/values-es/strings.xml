@@ -1076,6 +1076,8 @@
     <string name="settings_gwm_bt_music_off_during_aa_description">Evita que el reproductor Bluetooth del coche compita con Android Auto. Las llamadas siguen por Bluetooth. Vuelve al terminar Android Auto.</string>
     <string name="settings_gwm_voice_key">El botón de voz del volante abre el asistente del teléfono</string>
     <string name="settings_gwm_voice_key_description">Durante Android Auto, el botón de voz del volante abre el Asistente de Google del teléfono en lugar del asistente del coche. Fuera de Android Auto funciona como siempre.</string>
+    <string name="settings_home_preview">Vista previa de Di-Connect 2.0 Home (experimental)</string>
+    <string name="settings_home_preview_description">Una nueva pantalla de inicio de cristal con climatización y un dock a la derecha. No sustituye la pantalla de inicio del coche.</string>
     <string name="settings_start_app">Abrir una app al iniciar</string>
     <string name="settings_start_app_none">Ninguna</string>
     <string name="settings_start_app_description">Abre la app elegida en segundo plano cada vez que se inicia Di-Connect, por ejemplo una app de ajuste de audio, y vuelve a Di-Connect.</string>
