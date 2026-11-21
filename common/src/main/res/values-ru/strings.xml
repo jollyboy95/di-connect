@@ -1081,4 +1081,6 @@
     <string name="settings_start_app">Открывать приложение при запуске</string>
     <string name="settings_start_app_none">Нет</string>
     <string name="settings_start_app_description">Запускает выбранное приложение при каждом запуске Di-Connect, не показывая его, например приложение настройки звука машины.</string>
+    <string name="settings_home_default_app">Главный экран по умолчанию</string>
+    <string name="settings_home_default_app_description">Выберите Di-Connect Home или заводской лаунчер.</string>
 </resources>

@@ -16,6 +16,17 @@ import com.shilapi.xcertplay.media.CarPlayNowPlaying
  */
 internal object DiConnectPlayViews {
     fun install(app: Context) {
+        DiConnectViews.projectionHome = { activity, expand ->
+            val dashboard = HomeDashboardView(activity).apply {
+                useLiveProjection(expand)
+            }
+            object : DiConnectViews.ProjectionHome {
+                override val view: View = dashboard
+                override fun mapBounds(width: Int, height: Int) = dashboard.projectionBounds(width, height)
+                override fun start() = dashboard.start()
+                override fun stop() = dashboard.stop()
+            }
+        }
         DiConnectViews.cluster = { displayContext -> ClusterLayer(displayContext, app) }
         DiConnectViews.clusterDirectionsWanted = { NavDemo.active || ClusterThemeStore.directionsCard(app) }
         DiConnectViews.clusterMapWindow = { context ->

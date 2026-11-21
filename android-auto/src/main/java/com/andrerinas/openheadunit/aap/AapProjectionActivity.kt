@@ -458,7 +458,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private fun recreateProjectionView() {
         runOnUiThread {
             AppLog.i("Recreating projection view due to settings change...")
-            val container = findViewById<FrameLayout>(R.id.aa_container)
+            val container = projectionLayer
             if (::projectionView.isInitialized) {
                 // Deregister before discarding the view: the GLES backend posts its
                 // onSurfaceDestroyed to the main looper, so a still-registered callback from the
@@ -768,6 +768,13 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
 
 
         setContentView(R.layout.aa_activity_headunit)
+        val frame = findViewById<FrameLayout>(R.id.aa_container)
+        projectionLayer = FrameLayout(this).apply {
+            pivotX = 0f
+            pivotY = 0f
+        }
+        frame.addView(projectionLayer, 0, FrameLayout.LayoutParams(-1, -1))
+        frame.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> layoutProjectionHome() }
 
         if (settings.showFpsCounter) {
             setupFpsCounter()
@@ -777,7 +784,11 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                showExitDialog()
+                if (returnToProjectionHome && !showingProjectionHome) {
+                    showProjectionHome(true)
+                } else {
+                    showExitDialog()
+                }
             }
         })
 
@@ -878,7 +889,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                 true
             }
 
-        container.addView(overlayView)
+        projectionLayer.addView(overlayView)
         overlayView.requestFocus()
         // DiLink (byd-freeform) hides the bottom ~96px of the window from the decor;
         // claim it back so projection is true fullscreen and bottom-bar touches land.
@@ -899,6 +910,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
 
         // Ensure loading overlay is on top of everything
         loadingOverlay?.bringToFront()
+        showProjectionHome(intent.getBooleanExtra(EXTRA_HOME, false))
 
         // Set up custom loading screen if configured
         setupCustomLoadingScreen()
@@ -950,6 +962,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     override fun onPause() {
         isForeground = false
         AppLog.i("AapProjectionActivity: onPause")
+        projectionHome?.stop()
         com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()
         super.onPause()
         RenameNotice.dismiss()
@@ -984,8 +997,9 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     override fun onResume() {
         super.onResume()
         isForeground = true
+        if (showingProjectionHome) projectionHome?.start()
         AppLog.i("AapProjectionActivity: onResume")
-        com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
+        if (!showingProjectionHome) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
         // Show the one-time rename notice even here, on top of an active projection.
         RenameNotice.maybeShow(this, App.provide(this).settings)
         applyStickyOrientation()
@@ -1024,6 +1038,56 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         AppLog.i("AapProjectionActivity: onNewIntent received")
+        if (intent.getBooleanExtra(EXTRA_HOME, false)) {
+            showProjectionHome(true)
+        } else {
+            returnToProjectionHome = false
+            showProjectionHome(false)
+        }
+    }
+
+    private lateinit var projectionLayer: FrameLayout
+    private var projectionHome: com.andrerinas.openheadunit.DiConnectViews.ProjectionHome? = null
+    private var showingProjectionHome = false
+    private var returnToProjectionHome = false
+
+    private fun showProjectionHome(show: Boolean) {
+        if (!::projectionLayer.isInitialized || show == showingProjectionHome) return
+        val frame = findViewById<FrameLayout>(R.id.aa_container)
+        if (show) {
+            if (Build.VERSION.SDK_INT < 24) return
+            val home = com.andrerinas.openheadunit.DiConnectViews.projectionHome?.invoke(this) {
+                showProjectionHome(false)
+            } ?: return
+            projectionHome = home
+            frame.addView(home.view, frame.indexOfChild(projectionLayer) + 1, FrameLayout.LayoutParams(-1, -1))
+            showingProjectionHome = true
+            returnToProjectionHome = true
+            com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)
+            if (isForeground) home.start()
+        } else {
+            projectionHome?.let { home -> home.stop(); frame.removeView(home.view) }
+            projectionHome = null
+            showingProjectionHome = false
+            touchOverlayView?.requestFocus()
+            if (isForeground && !App.isPiPActive) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
+        }
+        layoutProjectionHome()
+        setFullscreen()
+    }
+
+    private fun layoutProjectionHome() {
+        if (!::projectionLayer.isInitialized) return
+        val frame = findViewById<FrameLayout>(R.id.aa_container)
+        val w = frame.width
+        val h = frame.height
+        if (w <= 0 || h <= 0) return
+        val bounds = projectionHome?.mapBounds(w, h)
+        val scale = bounds?.let { minOf(it.width() / w, it.height() / h) } ?: 1f
+        projectionLayer.scaleX = scale
+        projectionLayer.scaleY = scale
+        projectionLayer.translationX = bounds?.let { it.centerX() - w * scale / 2 } ?: 0f
+        projectionLayer.translationY = bounds?.let { it.centerY() - h * scale / 2 } ?: 0f
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -1313,7 +1377,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         val container = findViewById<View>(R.id.aa_container)
 
         // Use activity-local override if present, otherwise use stored settings
-        val mode = activityFullscreenOverride ?: settings.fullscreenMode
+        val mode = if (returnToProjectionHome) Settings.FullscreenMode.IMMERSIVE else activityFullscreenOverride ?: settings.fullscreenMode
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT && mode != Settings.FullscreenMode.NONE) {
             window.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -1459,6 +1523,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         App.isPiPActive = isInPictureInPictureMode
         if (isInPictureInPictureMode) {
+            showProjectionHome(false)
             // Hide UI elements during PiP (like FPS counter, loading overlay)
             findViewById<View>(R.id.aa_loading_overlay)?.visibility = View.GONE
             stopCustomLoadingMedia()
@@ -1661,7 +1726,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         }
 
         val view = projectionView as View
-        val effectiveFullscreenMode = activityFullscreenOverride ?: settings.fullscreenMode
+        val effectiveFullscreenMode = if (returnToProjectionHome) Settings.FullscreenMode.IMMERSIVE else activityFullscreenOverride ?: settings.fullscreenMode
         val measuredTouchSurfaceEnabled = settings.useMeasuredTouchSurface &&
             effectiveFullscreenMode == Settings.FullscreenMode.IMMERSIVE
         val overlay = touchOverlayView
@@ -1843,6 +1908,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
 
     companion object {
         const val EXTRA_FOCUS = "focus"
+        const val EXTRA_HOME = "di_connect_projection_home"
         @Volatile var isForeground = false
 
         /**
@@ -1878,7 +1944,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     }
 
     private fun setupProjectionView() {
-        val container = findViewById<FrameLayout>(R.id.aa_container)
+        val container = projectionLayer
         val displayMetrics = resources.displayMetrics
 
         // forcedViewModeOverride is set by the display-stall recovery to pin SurfaceView for the
@@ -1920,7 +1986,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         HeadUnitScreenConfig.init(this, displayMetrics, settings)
 
         val view = projectionView as View
-        container.addView(view)
+        container.addView(view, 0)
         videoDecoder.softwareYuvFrameSink = projectionView as? SoftwareYuvFrameSink
         if (videoDecoder.softwareYuvFrameSink != null) {
             AppLog.i("Using GLES YUV sink for bundled software HEVC")

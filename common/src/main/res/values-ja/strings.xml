@@ -1183,4 +1183,6 @@
     <string name="settings_start_app">起動時にアプリを開く</string>
     <string name="settings_start_app_none">なし</string>
     <string name="settings_start_app_description">Di-Connect の起動時に、選んだアプリを画面に出さずに起動します（車のオーディオ調整アプリなど）。</string>
+    <string name="settings_home_default_app">デフォルトのホームアプリ</string>
+    <string name="settings_home_default_app_description">Di-Connect Home または車両標準のホームを選択します。</string>
 </resources>

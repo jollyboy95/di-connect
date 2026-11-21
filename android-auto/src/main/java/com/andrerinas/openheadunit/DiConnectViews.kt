@@ -8,6 +8,15 @@ import com.andrerinas.openheadunit.hud.BydGuidance
 
 /** Lets Di-Connect's D-Play side draw Android Auto's GWM cluster layer and HUD with its own views. */
 object DiConnectViews {
+    interface ProjectionHome {
+        val view: View
+        fun mapBounds(width: Int, height: Int): android.graphics.RectF
+        fun start()
+        fun stop()
+    }
+
+    var projectionHome: ((android.app.Activity, () -> Unit) -> ProjectionHome)? = null
+
     /** Next turn in the AMap broadcast codes D-Play's views draw (DiAuto's cluster codes). */
     data class Guidance(
         val icon: Int,

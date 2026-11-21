@@ -1171,4 +1171,6 @@
     <string name="settings_start_app">Apri un’app all’avvio</string>
     <string name="settings_start_app_none">Nessuna</string>
     <string name="settings_start_app_description">Avvia l’app scelta a ogni avvio di Di-Connect, senza mostrarla, per esempio l’app di regolazione audio dell’auto.</string>
+    <string name="settings_home_default_app">App Home predefinita</string>
+    <string name="settings_home_default_app_description">Scegli Di-Connect Home o il launcher di fabbrica.</string>
 </resources>

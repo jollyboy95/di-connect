@@ -2,9 +2,11 @@ package com.shilapi.xcertplay
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import java.io.File
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -54,13 +56,13 @@ class DiConnectUiPreviewTest {
     @Test fun themes() = capture("themes") { ReflectionHelpers.setField(it, "page", "themes") }
 
     // Di-Connect 2.0 Home preview (phase 1): drawn directly at the head unit's 1920x1080.
-    private fun home2(name: String, setup: (HomeDashboardView) -> Unit) {
+    private fun home2(name: String, width: Int = 1920, height: Int = 1080, setup: (HomeDashboardView) -> Unit) {
         val view = HomeDashboardView(org.robolectric.RuntimeEnvironment.getApplication())
         view.fixedTime = java.util.GregorianCalendar(2026, 10, 21, 12, 41).time
         setup(view)
-        view.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY))
-        view.layout(0, 0, 1920, 1080)
-        val image = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888)
+        view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, width, height)
+        val image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         try {
             view.draw(Canvas(image))
             val file = File("build/reports/di-connect-ui/$name.png")
@@ -84,6 +86,42 @@ class DiConnectUiPreviewTest {
     @Test fun home2Fan() = home2("home2-climate-fan") { it.sample(); it.popover = HomeDashboardView.Popover.FAN }
     @Test fun home2Settings() = home2("home2-settings") { it.sample(); it.popover = HomeDashboardView.Popover.SETTINGS }
     @Test fun home2LeftHandDrive() = home2("home2-lhd") { it.sample(); it.rightHandDrive = false }
+
+    @Test fun home2LauncherPickerFullLargeFont() {
+        org.robolectric.RuntimeEnvironment.setFontScale(1.5f)
+        home2("home2-launcher-picker-full-large-font") { it.sample(); it.popover = HomeDashboardView.Popover.SETTINGS }
+    }
+
+    @Test
+    @Config(qualifiers = "ar-rSA-ldrtl-w600dp-h360dp-land-xhdpi")
+    fun home2LauncherPickerCompactArabicLargeFont() {
+        org.robolectric.RuntimeEnvironment.setFontScale(1.5f)
+        home2("home2-launcher-picker-compact-ar-large-font", 1200, 720) {
+            it.sample()
+            it.popover = HomeDashboardView.Popover.SETTINGS
+        }
+    }
+
+    @Test fun liveProjectionLetsMapTouchesThroughAndKeepsExpandAndModalTouches() {
+        val view = HomeDashboardView(org.robolectric.RuntimeEnvironment.getApplication())
+        view.useLiveProjection { }
+        view.layout(0, 0, 1280, 720)
+        val bitmap = Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888)
+        try {
+            view.draw(Canvas(bitmap))
+            fun down(x: Float, y: Float): Boolean {
+                val event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, x, y, 0)
+                return try { view.onTouchEvent(event) } finally { event.recycle() }
+            }
+            val bounds = view.projectionBounds(1280, 720)
+            assertFalse(down(bounds.centerX(), bounds.centerY()))
+            assertTrue(down(bounds.right - 30, bounds.top + 40))
+            view.popover = HomeDashboardView.Popover.SETTINGS
+            assertTrue(down(bounds.centerX(), bounds.centerY()))
+        } finally {
+            bitmap.recycle()
+        }
+    }
 
     private fun capture(name: String, open: (DiPlayActivity) -> Unit) {
         val controller = Robolectric.buildActivity(DiPlayActivity::class.java).setup()

@@ -64,10 +64,21 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/update_apk_paths" />
         </provider>
-        <!-- Di-Connect 2.0 Home preview. Deliberately NOT a Home app: no HOME category. -->
+        <!-- The preview stays private. The driver can enable the separate launcher entry. -->
         <activity android:name="com.shilapi.xcertplay.HomeDashboardActivity"
             android:exported="false"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
+        <activity-alias android:name="com.shilapi.xcertplay.HomeLauncher"
+            android:targetActivity="com.shilapi.xcertplay.HomeDashboardActivity"
+            android:label="Di-Connect Home"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
         <!-- Lets Home read the car's media sessions once the driver allows notification access. -->
         <service android:name="com.shilapi.xcertplay.HomeMediaListener"
             android:exported="true"

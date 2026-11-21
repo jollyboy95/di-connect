@@ -3385,10 +3385,21 @@ for _n in ('HomeMediaListener.kt','CarAutomationSignals.kt'):
 (root/'common/src/test/java/com/shilapi/xcertplay/HomeFactoryTargetsTest.kt').write_text(Path('target/_integration/ui/HomeFactoryTargetsTest.kt').read_text())
 (root/'common/src/test/java/com/shilapi/xcertplay/HomeSourcesTest.kt').write_text(Path('target/_integration/ui/HomeSourcesTest.kt').read_text())
 edit(root/'common/src/main/AndroidManifest.xml', ('''        <activity android:name="com.shilapi.xcertplay.DiPlayActivity"''',
-    '''        <!-- Di-Connect 2.0 Home preview. Deliberately NOT a Home app: no HOME category. -->
+    '''        <!-- The preview stays private. The driver can enable the separate launcher entry. -->
         <activity android:name="com.shilapi.xcertplay.HomeDashboardActivity"
             android:exported="false"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
+        <activity-alias android:name="com.shilapi.xcertplay.HomeLauncher"
+            android:targetActivity="com.shilapi.xcertplay.HomeDashboardActivity"
+            android:label="Di-Connect Home"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
         <!-- Lets Home read the car's media sessions once the driver allows notification access. -->
         <service android:name="com.shilapi.xcertplay.HomeMediaListener"
             android:exported="true"
@@ -3444,3 +3455,41 @@ _txt={'settings_start_app':['Open an app at start','فتح تطبيق عند ا�
 for p in STRINGS:
     i=LOCALE_ORDER.index(p.parent.name)
     edit(p,('</resources>',''.join(f'    <string name="{k}">{v[i]}</string>\n' for k,v in _txt.items())+'</resources>'))
+
+# Live Android Auto on Home uses the existing projection view and its touch overlay.
+edit(aa_java/'DiConnectViews.kt',
+    ('object DiConnectViews {\n', 'object DiConnectViews {\n    interface ProjectionHome {\n        val view: View\n        fun mapBounds(width: Int, height: Int): android.graphics.RectF\n        fun start()\n        fun stop()\n    }\n\n    var projectionHome: ((android.app.Activity, () -> Unit) -> ProjectionHome)? = null\n\n'))
+
+edit(aa_java/'DiConnectAndroidAuto.kt',
+    ('    fun connect(activity: Activity): Route {', '    fun showOnHome(activity: Activity): Boolean {\n        if (android.os.Build.VERSION.SDK_INT < 24 || !isConnected(activity) || DiConnectViews.projectionHome == null) return false\n        activity.startActivity(AapProjectionActivity.intent(activity).putExtra(AapProjectionActivity.EXTRA_HOME, true))\n        return true\n    }\n\n    fun connect(activity: Activity): Route {'))
+
+edit(aa_java/'aap/AapProjectionActivity.kt',
+    ('        setContentView(R.layout.aa_activity_headunit)\n', '        setContentView(R.layout.aa_activity_headunit)\n        val frame = findViewById<FrameLayout>(R.id.aa_container)\n        projectionLayer = FrameLayout(this).apply {\n            pivotX = 0f\n            pivotY = 0f\n        }\n        frame.addView(projectionLayer, 0, FrameLayout.LayoutParams(-1, -1))\n        frame.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> layoutProjectionHome() }\n'),
+    ('                showExitDialog()\n            }\n        })', '                if (returnToProjectionHome && !showingProjectionHome) {\n                    showProjectionHome(true)\n                } else {\n                    showExitDialog()\n                }\n            }\n        })'),
+    ('            val container = findViewById<FrameLayout>(R.id.aa_container)\n            if (::projectionView.isInitialized)', '            val container = projectionLayer\n            if (::projectionView.isInitialized)'),
+    ('        container.addView(overlayView)\n', '        projectionLayer.addView(overlayView)\n'),
+    ('        loadingOverlay?.bringToFront()\n', '        loadingOverlay?.bringToFront()\n        showProjectionHome(intent.getBooleanExtra(EXTRA_HOME, false))\n'),
+    ('        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()\n', '        projectionHome?.stop()\n        com.andrerinas.openheadunit.gwm.GwmClimateBar.pause()\n'),
+    ('        super.onResume()\n        isForeground = true\n', '        super.onResume()\n        isForeground = true\n        if (showingProjectionHome) projectionHome?.start()\n'),
+    ('        AppLog.i("AapProjectionActivity: onNewIntent received")\n    }\n', '        AppLog.i("AapProjectionActivity: onNewIntent received")\n        if (intent.getBooleanExtra(EXTRA_HOME, false)) {\n            showProjectionHome(true)\n        } else {\n            returnToProjectionHome = false\n            showProjectionHome(false)\n        }\n    }\n\n    private lateinit var projectionLayer: FrameLayout\n    private var projectionHome: com.andrerinas.openheadunit.DiConnectViews.ProjectionHome? = null\n    private var showingProjectionHome = false\n    private var returnToProjectionHome = false\n\n    private fun showProjectionHome(show: Boolean) {\n        if (!::projectionLayer.isInitialized || show == showingProjectionHome) return\n        val frame = findViewById<FrameLayout>(R.id.aa_container)\n        if (show) {\n            if (Build.VERSION.SDK_INT < 24) return\n            val home = com.andrerinas.openheadunit.DiConnectViews.projectionHome?.invoke(this) {\n                showProjectionHome(false)\n            } ?: return\n            projectionHome = home\n            frame.addView(home.view, frame.indexOfChild(projectionLayer) + 1, FrameLayout.LayoutParams(-1, -1))\n            showingProjectionHome = true\n            returnToProjectionHome = true\n            if (isForeground) home.start()\n        } else {\n            projectionHome?.let { home -> home.stop(); frame.removeView(home.view) }\n            projectionHome = null\n            showingProjectionHome = false\n            touchOverlayView?.requestFocus()\n        }\n        layoutProjectionHome()\n        setFullscreen()\n    }\n\n    private fun layoutProjectionHome() {\n        if (!::projectionLayer.isInitialized) return\n        val frame = findViewById<FrameLayout>(R.id.aa_container)\n        val w = frame.width\n        val h = frame.height\n        if (w <= 0 || h <= 0) return\n        val bounds = projectionHome?.mapBounds(w, h)\n        val scale = bounds?.let { minOf(it.width() / w, it.height() / h) } ?: 1f\n        projectionLayer.scaleX = scale\n        projectionLayer.scaleY = scale\n        projectionLayer.translationX = bounds?.let { it.centerX() - w * scale / 2 } ?: 0f\n        projectionLayer.translationY = bounds?.let { it.centerY() - h * scale / 2 } ?: 0f\n    }\n'),
+    ('        val mode = activityFullscreenOverride ?: settings.fullscreenMode\n', '        val mode = if (showingProjectionHome) Settings.FullscreenMode.IMMERSIVE else activityFullscreenOverride ?: settings.fullscreenMode\n'),
+    ('            // Hide UI elements during PiP (like FPS counter, loading overlay)\n', '            showProjectionHome(false)\n            // Hide UI elements during PiP (like FPS counter, loading overlay)\n'),
+    ('        const val EXTRA_FOCUS = "focus"\n', '        const val EXTRA_FOCUS = "focus"\n        const val EXTRA_HOME = "di_connect_projection_home"\n'),
+    ('    private fun setupProjectionView() {\n        val container = findViewById<FrameLayout>(R.id.aa_container)', '    private fun setupProjectionView() {\n        val container = projectionLayer'),
+    ('        container.addView(view)\n        videoDecoder.softwareYuvFrameSink', '        container.addView(view, 0)\n        videoDecoder.softwareYuvFrameSink'))
+
+edit(root/'common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt',
+    ('    fun install(app: Context) {\n', '    fun install(app: Context) {\n        DiConnectViews.projectionHome = { activity, expand ->\n            val dashboard = HomeDashboardView(activity).apply {\n                useLiveProjection(expand)\n            }\n            object : DiConnectViews.ProjectionHome {\n                override val view: View = dashboard\n                override fun mapBounds(width: Int, height: Int) = dashboard.projectionBounds(width, height)\n                override fun start() = dashboard.start()\n                override fun stop() = dashboard.stop()\n            }\n        }\n'))
+
+edit(aa_java/"aap/AapProjectionActivity.kt",
+    ('        com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)\n        // Show', '        if (!showingProjectionHome) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)\n        // Show'),
+    ('            returnToProjectionHome = true\n            if (isForeground) home.start()', '            returnToProjectionHome = true\n            com.andrerinas.openheadunit.gwm.GwmClimateBar.hide(this)\n            if (isForeground) home.start()'),
+    ('            touchOverlayView?.requestFocus()\n        }\n        layoutProjectionHome()', '            touchOverlayView?.requestFocus()\n            if (isForeground && !App.isPiPActive) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)\n        }\n        layoutProjectionHome()'),
+    ('val mode = if (showingProjectionHome) Settings.FullscreenMode.IMMERSIVE else activityFullscreenOverride ?: settings.fullscreenMode', 'val mode = if (returnToProjectionHome) Settings.FullscreenMode.IMMERSIVE else activityFullscreenOverride ?: settings.fullscreenMode'),
+    ('val effectiveFullscreenMode = activityFullscreenOverride ?: settings.fullscreenMode\n        val measuredTouchSurfaceEnabled', 'val effectiveFullscreenMode = if (returnToProjectionHome) Settings.FullscreenMode.IMMERSIVE else activityFullscreenOverride ?: settings.fullscreenMode\n        val measuredTouchSurfaceEnabled'))
+
+_home_launcher_strings = {'settings_home_default_app': ['Default Home app', 'تطبيق الشاشة الرئيسية الافتراضي', 'Aplicación de inicio predeterminada', 'App Home predefinita', 'デフォルトのホームアプリ', 'Главный экран по умолчанию', 'Головний екран за замовчуванням', '默认主屏幕应用', '預設主畫面應用程式'], 'settings_home_default_app_description': ['Choose Di-Connect Home or the factory launcher.', 'اختر Di-Connect Home أو مشغّل السيارة الأصلي.', 'Elige Di-Connect Home o el lanzador de fábrica.', 'Scegli Di-Connect Home o il launcher di fabbrica.', 'Di-Connect Home または車両標準のホームを選択します。', 'Выберите Di-Connect Home или заводской лаунчер.', 'Виберіть Di-Connect Home або заводську програму запуску.', '选择 Di-Connect Home 或原厂启动器。', '選擇 Di-Connect Home 或原廠啟動器。']}
+
+for p in STRINGS:
+    i = LOCALE_ORDER.index(p.parent.name)
+    edit(p, ('</resources>', ''.join(f'    <string name="{key}">{values[i]}</string>\n' for key, values in _home_launcher_strings.items()) + '</resources>'))

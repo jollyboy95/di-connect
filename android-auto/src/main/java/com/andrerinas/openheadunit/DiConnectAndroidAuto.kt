@@ -38,6 +38,12 @@ object DiConnectAndroidAuto {
     fun isConnected(context: Context): Boolean =
         DiConnectEngine.service != null && App.provide(context).commManager.isConnected
 
+    fun showOnHome(activity: Activity): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < 24 || !isConnected(activity) || DiConnectViews.projectionHome == null) return false
+        activity.startActivity(AapProjectionActivity.intent(activity).putExtra(AapProjectionActivity.EXTRA_HOME, true))
+        return true
+    }
+
     fun connect(activity: Activity): Route {
         App.get(activity).initializeAndroidAuto()
         val app = App.provide(activity)

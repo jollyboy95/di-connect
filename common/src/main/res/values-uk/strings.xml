@@ -1093,4 +1093,6 @@
     <string name="settings_start_app">Відкривати застосунок під час запуску</string>
     <string name="settings_start_app_none">Немає</string>
     <string name="settings_start_app_description">Запускає вибраний застосунок під час кожного запуску Di-Connect, не показуючи його, наприклад застосунок налаштування звуку авто.</string>
+    <string name="settings_home_default_app">Головний екран за замовчуванням</string>
+    <string name="settings_home_default_app_description">Виберіть Di-Connect Home або заводську програму запуску.</string>
 </resources>

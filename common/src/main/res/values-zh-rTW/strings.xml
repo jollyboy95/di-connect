@@ -1141,4 +1141,6 @@
     <string name="settings_start_app">啟動時開啟應用程式</string>
     <string name="settings_start_app_none">無</string>
     <string name="settings_start_app_description">每次 Di-Connect 啟動時啟動所選應用程式，但不顯示它，例如車輛的音訊調校應用程式。</string>
+    <string name="settings_home_default_app">預設主畫面應用程式</string>
+    <string name="settings_home_default_app_description">選擇 Di-Connect Home 或原廠啟動器。</string>
 </resources>

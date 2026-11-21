@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay
 
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -40,12 +41,11 @@ import kotlin.math.roundToInt
  * the driver's controls on the right for a right-hand-drive car (mirrored positions for left-hand
  * drive; text and pictures are never flipped).
  *
- * Opened only from Settings > Appearance. It is not a Home app: nothing here declares the HOME
- * category, so the car's own launcher is untouched. The map zone does not show a map yet: until map
- * streaming is built it says so and opens Android Auto, and it never draws a made-up map on the car.
+ * The preview opens from Settings. The optional launcher entry opens this dashboard from Android Home.
  */
 class HomeDashboardActivity : Activity() {
     private lateinit var view: HomeDashboardView
+    private var openProjectionOnResume = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +56,30 @@ class HomeDashboardActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        hideBars()
+        if (openProjectionOnResume) {
+            openProjectionOnResume = false
+            if (view.showLiveProjection()) return
+        }
         view.start()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.hasCategory(Intent.CATEGORY_HOME)) openProjectionOnResume = true
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideBars()
+    }
+
+    @Suppress("DEPRECATION")
+    private fun hideBars() {
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+            View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
     }
 
     override fun onPause() {
@@ -87,7 +110,28 @@ internal class HomeDashboardView(context: Context) : View(context) {
     var turn: Turn? = null; set(v) { field = v; invalidate() }
     var popover = Popover.NONE; set(v) { field = v; invalidate() }
     /** Shown in the map zone; the preview names itself a placeholder, the car says what is coming. */
-    var mapNote = "Tap to open Android Auto · the live map on this screen comes in the next build"
+    var mapNote = "Tap to show Android Auto in Home"
+    private var expandProjection: (() -> Unit)? = null
+
+    fun useLiveProjection(expand: () -> Unit) {
+        expandProjection = expand
+        connected = true
+        projection = HomeSources.Projection.ANDROID_AUTO
+    }
+
+    fun projectionBounds(width: Int, height: Int): RectF {
+        val scale = min(width / W, height / H)
+        val offsetX = (width - W * scale) / 2f
+        val offsetY = (height - H * scale) / 2f
+        return zone.apply {
+            set(left * scale + offsetX, top * scale + offsetY, right * scale + offsetX, bottom * scale + offsetY)
+        }
+    }
+
+    fun showLiveProjection(): Boolean {
+        val activity = context as? Activity ?: return false
+        return runCatching { com.andrerinas.openheadunit.DiConnectAndroidAuto.showOnHome(activity) }.getOrDefault(false)
+    }
     /** A fixed clock for previews; null = now. */
     var fixedTime: Date? = null
 
@@ -149,6 +193,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private val onCar: Boolean get() = runCatching { GwmMode.active(context) }.getOrDefault(false)
 
     fun start() {
+        if (running) return
         running = true
         main.removeCallbacks(tick); main.post(tick)
         main.removeCallbacks(mediaPoll); main.post(mediaPoll)
@@ -195,8 +240,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
         connected = HomeSources.connected(next)
         connectionName = HomeSources.connectionLabel(next, phone)
         mapNote = when (next) {
-            HomeSources.Projection.CARPLAY -> "Tap to open CarPlay · the live map on this screen comes in a later build"
-            else -> "Tap to open Android Auto · the live map on this screen comes in a later build"
+            HomeSources.Projection.CARPLAY -> "Tap to open CarPlay"
+            else -> "Tap to show Android Auto in Home"
         }
         usbMounted = usbDriveMounted()
         refreshMedia()
@@ -357,13 +402,23 @@ internal class HomeDashboardView(context: Context) : View(context) {
         s = min(width / W, height / H)
         ox = (width - W * s) / 2f
         oy = (height - H * s) / 2f
+        canvas.save()
+        if (expandProjection != null) {
+            @Suppress("DEPRECATION")
+            canvas.clipRect(projectionBounds(width, height), android.graphics.Region.Op.DIFFERENCE)
+        }
         drawBackdrop(canvas)
+        canvas.restore()
         canvas.save()
         canvas.translate(ox, oy)
         canvas.scale(s, s)
         drawTopBar(canvas)
         drawDock(canvas)
-        if (connected) drawMapZone(canvas) else drawLocalZone(canvas)
+        when {
+            expandProjection != null -> drawProjectionExpand(canvas)
+            connected -> drawMapZone(canvas)
+            else -> drawLocalZone(canvas)
+        }
         drawMediaCard(canvas)
         drawLowerCard(canvas)
         drawClimateBar(canvas)
@@ -510,7 +565,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         glass(c, r, 30f)
         val items = listOf<Triple<Int, String, () -> Unit>>(
             Triple(R.drawable.ic_dp_home, "Home") { popover = Popover.NONE },
-            Triple(R.drawable.ic_dp_navigation, "Map") { openDiConnect() },
+            Triple(R.drawable.ic_dp_navigation, "Map") { if (expandProjection != null) expandProjection?.invoke() else if (!showLiveProjection()) openProjection() },
             Triple(R.drawable.ic_dp_audio, "Music") { openDiConnect() },
             Triple(0, "Apps") { popover = if (popover == Popover.APPS) Popover.NONE else Popover.APPS },
             Triple(R.drawable.ic_dp_car, "Vehicle") { openVehicle() },
@@ -556,14 +611,21 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val carPlay = projection == HomeSources.Projection.CARPLAY
         text(c, if (carPlay) "CarPlay" else "Android Auto", z.centerX(), z.centerY() + 24f, 30f, ink, light, Paint.Align.CENTER)
         text(c, mapNote, z.centerX(), z.centerY() + 56f, 16f, quiet, null, Paint.Align.CENTER, z.width() - 80f)
-        hit(z) { openProjection() }
+        hit(z) { if (!showLiveProjection()) openProjection() }
         // Search goes to the real search inside Android Auto.
         r.set(z.left + 20f, z.top + 20f, z.left + 360f, z.top + 72f); glass(c, r, 26f, 2.4f)
         icon(c, R.drawable.ic_dp_search, r.left + 30f, r.centerY(), 24f, ink)
         text(c, if (carPlay) "Search in Maps" else "Search in Google Maps", r.left + 54f, r.centerY() + 6.5f, 18f, ink)
         hit(r) { openProjection() }
-        // Full screen projection.
-        r.set(z.right - 72f, z.top + 20f, z.right - 20f, z.top + 72f); glass(c, r, 26f, 2.4f)
+        drawProjectionExpand(c)
+    }
+
+    private fun projectionExpandBounds(): RectF = zone.let {
+        RectF(it.right - 72f, it.top + 20f, it.right - 20f, it.top + 72f)
+    }
+
+    private fun drawProjectionExpand(c: Canvas) {
+        r.set(projectionExpandBounds()); glass(c, r, 26f, 2.4f)
         p.style = Paint.Style.STROKE; p.strokeWidth = 2.4f; p.color = ink; p.strokeCap = Paint.Cap.ROUND
         val ex = r.centerX(); val ey = r.centerY(); val e = 10f
         c.drawLine(ex - e, ey - e + 6, ex - e, ey - e); c.drawLine(ex - e, ey - e, ex - e + 6, ey - e)
@@ -571,7 +633,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         c.drawLine(ex + e - 6, ey - e, ex + e, ey - e); c.drawLine(ex + e, ey - e, ex + e, ey - e + 6)
         c.drawLine(ex - e, ey + e - 6, ex - e, ey + e); c.drawLine(ex - e, ey + e, ex - e + 6, ey + e)
         p.style = Paint.Style.FILL
-        hit(r) { openProjection() }
+        hit(r) { expandProjection?.invoke() ?: openProjection() }
     }
 
     private fun Canvas.drawLine(x0: Float, y0: Float, x1: Float, y1: Float) = drawLine(x0, y0, x1, y1, p)
@@ -920,9 +982,11 @@ internal class HomeDashboardView(context: Context) : View(context) {
             Triple("System settings", "The head unit's display, sound and connection menu") { openSystemSettings() },
             Triple("Android settings", "The full Android settings app") { openAndroidSettings() },
             Triple("Di-Connect settings", "Projection, cluster, HUD, themes and diagnostics") { openDiConnect() },
+            Triple(context.getString(R.string.settings_home_default_app),
+                context.getString(R.string.settings_home_default_app_description)) { chooseDefaultHome() },
         )
         rows.forEachIndexed { i, (title, sub, action) ->
-            r.set(f.left + 32f, f.top + 88f + i * 96f, f.right - 32f, f.top + 168f + i * 96f); glass(c, r, 20f, 1.4f)
+            r.set(f.left + 32f, f.top + 88f + i * 84f, f.right - 32f, f.top + 164f + i * 84f); glass(c, r, 20f, 1.4f)
             text(c, title, r.left + 24f, r.top + 36f, 20f, ink, medium)
             text(c, sub, r.left + 24f, r.top + 62f, 15f, quiet)
             text(c, "›", r.right - 28f, r.centerY() + 9f, 28f, quiet, null, Paint.Align.CENTER)
@@ -942,6 +1006,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val sl = slider?.takeIf { popover == Popover.DRIVER_TEMP || popover == Popover.PASSENGER_TEMP || popover == Popover.FAN }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                if (expandProjection != null && popover == Popover.NONE && zone.contains(x, y) &&
+                    !projectionExpandBounds().contains(x, y)) return false
                 dragging = sl != null && abs(y - sl.y) < 32f && x in (sl.x0 - 24f)..(sl.x1 + 24f)
                 if (dragging) slide(sl!!, x)
                 return true
@@ -1069,6 +1135,14 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
         val pkg = media.pkg ?: return run { openDiConnect() }
         if (!launch(pkg)) openDiConnect()
+    }
+
+    private fun chooseDefaultHome() {
+        val alias = ComponentName(context.packageName, "com.shilapi.xcertplay.HomeLauncher")
+        context.packageManager.setComponentEnabledSetting(
+            alias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP
+        )
+        if (!start(Intent(android.provider.Settings.ACTION_HOME_SETTINGS))) openAndroidSettings()
     }
 
     private fun openFactoryHome() {
