@@ -226,6 +226,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         p.shader = null
         p.color = Color.argb(if (night) 70 else 40, 0, 0, 20)
         c.drawRoundRect(rect.left, rect.top + 6f, rect.right, rect.bottom + 8f, radius, radius, p)
+        // Note: the shader is multiplied by the shadow colour's alpha above; the values are tuned with that.
         val top = ((if (night) 34 else 70) * strength).toInt()
         val bottom = ((if (night) 14 else 38) * strength).toInt()
         p.shader = LinearGradient(0f, rect.top, 0f, rect.bottom, Color.argb(top, 255, 255, 255), Color.argb(bottom, 255, 255, 255), Shader.TileMode.CLAMP)
@@ -244,6 +245,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
         p.style = Paint.Style.FILL; p.shader = null
         p.color = Color.argb(if (night) 110 else 70, 0, 0, 20)
         c.drawRoundRect(rect.left, rect.top + 8f, rect.right, rect.bottom + 14f, radius, radius, p)
+        // A shader is multiplied by the paint's own alpha, so the paint must be opaque here.
+        p.color = Color.BLACK
         p.shader = LinearGradient(0f, rect.top, 0f, rect.bottom,
             if (night) Color.argb(246, 52, 55, 84) else Color.argb(246, 128, 132, 186),
             if (night) Color.argb(246, 38, 40, 64) else Color.argb(246, 112, 110, 170), Shader.TileMode.CLAMP)
