@@ -205,6 +205,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
     /** Both zones follow the driver while on; the passenger zone is independent while off. */
     var sync: Boolean? = false; set(v) { if (field != v) { field = v; invalidate() } }
     var eco: Boolean? = null; set(v) { if (field != v) { field = v; invalidate() } }
+    /** The car's airflow-direction key, found by asking (its name is not published); null hides the buttons. */
+    var airflowKey: String? = null; set(v) { if (field != v) { field = v; invalidate() } }
+    var airflow: Int? = null; set(v) { if (field != v) { field = v; invalidate() } }
     /** False while the climate system is switched off; the temperatures then show as Off. */
     var climateOn: Boolean? = null; set(v) { if (field != v) { field = v; invalidate() } }
 
@@ -442,7 +445,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val app = context.applicationContext
         Thread({
             val keys = arrayOf(bar.DRIVER_TEMP, bar.PASS_TEMP, bar.FAN, bar.AC, keyAuto, bar.DRIVER_VENT, bar.PASS_VENT, keyFront, keyRear,
-                keySync, keyEco, keyPower, HomeFactoryTargets.CLIMATE_CYCLE_MODE)
+                keySync, keyEco, keyPower, HomeFactoryTargets.CLIMATE_CYCLE_MODE, *HomeAirflow.CANDIDATES)
             val v = runCatching { bar.readKeys(app, keys) }.getOrDefault(emptyMap())
             main.post {
                 if (generation != lifecycleGeneration || !running) return@post
@@ -453,6 +456,9 @@ internal class HomeDashboardView(context: Context) : View(context) {
                 sync = v[keySync]?.let { it.toInt() == 1 }; eco = v[keyEco]?.let { it.toInt() == 1 }
                 climateOn = v[keyPower]?.let { it.toInt() != 0 }
                 recirculation = HomeRecirculation.fromValue(v[HomeFactoryTargets.CLIMATE_CYCLE_MODE])
+                val found = HomeAirflow.CANDIDATES.firstOrNull { v.containsKey(it) }
+                HomeAirflow.note(found, found?.let { v[it] }, HomeAirflow.CANDIDATES.filter { v.containsKey(it) })
+                airflowKey = found; airflow = found?.let { v[it]?.toInt() }
             }
         }, "home-climate-read").start()
     }
@@ -511,7 +517,8 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private val H = 720f
     private val bodyTop = 64f
     private val bodyBottom = 594f
-    private val mapEnd get() = if (expandProjection != null) 1028f else 942f
+    // Nov 22: no right column; the map zone runs to the dock at the screen edge.
+    private val mapEnd get() = 1194f
     private var s = 1f
     private var ox = 0f
     private var oy = 0f
@@ -558,9 +565,6 @@ internal class HomeDashboardView(context: Context) : View(context) {
             connected -> drawMapZone(canvas)
             else -> drawLocalZone(canvas)
         }
-        drawMediaGlow(canvas)
-        drawMediaCard(canvas)
-        drawLowerCard(canvas)
         drawTyrePressure(canvas)
         drawClimateBar(canvas)
         when (popover) {
@@ -770,8 +774,12 @@ internal class HomeDashboardView(context: Context) : View(context) {
     private fun connectivityInk(enabled: Boolean): Int =
         if (enabled) ink else ColorUtils.setAlphaComponent(ink, 90)
 
+    private val dockX get() = mx(1240f)
+    /** Space under Settings kept for the tyre picture when the car reports pressures. */
+    private val tyreSpace get() = if (tyrePressure != null) 118f else 0f
+
     private fun drawDock(c: Canvas) {
-        val cx = mx(1222f)
+        val cx = dockX
         val items = listOf<Triple<Int, String, () -> Unit>>(
             Triple(R.drawable.ic_dp_home, "Home") { popover = Popover.NONE },
             Triple(R.drawable.ic_dp_navigation, "Map") {
@@ -785,7 +793,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
             Triple(R.drawable.ic_dp_car, "Vehicle") { openVehicle() },
             Triple(R.drawable.ic_dp_advanced, "Settings") { popover = if (popover == Popover.SETTINGS) Popover.NONE else Popover.SETTINGS },
         )
-        val step = (bodyBottom - bodyTop) / items.size
+        val step = (climateTop - 8f - tyreSpace - bodyTop) / items.size
         items.forEachIndexed { i, (res, label, action) ->
             val cy = bodyTop + step * (i + .5f)
             val active = (i == 0 && popover == Popover.NONE) || (label == "Apps" && popover == Popover.APPS) ||
@@ -1043,14 +1051,27 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun drawTyrePressure(c: Canvas) {
         val tyres = tyrePressure ?: return
-        val col = column
-        fun psi(value: Float?): String = value?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: "—"
-        val left = col.left + 18f
-        val width = col.width() - 36f
-        text(c, "FL ${psi(tyres.frontLeft)}  ·  FR ${psi(tyres.frontRight)}  psi", left, 608f,
-            13f, quiet, medium, Paint.Align.LEFT, width)
-        text(c, "RL ${psi(tyres.rearLeft)}  ·  RR ${psi(tyres.rearRight)}  psi", left, 625f,
-            13f, quiet, medium, Paint.Align.LEFT, width)
+        val cx = dockX
+        val cy = climateTop - 8f - tyreSpace / 2f
+        // The car, nose up: body, windscreen and the four wheels.
+        val bw = 24f; val bh = 58f
+        p.style = Paint.Style.STROKE; p.strokeWidth = 1.6f; p.color = quiet
+        c.drawRoundRect(cx - bw / 2, cy - bh / 2, cx + bw / 2, cy + bh / 2, 9f, 9f, p)
+        c.drawLine(cx - bw / 2 + 4f, cy - bh / 2 + 15f, cx + bw / 2 - 4f, cy - bh / 2 + 15f)
+        p.style = Paint.Style.FILL
+        val fy = cy - bh / 2 + 12f; val ry = cy + bh / 2 - 12f
+        fun wheel(x: Float, y: Float) { p.color = ink; c.drawRoundRect(x - 2.5f, y - 7f, x + 2.5f, y + 7f, 2f, 2f, p) }
+        wheel(cx - bw / 2 - 1f, fy); wheel(cx + bw / 2 + 1f, fy); wheel(cx - bw / 2 - 1f, ry); wheel(cx + bw / 2 + 1f, ry)
+        // Whole psi, rounded; amber below 30.
+        fun value(v: Float?, x: Float, y: Float, align: Paint.Align) {
+            val shown = v?.roundToInt()?.toString() ?: "—"
+            val low = v != null && v < 30f
+            text(c, shown, x, y + 5.5f, 15f, if (low) Color.rgb(255, 190, 110) else ink, medium, align)
+        }
+        val gap = bw / 2 + 7f
+        value(tyres.frontLeft, cx - gap, fy, Paint.Align.RIGHT); value(tyres.frontRight, cx + gap, fy, Paint.Align.LEFT)
+        value(tyres.rearLeft, cx - gap, ry, Paint.Align.RIGHT); value(tyres.rearRight, cx + gap, ry, Paint.Align.LEFT)
+        text(c, "psi", cx, cy + bh / 2 + 16f, 11f, quiet, medium, Paint.Align.CENTER)
     }
 
     // ---- Climate bar ------------------------------------------------------------------------------
@@ -1263,14 +1284,27 @@ internal class HomeDashboardView(context: Context) : View(context) {
 
     private fun drawFanPopover(c: Canvas) {
         val level = fan ?: return
-        val f = popoverFrame(c, 489f, 520f, 170f)
+        val modes = airflowKey?.let { HomeAirflow.MODES }
+        val f = popoverFrame(c, 489f, 560f, if (modes != null) 252f else 170f)
         text(c, "Fan speed", f.left + 28f, f.top + 40f, 16f, quiet, medium)
         text(c, level.toString(), f.left + 28f, f.top + 92f, 44f, ink, light)
         val x0 = f.left + 40f; val x1 = f.right - 40f; val ty = f.top + 128f
+        // Airflow direction, under the fan slider, only when the car answers for it.
+        if (modes != null) {
+            val key = airflowKey!!
+            val w = (f.width() - 56f - 8f * (modes.size - 1)) / modes.size
+            modes.forEachIndexed { i, mode ->
+                r.set(f.left + 28f + i * (w + 8f), f.bottom - 70f, f.left + 28f + i * (w + 8f) + w, f.bottom - 22f)
+                val on = airflow == mode.value
+                glass(c, r, 24f, if (on) 3f else 1.3f)
+                text(c, mode.label, r.centerX(), r.centerY() + 5.5f, 15f, if (on) ink else quiet, medium, Paint.Align.CENTER, w - 12f)
+                hit(RectF(r)) { airflow = mode.value; write(key, mode.value.toFloat()) }
+            }
+        }
         p.color = Color.argb(60, 255, 255, 255); c.drawRoundRect(x0, ty - 5f, x1, ty + 5f, 5f, 5f, p)
         val kx = x0 + (x1 - x0) * (level - 1) / 6f
         p.color = accent; c.drawRoundRect(x0, ty - 5f, kx, ty + 5f, 5f, 5f, p)
-        for (i in 1..7) { val sx = x0 + (x1 - x0) * (i - 1) / 6f; text(c, "$i", sx, f.bottom - 12f, 13f, quiet, null, Paint.Align.CENTER) }
+        for (i in 1..7) { val sx = x0 + (x1 - x0) * (i - 1) / 6f; text(c, "$i", sx, ty + 30f, 13f, quiet, null, Paint.Align.CENTER) }
         p.color = Color.WHITE; c.drawCircle(kx, ty, 15f, p)
         slider = Slider(x0, x1, ty, 1f, 7f, 1f) { value -> setFan(value.roundToInt()) }
         hit(RectF(x0 - 20f, ty - 30f, x1 + 20f, ty + 30f)) { }
@@ -1285,9 +1319,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
     }
 
     private fun overlayFrame(c: Canvas, title: String): RectF {
-        val frame = RectF(zone.left, zone.top, column.right, zone.bottom).let {
-            if (rightHandDrive) RectF(20f, 64f, 1168f, 584f) else RectF(112f, 64f, 1260f, 584f)
-        }
+        val frame = if (rightHandDrive) RectF(20f, 64f, 1190f, 584f) else RectF(90f, 64f, 1260f, 584f)
         hits.add(Pair(RectF(0f, 0f, W, H), closePopover))
         panel(c, frame, 28f)
         text(c, title, frame.left + 32f, frame.top + 52f, 28f, ink, light)
@@ -1456,9 +1488,10 @@ internal class HomeDashboardView(context: Context) : View(context) {
     /** The source list: what plays now is ticked, and only sources that can play are listed. */
     private fun drawSources(c: Canvas) {
         val list = sources
-        val col = column
         val h = 76f + list.size * 64f
-        val frame = RectF(col.left, col.top + 60f, col.right, col.top + 60f + h)
+        // Beside the dock's Music button.
+        val right = if (rightHandDrive) dockX - 50f else dockX + 50f + 300f
+        val frame = RectF(right - 300f, bodyTop + 60f, right, bodyTop + 60f + h)
         hits.add(Pair(RectF(0f, 0f, W, H), closePopover))
         panel(c, frame, 24f)
         hit(frame) { }
@@ -1687,7 +1720,34 @@ internal object HomeFactoryTargets {
         "car.comfort_setting.driver_seat_ventilation_level_nine", "car.comfort_setting.passenger_seat_ventilation_level_nine",
     )
 
-    fun climateWritable(key: String): Boolean = key in CLIMATE_WRITABLE
+    fun climateWritable(key: String): Boolean = key in CLIMATE_WRITABLE || key in HomeAirflow.CANDIDATES
 
     fun hiddenFromApps(pkg: String): Boolean = pkg in HIDDEN_PACKAGES || HIDDEN_PREFIXES.any { pkg.startsWith(it) }
+}
+
+/**
+ * Airflow direction (face, face and feet, feet, feet and windscreen). GWM does not publish the
+ * gwm_adapter key, so Home asks for the likely names and uses the first the car answers for. The
+ * diagnostic report shows which key answered and its raw value, so the order of the modes can be
+ * checked against the car's own buttons.
+ */
+internal object HomeAirflow {
+    data class Mode(val label: String, val value: Int)
+
+    val CANDIDATES = arrayOf(
+        "car.hvac.blow_mode", "car.hvac.blower_mode", "car.hvac.wind_mode", "car.hvac.air_outlet_mode",
+        "car.hvac.outlet_mode", "car.hvac.air_mode", "car.hvac.fan_direction", "car.hvac.wind_direction",
+        "car.hvac.blow_direction", "car.hvac.air_distribution_mode", "car.hvac.mode",
+    )
+
+    /** Assumed order; to be confirmed on the car from the report. */
+    val MODES = listOf(Mode("Face", 1), Mode("Face + feet", 2), Mode("Feet", 3), Mode("Feet + screen", 4))
+
+    @Volatile var last: String = "not read yet"
+        private set
+
+    fun note(key: String?, value: Float?, answered: List<String>) {
+        last = if (key == null) "no airflow key answered (asked ${CANDIDATES.size} names)"
+        else "key $key = ${value ?: "?"}" + if (answered.size > 1) " (also answered: ${answered.drop(1).joinToString()})" else ""
+    }
 }

@@ -7196,6 +7196,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         appendLine("Car Wi-Fi during Android Auto: ${com.andrerinas.openheadunit.gwm.GwmCarWifi.last}")
         appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")
         appendLine("Android Auto now playing from the phone: ${com.andrerinas.openheadunit.DiConnectViews.musicReport()}")
+        appendLine("Home airflow direction: ${HomeAirflow.last}")
         append(CarWifiScanReport.report(appContext))
         appendLine(AdbSwitch.report(appContext))
         appendLine(WheelKeyService.report(appContext))

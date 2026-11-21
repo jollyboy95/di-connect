@@ -3346,6 +3346,8 @@ for p in STRINGS:
 (root/'common/src/main/java/com/shilapi/xcertplay/CarWifiScanReport.kt').write_text(Path('target/_integration/CarWifiScanReport.kt').read_text())
 edit(D, ('        appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")\n',
          '        appendLine("Wheel voice button in Android Auto: ${com.andrerinas.openheadunit.gwm.GwmVoiceKey.last}")\n        append(CarWifiScanReport.report(appContext))\n'))
+edit(D, ('        append(CarWifiScanReport.report(appContext))\n',
+         '        appendLine("Home airflow direction: ${HomeAirflow.last}")\n        append(CarWifiScanReport.report(appContext))\n'))
 # The report-saved dialog's Share and Done ran together on the car's screen ("SHAREDONE").
 edit(D, ('''                            }.onFailure { showDiagnosticReport(report) }
                         }.show()
@@ -3557,3 +3559,6 @@ edit(aa_java/"aap/AapProjectionActivity.kt",
     ('            val home = com.andrerinas.openheadunit.DiConnectViews.projectionHome?.invoke(this) {\n                showProjectionHome(false)\n            } ?: return', '            val home = projectionHome ?: com.andrerinas.openheadunit.DiConnectViews.projectionHome?.invoke(this) {\n                showProjectionHome(false)\n            } ?: return'),
     ('            projectionHome?.let { home -> home.stop(); frame.removeView(home.view) }\n            projectionHome = null\n            showingProjectionHome = false', '            projectionHome?.let { home -> home.stop(); frame.removeView(home.view) }\n            showingProjectionHome = false'),
     ('        val bounds = projectionHome?.mapBounds(w, h)', '        positionReturnToHomeButton(w, h)\n        val bounds = if (showingProjectionHome) projectionHome?.mapBounds(w, h) else null'))
+
+# The H7 display notes were updated from the car survey (21 Nov 2026); keep that version.
+(root/'docs/H7_DISPLAY_ARCHITECTURE.md').write_text(Path('target/_integration/docs/H7_DISPLAY_ARCHITECTURE.md').read_text())
