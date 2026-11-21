@@ -999,7 +999,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         isForeground = true
         if (showingProjectionHome) projectionHome?.start()
         AppLog.i("AapProjectionActivity: onResume")
-        if (!showingProjectionHome) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
+        if (!returnToProjectionHome) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
         // Show the one-time rename notice even here, on top of an active projection.
         RenameNotice.maybeShow(this, App.provide(this).settings)
         applyStickyOrientation()
@@ -1070,7 +1070,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             projectionHome = null
             showingProjectionHome = false
             touchOverlayView?.requestFocus()
-            if (isForeground && !App.isPiPActive) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
+            if (!returnToProjectionHome && isForeground && !App.isPiPActive) com.andrerinas.openheadunit.gwm.GwmClimateBar.show(this)
         }
         layoutProjectionHome()
         setFullscreen()
