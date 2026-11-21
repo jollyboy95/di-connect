@@ -187,8 +187,8 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
     /** Arrow on top, distance under it, arrival time last; everything centred and sized to fit. */
     /**
      * The H7 HUD shows display 3 (480x240) only through its nav-arrow window, measured with a
-     * 10x5 grid as cells A3-C4, with column C only half visible: x 0-25 %, y 42-78 % (120x86 px). Arrow and distance on one line,
-     * arrival time below, all inside that window with a small margin.
+     * 10x5 grid as cells A3-C4, with column C only half visible: x 0-25 %, y 42-78 % (120x86 px). A large arrow and the distance
+     * to the turn on one line; kilometres left and "A:" with the arrival time below.
      */
     private fun drawInNavWindow(canvas: Canvas, next: ClusterTurnGuidance, distance: String, eta: String?, w: Float, h: Float) {
         val inset = h * 0.02f
@@ -200,7 +200,7 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         val boxH = bottom - top
         if (eta == null) {
             // Nothing for a second line: give the whole window to a large arrow over a large distance.
-            val big = minOf(boxH * 0.55f, boxW * 0.62f)
+            val big = minOf(boxH * 0.62f, boxW * 0.70f)
             glyph = glyphFor(next)
             val gx = left + (boxW - big) / 2f
             glyph?.setBounds(gx.toInt(), top.toInt(), (gx + big).toInt(), (top + big).toInt())
@@ -214,15 +214,17 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
             distancePaint.textAlign = Paint.Align.LEFT
             return
         }
-        val lineOne = boxH * 0.64f
-        val arrow = minOf(lineOne * 0.92f, boxW * 0.40f)
+        // The arrow (or roundabout) takes the full height of a taller first line; the second line
+        // is one compact row: kilometres left on the left, then "A:" and the arrival time.
+        val lineOne = boxH * 0.74f
+        val arrow = minOf(lineOne, boxW * 0.54f)
 
         glyph = glyphFor(next)
         val arrowTop = top + (lineOne - arrow) / 2f
         glyph?.setBounds(left.toInt(), arrowTop.toInt(), (left + arrow).toInt(), (arrowTop + arrow).toInt())
         glyph?.draw(canvas)
 
-        val textLeft = left + arrow + boxW * 0.05f
+        val textLeft = left + arrow + boxW * 0.04f
         val textWidth = right - textLeft
         distancePaint.textAlign = Paint.Align.LEFT
         distancePaint.textSize = lineOne * 0.48f
@@ -230,27 +232,33 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
         val distanceBaseline = top + lineOne / 2f - (distancePaint.descent() + distancePaint.ascent()) / 2f
         canvas.drawText(distance, textLeft, distanceBaseline, distancePaint)
 
-        eta?.let {
-            val lineTwoTop = top + lineOne
-            val lineTwo = bottom - lineTwoTop
-            // "ARRIVE 7:33 PM": a small grey label so the time reads as the arrival time.
-            val label = etaLabel.uppercase()
-            etaPaint.textAlign = Paint.Align.LEFT
-            etaLabelPaint.textAlign = Paint.Align.LEFT
-            etaPaint.textSize = lineTwo * 0.72f
-            fun rowWidth(): Float {
-                etaLabelPaint.textSize = etaPaint.textSize * 0.62f
-                return etaLabelPaint.measureText(label) + etaPaint.textSize * 0.3f + etaPaint.measureText(it)
-            }
-            while (etaPaint.textSize > 8f && rowWidth() > boxW) etaPaint.textSize *= 0.92f
-            val etaBaseline = lineTwoTop + lineTwo / 2f - (etaPaint.descent() + etaPaint.ascent()) / 2f
-            canvas.drawText(label, left, etaBaseline, etaLabelPaint)
-            val timeLeft = left + etaLabelPaint.measureText(label) + etaPaint.textSize * 0.3f
-            canvas.drawText(it, timeLeft, etaBaseline, etaPaint)
+        val lineTwoTop = top + lineOne
+        val lineTwo = bottom - lineTwoTop
+        val km = next.remainingMeters?.takeIf { it > 0 }?.let { meters ->
+            if (meters >= 100_000) "${meters / 1000} km" else String.format(java.util.Locale.US, "%.1f km", meters / 1000f)
         }
+        // No AM/PM: the window is about 110 px wide, and an arrival a few hours off is not ambiguous.
+        val clock = eta.substringBefore(' ')
+        etaPaint.textAlign = Paint.Align.LEFT
+        etaLabelPaint.textAlign = Paint.Align.LEFT
+        etaPaint.textSize = lineTwo * 0.86f
+        var space = 0f
+        fun rowWidth(): Float {
+            etaLabelPaint.textSize = etaPaint.textSize * 0.72f
+            space = etaPaint.textSize * 0.22f
+            return (km?.let { etaPaint.measureText(it) + space * 1.6f } ?: 0f) + etaLabelPaint.measureText(ARRIVAL_MARK) + space +
+                etaPaint.measureText(clock)
+        }
+        while (etaPaint.textSize > 8f && rowWidth() > boxW) etaPaint.textSize *= 0.95f
+        val baseline = lineTwoTop + lineTwo / 2f - (etaPaint.descent() + etaPaint.ascent()) / 2f
+        var x = left
+        km?.let { canvas.drawText(it, x, baseline, etaPaint); x += etaPaint.measureText(it) + space * 1.6f }
+        canvas.drawText(ARRIVAL_MARK, x, baseline, etaLabelPaint)
+        canvas.drawText(clock, x + etaLabelPaint.measureText(ARRIVAL_MARK) + space, baseline, etaPaint)
     }
 
     private companion object {
+        const val ARRIVAL_MARK = "A:"
         const val NAV_WINDOW_LEFT = 0f
         // Re-measured on the windscreen: column C is only half visible, so the window ends near
         // 25 %, and the 40 % / 80 % edges sit right on the boundary. Keep a margin inside both.
@@ -335,14 +343,15 @@ internal class GwmAndroidAutoHeadUpView(context: Context) : View(context) {
             }
             val size = minOf(box.width(), box.height())
             val cx = box.centerX()
+            // Fills its box: the ring nearly as wide as the box, a short stem under it.
             val cy = box.top + size * .40f
-            val radius = size * .25f
-            ink.strokeWidth = size * .075f
+            val radius = size * .33f
+            ink.strokeWidth = size * .09f
             ink.style = Paint.Style.STROKE
             canvas.drawCircle(cx, cy, radius, ink)
-            canvas.drawLine(cx, cy + radius, cx, box.top + size * .88f, ink)
+            canvas.drawLine(cx, cy + radius, cx, box.top + size * .95f, ink)
             if (exitNumber in 1..10) {
-                number.textSize = size * .30f
+                number.textSize = size * .40f
                 canvas.drawText(exitNumber.toString(), cx, cy - (number.ascent() + number.descent()) / 2f, number)
             }
         }

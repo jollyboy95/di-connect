@@ -82,7 +82,7 @@ class DiLink3ClusterRouteSettingsTest {
 
     private fun renderAdvanced() {
         ReflectionHelpers.setField(activity, "page", "settings")
-        ReflectionHelpers.setField(activity, "settingsCategory", SettingsCategory.ADVANCED)
+        ReflectionHelpers.setField(activity, "settingsCategory", SettingsCategory.CLUSTER)
         ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")
         page = ReflectionHelpers.getField<ScrollView>(activity, "rootScroll").getChildAt(0) as LinearLayout
     }

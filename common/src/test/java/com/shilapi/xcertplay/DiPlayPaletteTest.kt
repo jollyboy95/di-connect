@@ -17,25 +17,25 @@ import kotlin.math.pow
 class DiPlayPaletteTest {
     @Test fun darkPalettePreservesTheExistingProductionColors() {
         val palette = DiPlayPalette.DARK
-        assertEquals(Color.rgb(12, 17, 27), palette.background)
-        assertEquals(Color.rgb(21, 30, 44), palette.surface)
-        assertEquals(Color.rgb(31, 43, 61), palette.button)
-        assertEquals(Color.rgb(42, 56, 75), palette.outline)
-        assertEquals(Color.rgb(24, 54, 92), palette.railSelected)
-        assertEquals(Color.rgb(42, 82, 130), palette.railSelectedOutline)
+        assertEquals(Color.rgb(9, 14, 23), palette.background)
+        assertEquals(Color.rgb(17, 25, 38), palette.surface)
+        assertEquals(Color.rgb(26, 37, 54), palette.button)
+        assertEquals(Color.rgb(37, 50, 72), palette.outline)
+        assertEquals(Color.rgb(18, 52, 104), palette.railSelected)
+        assertEquals(Color.rgb(47, 111, 214), palette.railSelectedOutline)
         assertEquals(Color.rgb(241, 245, 252), palette.primaryText)
         assertEquals(Color.rgb(168, 182, 202), palette.secondaryText)
-        assertEquals(Color.rgb(166, 200, 255), palette.accent)
+        assertEquals(Color.rgb(92, 164, 255), palette.accent)
         assertEquals(Color.rgb(255, 196, 128), palette.warning)
-        assertEquals(Color.rgb(127, 205, 154), palette.success)
+        assertEquals(Color.rgb(61, 220, 132), palette.success)
         assertEquals(Color.rgb(190, 45, 45), palette.danger)
-        assertEquals(0x336F9FD9, palette.ripple)
+        assertEquals(0x335CA4FF, palette.ripple)
         assertFalse(palette.systemBarIconsAreDark)
     }
 
     @Test fun waitingScreenDelegationKeepsItsExactLightAndDarkColors() {
         assertEquals(
-            WaitingScreenColors(Color.rgb(12, 17, 27), Color.rgb(241, 245, 252), Color.rgb(168, 182, 202)),
+            WaitingScreenColors(Color.rgb(9, 14, 23), Color.rgb(241, 245, 252), Color.rgb(168, 182, 202)),
             WaitingScreenColors.of(night = true),
         )
         assertEquals(

@@ -75,7 +75,9 @@ class ClusterThemesRenderTest {
         ClusterTheme.Layout.FLOAT_CARDS, ClusterTheme.Layout.INDUSTRIAL, ClusterTheme.Layout.VERTICAL_STACK,
         ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH, ClusterTheme.Layout.ECLIPSE, ClusterTheme.Layout.FLOAT_GLASS,
         ClusterTheme.Layout.HORIZON_PLUS, ClusterTheme.Layout.PRISM, ClusterTheme.Layout.OVAL_FRAME, ClusterTheme.Layout.DUAL_DIAL,
-        ClusterTheme.Layout.WIDE_HORIZON, ClusterTheme.Layout.ELONGATED)
+        ClusterTheme.Layout.WIDE_HORIZON, ClusterTheme.Layout.ELONGATED,
+        ClusterTheme.Layout.SIG_AURORA_EVO, ClusterTheme.Layout.SIG_ONYX, ClusterTheme.Layout.SIG_HORIZON, ClusterTheme.Layout.SIG_NEXUS, ClusterTheme.Layout.SIG_LUXE, ClusterTheme.Layout.SIG_TERRAIN, ClusterTheme.Layout.SIG_METRO, ClusterTheme.Layout.SIG_VELOCITY, ClusterTheme.Layout.SIG_SERENITY, ClusterTheme.Layout.SIG_NEBULA, ClusterTheme.Layout.SIG_CLASSIC, ClusterTheme.Layout.SIG_CRYSTAL, ClusterTheme.Layout.MAP_FOCUS, ClusterTheme.Layout.MAP_PANORAMIC, ClusterTheme.Layout.MAP_GLASS, ClusterTheme.Layout.MAP_TRIPLE_DIAL, ClusterTheme.Layout.MAP_COCKPIT, ClusterTheme.Layout.MAP_AURORA,
+        ClusterTheme.Layout.SIG_FLOW, ClusterTheme.Layout.SIG_GALAXY, ClusterTheme.Layout.SIG_OPEN_ROAD, ClusterTheme.Layout.SIG_HYPERDRIVE, ClusterTheme.Layout.SIG_PLAY, ClusterTheme.Layout.SIG_ELITE, ClusterTheme.Layout.SIG_VISION, ClusterTheme.Layout.SIG_AERO, ClusterTheme.Layout.SIG_FACET)
 
     @Test fun materialPanelsDoNotInheritThePreviousShadowOpacity() {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
@@ -103,7 +105,7 @@ class ClusterThemesRenderTest {
         val catalogue = sequenceOf(File("../_integration/themes.json"), File("_integration/themes.json"))
             .first { it.isFile }.readText().let(ThemePacks::parse)
         val concepts = (ClusterThemes.builtIn+catalogue).distinctBy{it.id}.filter { it.layout in conceptLayouts }
-        assertEquals(36,concepts.size) // 13 earlier concepts, the nine-tile sheet, the glass set and the cockpit set
+        assertEquals(63,concepts.size) // 13 earlier concepts, the nine-tile sheet, the glass set, the cockpit set and the 27 signature themes
         val output=File("build/reports/gwm-cluster/themes").apply{mkdirs()}
         val artwork=Bitmap.createBitmap(300,300,Bitmap.Config.ARGB_8888)
         val cover=Canvas(artwork)

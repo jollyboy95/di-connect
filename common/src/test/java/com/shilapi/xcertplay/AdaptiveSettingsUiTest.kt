@@ -720,7 +720,6 @@ class AdaptiveSettingsUiTest {
             .performClick()
 
         assertTrue(texts(screen).any { it.text == screen.getString(R.string.settings_advanced_caution_title) })
-        assertTrue(texts(screen).any { it.text == screen.getString(R.string.carplay_map_on_instrument_cluster_experimental) })
         assertTrue(texts(screen).any { it.text == screen.getString(R.string.advanced_vehicle_data) })
         assertFalse(texts(screen).any { it.text == screen.getString(R.string.automatic_connection) })
         assertFalse(texts(screen).any { it.text == screen.getString(R.string.display_and_performance) })
@@ -780,7 +779,7 @@ class AdaptiveSettingsUiTest {
         assertFalse(text(R.string.settings_ambient_title) in vehicle)
         assertFalse(text(R.string.settings_ambient_title) in display)
         assertTrue(text(R.string.side_panel) in advanced)
-        assertTrue(display.any { it.startsWith(text(R.string.settings_app_appearance)) })
+        assertFalse(display.any { it.startsWith(text(R.string.settings_app_appearance)) })
         assertFalse(audio.any { it.startsWith(text(R.string.settings_app_appearance)) })
         assertFalse(vehicle.any { it.startsWith(text(R.string.settings_app_appearance)) })
         assertFalse(advanced.any { it.startsWith(text(R.string.settings_app_appearance)) })
@@ -1049,7 +1048,7 @@ class AdaptiveSettingsUiTest {
                 destination.contentDescription?.endsWith(" settings") == true &&
                 descendants(destination).filterIsInstance<ImageView>().count() == 1
         }.toList()
-        assertEquals(10, destinations.size)
+        assertEquals(13, destinations.size)
         destinations.forEach { destination ->
             assertEquals(1, descendants(destination).filterIsInstance<ImageView>().count())
         }
@@ -1064,7 +1063,7 @@ class AdaptiveSettingsUiTest {
             val destination = descendants(screen.window.decorView).single {
                 it.contentDescription == screen.getString(R.string.settings_open_category, title)
             }
-            assertEquals(1, descendants(destination).filterIsInstance<ImageView>().count())
+            assertEquals(2, descendants(destination).filterIsInstance<ImageView>().count())
         }
     }
 

@@ -120,6 +120,9 @@ internal class ThemedClusterView(
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
+        // Music cards drawn last frame and this one, so directions can keep clear of them
+        // whichever is drawn first.
+        musicLast.clear(); musicLast.addAll(musicNow); musicNow.clear()
         advanceSmoothing()
         if (theme.dim > 0) canvas.drawColor(Color.argb(theme.dim, 0, 0, 0))
         val showMusic = preview || AirPlayPersistence.loadGwmMusicCard(context)
@@ -149,6 +152,7 @@ internal class ThemedClusterView(
             ClusterTheme.Layout.PRISM -> drawGlassSet(canvas, w, h, showMusic)
             ClusterTheme.Layout.OVAL_FRAME, ClusterTheme.Layout.DUAL_DIAL, ClusterTheme.Layout.WIDE_HORIZON,
             ClusterTheme.Layout.ELONGATED -> drawCockpitSet(canvas, w, h, showMusic)
+            ClusterTheme.Layout.SIG_AURORA_EVO, ClusterTheme.Layout.SIG_ONYX, ClusterTheme.Layout.SIG_HORIZON, ClusterTheme.Layout.SIG_NEXUS, ClusterTheme.Layout.SIG_LUXE, ClusterTheme.Layout.SIG_TERRAIN, ClusterTheme.Layout.SIG_METRO, ClusterTheme.Layout.SIG_VELOCITY, ClusterTheme.Layout.SIG_SERENITY, ClusterTheme.Layout.SIG_NEBULA, ClusterTheme.Layout.SIG_CLASSIC, ClusterTheme.Layout.SIG_CRYSTAL, ClusterTheme.Layout.MAP_FOCUS, ClusterTheme.Layout.MAP_PANORAMIC, ClusterTheme.Layout.MAP_GLASS, ClusterTheme.Layout.MAP_TRIPLE_DIAL, ClusterTheme.Layout.MAP_COCKPIT, ClusterTheme.Layout.MAP_AURORA, ClusterTheme.Layout.SIG_FLOW, ClusterTheme.Layout.SIG_GALAXY, ClusterTheme.Layout.SIG_OPEN_ROAD, ClusterTheme.Layout.SIG_HYPERDRIVE, ClusterTheme.Layout.SIG_PLAY, ClusterTheme.Layout.SIG_ELITE, ClusterTheme.Layout.SIG_VISION, ClusterTheme.Layout.SIG_AERO, ClusterTheme.Layout.SIG_FACET -> drawSignature(canvas, w, h, showMusic)
             ClusterTheme.Layout.HORIZON_RIBBON -> drawHorizonRibbon(canvas,w,h)
             ClusterTheme.Layout.ORBIT_GLASS -> drawOrbitGlass(canvas,w,h)
             ClusterTheme.Layout.NIGHTFALL_AUDIO -> drawNightfallAudio(canvas,w,h)
@@ -743,6 +747,7 @@ internal class ThemedClusterView(
         val title = music.info.title?.takeIf { it.isNotBlank() } ?: return
         rect.set(MUSIC_LEFT * w, MUSIC_TOP * h, MUSIC_RIGHT * w, MUSIC_BOTTOM * h)
         val box = RectF(rect)
+        noteMusic(box)
         if (theme.panel == ClusterTheme.Panel.BONE) {
             fill.shader = null; fill.color = theme.surface; canvas.drawRoundRect(box, 26f * s, 26f * s, fill)
             line.color = theme.edge; line.strokeWidth = 2f * s; canvas.drawRoundRect(box, 26f * s, 26f * s, line)
@@ -1706,6 +1711,7 @@ internal class ThemedClusterView(
     }
 
     private fun studioMusic(canvas: Canvas, box: RectF, large: Boolean) {
+        noteMusic(box)
         val h = height.toFloat()
         val side = minOf(box.height(), box.width() * (if (large) .48f else .25f))
         studioAlbum(canvas, RectF(box.left, box.top, box.left + side, box.top + side), .014f * h)
@@ -2037,7 +2043,8 @@ internal class ThemedClusterView(
         }
     }
 
-    private fun openMusic(canvas:Canvas,box:RectF,large:Boolean=false,plate:Boolean=true) {
+    private fun openMusic(canvas:Canvas,box:RectF,large:Boolean=false,plate:Boolean=true,scale:Float=1f) {
+        noteMusic(box)
         if(!(preview || AirPlayPersistence.loadGwmMusicCard(context))) return
         if(music.info.title.isNullOrBlank() && music.artwork==null) return
         if(plate) openPlate(canvas,box,.025f*height)
@@ -2046,9 +2053,9 @@ internal class ThemedClusterView(
         studioAlbum(canvas,RectF(box.left+inset,box.top+inset,box.left+inset+side,box.top+inset+side),.012f*h)
         val x=box.left+side+2*inset;val right=box.right-inset;val available=right-x
         music.info.title?.takeIf{it.isNotBlank()}?.let{studioText(canvas,it,x,box.top+box.height()*.34f,
-            (if(large) .047f else .037f)*h,weight=500,width=available)}
+            (if(large) .047f else .037f)*h*scale,weight=500,width=available)}
         music.info.artist?.takeIf{it.isNotBlank()}?.let{studioText(canvas,it,x,box.top+box.height()*.61f,
-            (if(large) .034f else .027f)*h,theme.secondary,width=available)}
+            (if(large) .034f else .027f)*h*scale,theme.secondary,width=available)}
         progress()?.let { done ->
             wavyProgress(canvas,x,right,box.top+box.height()*.79f+.003f*h,done)
         }
@@ -2058,7 +2065,11 @@ internal class ThemedClusterView(
         drawHeader(canvas,w,h)
         snapshot?.speedKph?.let{drawSpeed(canvas,w,h,it)}
         drawFlow(canvas,w,h,smoothAmps)
-        openMusic(canvas,RectF(.695f*w,.29f*h,.975f*w,.515f*h),large=true)
+        // Aurora: the turn card owns the guidance band above the music plate, so the plate fills
+        // the column left beneath it and its type scales with the plate rather than the small-card size.
+        val musicTop = .29f*h
+        val musicHeight = .28f*h
+        openMusic(canvas,RectF(.695f*w,musicTop,.975f*w,musicTop+musicHeight),large=true,scale=musicHeight/(.225f*h))
         drawOpenFooter(canvas,w,h)
     }
 
@@ -2145,7 +2156,13 @@ internal class ThemedClusterView(
         journeyLine(next)?.let{journey ->
             if(vertical) journey.split("  ·  ").forEachIndexed{i,part ->
                 studioText(canvas,part,box.centerX(),box.bottom-(.105f-i*.039f)*h,.027f*h,theme.secondary,width=box.width()-.04f*h,align=Paint.Align.CENTER)
-            } else studioText(canvas,journey,box.left+.025f*h,box.bottom-.023f*h,.027f*h,theme.secondary,width=box.width()-.05f*h)
+            } else {
+                // A hairline and a little more air separate the journey row from the turn, so the
+                // guidance card reads as one hierarchy instead of three loose lines.
+                line.color=withAlpha(theme.text,42);line.strokeWidth=maxOf(1f,.0014f*h)
+                canvas.drawLine(box.left+.025f*h,box.bottom-.058f*h,box.right-.025f*h,box.bottom-.058f*h,line)
+                studioText(canvas,journey,box.left+.025f*h,box.bottom-.020f*h,.027f*h,theme.secondary,width=box.width()-.05f*h)
+            }
         }
     }
 
@@ -2199,6 +2216,7 @@ internal class ThemedClusterView(
     }
 
     private fun atelierMusic(canvas:Canvas,box:RectF) {
+        noteMusic(box)
         if (!(preview || AirPlayPersistence.loadGwmMusicCard(context))) return
         if (music.info.title.isNullOrBlank() && music.artwork == null) return
         studioMusic(canvas,box,false)
@@ -2383,7 +2401,9 @@ internal class ThemedClusterView(
         ClusterTheme.Layout.HORIZON_BAR, ClusterTheme.Layout.FLOAT_CARDS, ClusterTheme.Layout.INDUSTRIAL,
         ClusterTheme.Layout.VERTICAL_STACK, ClusterTheme.Layout.SPLIT_BAR, ClusterTheme.Layout.STEALTH,
         ClusterTheme.Layout.ECLIPSE, ClusterTheme.Layout.FLOAT_GLASS, ClusterTheme.Layout.HORIZON_PLUS, ClusterTheme.Layout.PRISM,
-        ClusterTheme.Layout.OVAL_FRAME, ClusterTheme.Layout.DUAL_DIAL, ClusterTheme.Layout.WIDE_HORIZON, ClusterTheme.Layout.ELONGATED)
+        ClusterTheme.Layout.OVAL_FRAME, ClusterTheme.Layout.DUAL_DIAL, ClusterTheme.Layout.WIDE_HORIZON, ClusterTheme.Layout.ELONGATED,
+        ClusterTheme.Layout.SIG_AURORA_EVO, ClusterTheme.Layout.SIG_ONYX, ClusterTheme.Layout.SIG_HORIZON, ClusterTheme.Layout.SIG_NEXUS, ClusterTheme.Layout.SIG_LUXE, ClusterTheme.Layout.SIG_TERRAIN, ClusterTheme.Layout.SIG_METRO, ClusterTheme.Layout.SIG_VELOCITY, ClusterTheme.Layout.SIG_SERENITY, ClusterTheme.Layout.SIG_NEBULA, ClusterTheme.Layout.SIG_CLASSIC, ClusterTheme.Layout.SIG_CRYSTAL, ClusterTheme.Layout.MAP_FOCUS, ClusterTheme.Layout.MAP_PANORAMIC, ClusterTheme.Layout.MAP_GLASS, ClusterTheme.Layout.MAP_TRIPLE_DIAL, ClusterTheme.Layout.MAP_COCKPIT, ClusterTheme.Layout.MAP_AURORA,
+        ClusterTheme.Layout.SIG_FLOW, ClusterTheme.Layout.SIG_GALAXY, ClusterTheme.Layout.SIG_OPEN_ROAD, ClusterTheme.Layout.SIG_HYPERDRIVE, ClusterTheme.Layout.SIG_PLAY, ClusterTheme.Layout.SIG_ELITE, ClusterTheme.Layout.SIG_VISION, ClusterTheme.Layout.SIG_AERO, ClusterTheme.Layout.SIG_FACET)
 
     private fun isNine() = theme.layout in nineLayouts
 
@@ -2522,6 +2542,7 @@ internal class ThemedClusterView(
 
     /** Album art on top, title, artist and controls centred below. */
     private fun nineMusicTall(canvas: Canvas, box: RectF, edge: Int = withAlpha(theme.accent, 120), glow: Boolean = false) {
+        noteMusic(box)
         val h = height.toFloat()
         nineCard(canvas, box, edge, glow)
         val pad = box.width() * .12f
@@ -2539,6 +2560,7 @@ internal class ThemedClusterView(
 
     /** Album art on the left, title and artist beside it, controls under the text. */
     private fun nineMusicWide(canvas: Canvas, box: RectF, edge: Int = withAlpha(theme.accent, 120), glow: Boolean = false, inline: Boolean = false) {
+        noteMusic(box)
         val h = height.toFloat()
         nineCard(canvas, box, edge, glow)
         val pad = box.height() * .14f
@@ -2621,8 +2643,32 @@ internal class ThemedClusterView(
         }
     }
 
+    // ---- directions never cover the music card ---------------------------------------------
+    private val musicNow = ArrayList<RectF>(2)
+    private val musicLast = ArrayList<RectF>(2)
+
+    private fun noteMusic(box: RectF) { musicNow += RectF(box) }
+
+    /**
+     * Moves a directions card that would land on a music card: below it if there is room, else
+     * above it, else beside it on the side with more space. The card keeps its size.
+     */
+    private fun clearOfMusic(box: RectF) {
+        val h = height.toFloat(); val w = width.toFloat()
+        val gap = .02f * h
+        val music = (musicNow + musicLast).firstOrNull { RectF.intersects(it, box) } ?: return
+        val bh = box.height(); val bw = box.width()
+        when {
+            music.bottom + gap + bh <= .87f * h -> box.offsetTo(box.left, music.bottom + gap)
+            music.top - gap - bh >= .09f * h -> box.offsetTo(box.left, music.top - gap - bh)
+            music.left > w - music.right -> box.offsetTo((music.left - gap - bw).coerceAtLeast(.02f * w), box.top)
+            else -> box.offsetTo((music.right + gap).coerceAtMost(.98f * w - bw), box.top)
+        }
+    }
+
     private fun nineTurnCard(canvas: Canvas, box: RectF, next: ClusterTurnGuidance, journey: NineJourney = NineJourney.NONE,
                              edge: Int = withAlpha(theme.accent, 120), glow: Boolean = false) {
+        clearOfMusic(box)
         nineCard(canvas, box, edge, glow)
         nineTurnContent(canvas, box, next, journey, .03f * height)
     }
@@ -2904,6 +2950,7 @@ internal class ThemedClusterView(
     /** Arrow, distance, road (with its route number as a yellow badge), progress, then the journey. */
     private fun glassNav(canvas: Canvas, box: RectF, next: ClusterTurnGuidance, path: Path? = null,
                          tint: Int = Color.argb(222, Color.red(theme.accent) / 6, Color.green(theme.accent) / 6, Color.blue(theme.accent) / 5)) {
+        if (path == null) clearOfMusic(box)
         val h = height.toFloat()
         val s = h / 720f
         if (path != null) nineGlass(canvas, path, box.top, box.bottom, withAlpha(theme.accent, 140))
@@ -2969,6 +3016,7 @@ internal class ThemedClusterView(
 
     /** Art and text on top, a progress line (wavy, or a waveform), controls underneath. */
     private fun glassMusic(canvas: Canvas, box: RectF, waveform: Boolean = false, path: Path? = null) {
+        noteMusic(box)
         val h = height.toFloat()
         if (path != null) nineGlass(canvas, path, box.top, box.bottom, withAlpha(theme.text, 60)) else nineCard(canvas, box, withAlpha(theme.text, 60))
         val pad = .03f * h
@@ -3089,6 +3137,539 @@ internal class ThemedClusterView(
         }
         glassFooter(canvas, w, h)
         glassHeader(canvas, w, h)
+    }
+
+    // ---- Signature set (Steve's November 2026 sheets) ------------------------------------------
+    // Twelve scene themes (Aurora Evo, Onyx, Horizon Dusk, Nexus, Luxe, Terrain, Metro, Velocity,
+    // Serenity, Nebula, Classic Duo, Crystal) and six map-first frames (Map Focus, Panoramic, Glass
+    // Sweep, Triple Dial, Cockpit Edge, Aurora Evolution). Each theme's artwork is painted once into
+    // a bitmap at the panel's size, with its middle faded out so the live map shows through, and is
+    // then drawn with one call per frame. READY, ECO, the gear, speed-limit and assist symbols are
+    // left to the car, which draws its own on top.
+
+    private val signatureLayouts = setOf(ClusterTheme.Layout.SIG_AURORA_EVO, ClusterTheme.Layout.SIG_ONYX,
+        ClusterTheme.Layout.SIG_HORIZON, ClusterTheme.Layout.SIG_NEXUS, ClusterTheme.Layout.SIG_LUXE, ClusterTheme.Layout.SIG_TERRAIN,
+        ClusterTheme.Layout.SIG_METRO, ClusterTheme.Layout.SIG_VELOCITY, ClusterTheme.Layout.SIG_SERENITY, ClusterTheme.Layout.SIG_NEBULA,
+        ClusterTheme.Layout.SIG_CLASSIC, ClusterTheme.Layout.SIG_CRYSTAL, ClusterTheme.Layout.MAP_FOCUS, ClusterTheme.Layout.MAP_PANORAMIC,
+        ClusterTheme.Layout.MAP_GLASS, ClusterTheme.Layout.MAP_TRIPLE_DIAL, ClusterTheme.Layout.MAP_COCKPIT, ClusterTheme.Layout.MAP_AURORA,
+        ClusterTheme.Layout.SIG_FLOW, ClusterTheme.Layout.SIG_GALAXY, ClusterTheme.Layout.SIG_OPEN_ROAD, ClusterTheme.Layout.SIG_HYPERDRIVE, ClusterTheme.Layout.SIG_PLAY, ClusterTheme.Layout.SIG_ELITE, ClusterTheme.Layout.SIG_VISION, ClusterTheme.Layout.SIG_AERO, ClusterTheme.Layout.SIG_FACET)
+
+    private var sigArt: Bitmap? = null
+    private var sigArtKey: String? = null
+
+    /** The theme's artwork at this size, painted once. */
+    private fun signatureArt(w: Int, h: Int): Bitmap? {
+        if (w <= 0 || h <= 0) return null
+        val key = "${theme.id}:$w:$h"
+        sigArt?.takeIf { key == sigArtKey && !it.isRecycled }?.let { return it }
+        sigArt?.recycle()
+        val bitmap = runCatching { Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888) }.getOrNull() ?: return null
+        val c = Canvas(bitmap)
+        paintSignatureArt(c, w.toFloat(), h.toFloat())
+        // Fade the middle out so the map, its route and the car marker stay in view.
+        val keep = theme.layout in setOf(ClusterTheme.Layout.SIG_METRO, ClusterTheme.Layout.SIG_PLAY)
+        if (!keep) {
+            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_OUT) }
+            val cx = w * .5f; val cy = h * .56f
+            p.shader = RadialGradient(cx, cy, h * .52f, intArrayOf(Color.argb(250, 0, 0, 0), Color.argb(190, 0, 0, 0), Color.TRANSPARENT),
+                floatArrayOf(0f, .55f, 1f), Shader.TileMode.CLAMP).apply { setLocalMatrix(android.graphics.Matrix().apply { setScale(1.55f, 1f, cx, cy) }) }
+            c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), p)
+        }
+        sigArt = bitmap; sigArtKey = key
+        return bitmap
+    }
+
+    private fun sigNoise(seed: Int, x: Float): Float =
+        (sin(x * 1.7f + seed) * .5f + sin(x * 3.9f + seed * 2.1f) * .3f + sin(x * 8.3f + seed * .7f) * .2f).toFloat()
+
+    private fun paintSignatureArt(c: Canvas, w: Float, h: Float) {
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        val light = theme.layout == ClusterTheme.Layout.SIG_SERENITY
+        // Base: a dark (or misty) wash the art sits on.
+        p.shader = LinearGradient(0f, 0f, 0f, h,
+            // Serenity: a misty mid-blue, light enough to feel calm and dark enough for white text and glass cards.
+            if (light) intArrayOf(Color.argb(225, 70, 90, 118), Color.argb(210, 98, 120, 148), Color.argb(230, 58, 76, 102))
+            else intArrayOf(Color.argb(235, 4, 7, 15), Color.argb(215, 6, 10, 20), Color.argb(240, 3, 5, 11)),
+            null, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w, h, p); p.shader = null
+        fun ribbons(colours: IntArray, top: Boolean, count: Int) {
+            p.style = Paint.Style.STROKE; p.strokeCap = Paint.Cap.ROUND
+            for (i in 0 until count) {
+                val k = i / count.toFloat()
+                val base = if (top) (.05f + k * .16f) * h else (.80f + k * .16f) * h
+                val path = Path().apply {
+                    moveTo(-.05f * w, base + sigNoise(i, 0f) * .06f * h)
+                    cubicTo(.3f * w, base + sigNoise(i, 1f) * .12f * h, .65f * w, base + sigNoise(i, 2f) * .12f * h, 1.05f * w, base + sigNoise(i, 3f) * .06f * h)
+                }
+                p.strokeWidth = (.006f + .03f * ((i * 37) % 7) / 7f) * h
+                p.shader = LinearGradient(0f, 0f, w, 0f, intArrayOf(withAlpha(colours[0], 40 + i * 12), withAlpha(colours[1], 70 + i * 14),
+                    withAlpha(colours[2], 40 + i * 10)), null, Shader.TileMode.CLAMP)
+                c.drawPath(path, p)
+            }
+            p.shader = null; p.style = Paint.Style.FILL
+        }
+        fun mountains(dusk: Boolean, sky: IntArray? = null, ridge: Int? = null, reflect: Boolean = false) {
+            // Sky glow behind the ridges.
+            p.shader = LinearGradient(0f, 0f, 0f, .45f * h,
+                sky ?: if (dusk) intArrayOf(Color.argb(230, 24, 18, 52), Color.argb(220, 120, 60, 90), Color.argb(200, 238, 128, 72))
+                else intArrayOf(Color.argb(230, 226, 234, 246), Color.argb(220, 206, 220, 238), Color.argb(200, 236, 242, 250)),
+                null, Shader.TileMode.CLAMP)
+            c.drawRect(0f, 0f, w, .45f * h, p); p.shader = null
+            for (layer in 0 until 4) {
+                val y0 = (.24f + layer * .07f) * h
+                val path = Path().apply {
+                    moveTo(0f, h)
+                    var x = 0f
+                    lineTo(0f, y0)
+                    while (x <= w) {
+                        val peak = kotlin.math.abs(sigNoise(layer * 3 + 1, x / w * 6f)) * (.16f - layer * .025f) * h
+                        lineTo(x, y0 - peak); x += w / 90f
+                    }
+                    lineTo(w, h); close()
+                }
+                p.color = when {
+                    ridge != null -> Color.argb(200 + layer * 12, (Color.red(ridge) * (1f - layer * .18f)).toInt(),
+                        (Color.green(ridge) * (1f - layer * .18f)).toInt(), (Color.blue(ridge) * (1f - layer * .15f)).toInt())
+                    dusk -> Color.argb(235, 18 + layer * 6, 16 + layer * 5, 30 + layer * 8)
+                    else -> Color.argb(150 + layer * 20, 150 - layer * 18, 170 - layer * 16, 196 - layer * 14)
+                }
+                c.drawPath(path, p)
+                if (reflect && layer < 2) {
+                    // The ridges mirrored in still water below the horizon.
+                    c.save(); c.scale(1f, -1f, 0f, .58f * h); p.alpha = 70; c.drawPath(path, p); p.alpha = 255; c.restore()
+                }
+            }
+        }
+        fun facets(seedStart: Int, light: IntArray, dark: Int) {
+            var seed = seedStart
+            fun rnd(): Float { seed = seed * 1103515245 + 12345; return ((seed ushr 8) and 0xFFFF) / 65535f }
+            val cols = 9; val rows = 4
+            val pts = Array(rows + 1) { r -> Array(cols + 1) { col ->
+                android.graphics.PointF(col * w / cols + (if (col in 1 until cols) (rnd() - .5f) * w / cols * .6f else 0f),
+                    r * h / rows + (if (r in 1 until rows) (rnd() - .5f) * h / rows * .6f else 0f)) } }
+            for (r in 0 until rows) for (col in 0 until cols) {
+                val a = pts[r][col]; val b = pts[r][col + 1]; val cc = pts[r + 1][col + 1]; val d = pts[r + 1][col]
+                for (tri in listOf(listOf(a, b, cc), listOf(a, cc, d))) {
+                    val path = Path().apply { moveTo(tri[0].x, tri[0].y); lineTo(tri[1].x, tri[1].y); lineTo(tri[2].x, tri[2].y); close() }
+                    val shade = rnd()
+                    p.shader = LinearGradient(tri[0].x, tri[0].y, tri[2].x, tri[2].y,
+                        Color.argb(170, (Color.red(light[0]) + shade * (Color.red(light[1]) - Color.red(light[0]))).toInt(),
+                            (Color.green(light[0]) + shade * (Color.green(light[1]) - Color.green(light[0]))).toInt(),
+                            (Color.blue(light[0]) + shade * (Color.blue(light[1]) - Color.blue(light[0]))).toInt()),
+                        withAlpha(dark, 150), Shader.TileMode.CLAMP)
+                    c.drawPath(path, p)
+                    p.shader = null; p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * h / 720f; p.color = Color.argb(70, 230, 220, 255)
+                    c.drawPath(path, p); p.style = Paint.Style.FILL
+                }
+            }
+        }
+        fun beams(colour: Int, vx: Float, vy: Float) {
+            for (side in listOf(-1f, 1f)) for (i in 0 until 3) {
+                val path = Path().apply {
+                    moveTo(vx, vy); lineTo(vx + side * (.30f + i * .08f) * w, (.02f + i * .05f) * h)
+                    lineTo(vx + side * (.36f + i * .08f) * w, (.10f + i * .05f) * h); close()
+                }
+                p.shader = LinearGradient(vx, vy, vx + side * .4f * w, 0f, withAlpha(colour, 150), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+                c.drawPath(path, p)
+            }
+            p.shader = null
+        }
+        fun perspectiveRoad(colour: Int) {
+            p.style = Paint.Style.STROKE; p.strokeCap = Paint.Cap.ROUND
+            val vx = .5f * w; val vy = .30f * h
+            for (k in listOf(-3f, -1f, 1f, 3f)) {
+                p.strokeWidth = (if (kotlin.math.abs(k) == 3f) 4f else 2f) * h / 720f
+                p.shader = LinearGradient(vx, vy, vx, h, Color.TRANSPARENT, withAlpha(colour, 200), Shader.TileMode.CLAMP)
+                c.drawLine(vx + k * .01f * w, vy, vx + k * .12f * w, h, p)
+            }
+            p.shader = null; p.style = Paint.Style.FILL
+        }
+        when (theme.layout) {
+            ClusterTheme.Layout.SIG_AURORA_EVO, ClusterTheme.Layout.MAP_AURORA -> {
+                val colours = intArrayOf(Color.rgb(90, 60, 255), Color.rgb(140, 90, 255), Color.rgb(40, 150, 255))
+                ribbons(colours, true, 9); ribbons(colours, false, 9)
+            }
+            ClusterTheme.Layout.SIG_HORIZON -> mountains(dusk = true)
+            ClusterTheme.Layout.SIG_SERENITY -> mountains(dusk = false,
+                sky = intArrayOf(Color.argb(215, 120, 146, 180), Color.argb(200, 160, 182, 208), Color.argb(190, 196, 212, 230)), ridge = Color.rgb(110, 134, 168))
+            ClusterTheme.Layout.SIG_FLOW -> mountains(dusk = true,
+                sky = intArrayOf(Color.argb(230, 20, 16, 60), Color.argb(220, 110, 70, 170), Color.argb(210, 230, 140, 190)), ridge = Color.rgb(40, 30, 80))
+            ClusterTheme.Layout.SIG_OPEN_ROAD -> { mountains(dusk = true,
+                sky = intArrayOf(Color.argb(230, 10, 20, 46), Color.argb(220, 40, 70, 120), Color.argb(200, 120, 150, 190)), ridge = Color.rgb(24, 36, 64))
+                perspectiveRoad(theme.accent) }
+            ClusterTheme.Layout.SIG_VISION -> mountains(dusk = true,
+                sky = intArrayOf(Color.argb(230, 30, 50, 100), Color.argb(220, 90, 120, 180), Color.argb(210, 200, 170, 200)), ridge = Color.rgb(50, 70, 120), reflect = true)
+            ClusterTheme.Layout.SIG_HYPERDRIVE -> {
+                // Desert dusk: an orange horizon glow and low dunes along the bottom.
+                p.shader = RadialGradient(.5f * w, .86f * h, .7f * h, intArrayOf(Color.argb(220, 255, 140, 60), Color.argb(120, 160, 60, 40), Color.TRANSPARENT),
+                    null, Shader.TileMode.CLAMP).apply { setLocalMatrix(android.graphics.Matrix().apply { setScale(2.6f, 1f, .5f * w, .86f * h) }) }
+                c.drawRect(0f, 0f, w, h, p); p.shader = null
+                for (layer in 0 until 3) {
+                    val path = Path().apply {
+                        moveTo(0f, h); var x = 0f
+                        while (x <= w) { lineTo(x, (.80f + layer * .05f) * h - kotlin.math.abs(sigNoise(layer + 9, x / w * 3f)) * .05f * h); x += w / 60f }
+                        lineTo(w, h); close()
+                    }
+                    p.color = Color.argb(230, 40 - layer * 8, 22 - layer * 4, 14 - layer * 2); c.drawPath(path, p)
+                }
+            }
+            ClusterTheme.Layout.SIG_ELITE -> beams(theme.accent, .5f * w, .55f * h)
+            ClusterTheme.Layout.SIG_AERO -> { perspectiveRoad(theme.accent); beams(theme.accent, .5f * w, .30f * h) }
+            ClusterTheme.Layout.SIG_FACET -> facets(37, intArrayOf(Color.rgb(70, 60, 170), Color.rgb(90, 170, 255)), Color.rgb(16, 12, 40))
+            ClusterTheme.Layout.SIG_GALAXY -> {
+                p.shader = RadialGradient(.18f * w, .45f * h, .55f * h, intArrayOf(Color.argb(150, 40, 110, 255), Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
+                c.drawRect(0f, 0f, w, h, p); p.shader = null
+            }
+            ClusterTheme.Layout.SIG_PLAY -> {
+                // A dark frame with a rounded window in the middle for the map.
+                val window = RectF(.27f * w, .12f * h, .70f * w, .82f * h)
+                val q = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR) }
+                c.drawRoundRect(window, .05f * h, .05f * h, q)
+                p.style = Paint.Style.STROKE; p.color = withAlpha(theme.accent, 90); p.strokeWidth = 2.4f * h / 720f
+                c.drawRoundRect(window, .05f * h, .05f * h, p); p.style = Paint.Style.FILL
+            }
+            ClusterTheme.Layout.SIG_NEXUS -> {
+                val vx = .5f * w; val vy = .48f * h
+                p.style = Paint.Style.STROKE
+                for (i in 0 until 40) {
+                    val a = Math.toRadians(i * 9.0)
+                    val r = w * 1.1f
+                    p.strokeWidth = (if (i % 5 == 0) 2.4f else 1.2f) * h / 720f
+                    p.color = withAlpha(theme.accent, if (i % 5 == 0) 120 else 55)
+                    c.drawLine(vx, vy, vx + r * cos(a).toFloat(), vy + r * sin(a).toFloat() * .45f, p)
+                }
+                for (k in 1..6) {
+                    val f = k / 6f
+                    p.strokeWidth = 1.6f * h / 720f; p.color = withAlpha(theme.accent, 40 + k * 14)
+                    c.drawRoundRect(RectF(vx - f * .62f * w, vy - f * .50f * h, vx + f * .62f * w, vy + f * .52f * h), .04f * h, .04f * h, p)
+                }
+                p.style = Paint.Style.FILL
+            }
+            ClusterTheme.Layout.SIG_TERRAIN -> {
+                p.style = Paint.Style.STROKE
+                for ((cx, cy, n) in listOf(Triple(.22f, .30f, 14), Triple(.70f, .70f, 12), Triple(.92f, .20f, 9))) {
+                    for (k in 1..n) {
+                        val path = Path()
+                        for (step in 0..72) {
+                            val a = step / 72f * 2f * Math.PI.toFloat()
+                            val r = (k * .028f * h) * (1f + .18f * sigNoise(k, a * 2f))
+                            val x = cx * w + r * 1.6f * cos(a); val y = cy * h + r * sin(a)
+                            if (step == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        }
+                        p.strokeWidth = 1.3f * h / 720f; p.color = withAlpha(theme.accent, 34 + (k % 4) * 16)
+                        c.drawPath(path, p)
+                    }
+                }
+                p.style = Paint.Style.FILL
+            }
+            ClusterTheme.Layout.SIG_VELOCITY -> {
+                p.style = Paint.Style.STROKE; p.strokeCap = Paint.Cap.ROUND
+                for (i in 0 until 46) {
+                    val y = (.12f + (i * 53 % 46) / 46f * .78f) * h
+                    val len = (.12f + (i * 29 % 13) / 13f * .25f) * w
+                    val left = i % 2 == 0
+                    p.strokeWidth = (1f + (i % 4)) * h / 720f
+                    p.shader = LinearGradient(if (left) 0f else w, 0f, if (left) len else w - len, 0f,
+                        withAlpha(theme.accent, 150), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+                    if (left) c.drawLine(0f, y, len, y + (y - .5f * h) * .1f, p) else c.drawLine(w, y, w - len, y + (y - .5f * h) * .1f, p)
+                }
+                p.shader = null; p.style = Paint.Style.FILL
+            }
+            ClusterTheme.Layout.SIG_NEBULA -> {
+                for ((x, y, r, colour) in listOf(
+                    listOf(.12f, .25f, .45f, Color.rgb(120, 40, 200)), listOf(.30f, .85f, .40f, Color.rgb(40, 60, 210)),
+                    listOf(.85f, .20f, .40f, Color.rgb(200, 50, 170)), listOf(.92f, .80f, .45f, Color.rgb(70, 40, 190)),
+                    listOf(.60f, .05f, .30f, Color.rgb(60, 120, 230)))) {
+                    p.shader = RadialGradient((x as Float) * w, (y as Float) * h, (r as Float) * h,
+                        intArrayOf(withAlpha(colour as Int, 150), withAlpha(colour, 50), Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
+                    c.drawRect(0f, 0f, w, h, p)
+                }
+                p.shader = null
+                var seed = 71
+                for (i in 0 until 160) {
+                    seed = seed * 1103515245 + 12345
+                    val x = ((seed ushr 8) and 0xFFFF) / 65535f * w
+                    seed = seed * 1103515245 + 12345
+                    val y = ((seed ushr 8) and 0xFFFF) / 65535f * h
+                    p.color = Color.argb(60 + (seed and 0x7F), 255, 255, 255)
+                    c.drawCircle(x, y, (.6f + (i % 3) * .5f) * h / 720f, p)
+                }
+            }
+            ClusterTheme.Layout.SIG_CRYSTAL -> {
+                var seed = 19
+                fun rnd(): Float { seed = seed * 1103515245 + 12345; return ((seed ushr 8) and 0xFFFF) / 65535f }
+                val cols = 9; val rows = 4
+                val pts = Array(rows + 1) { r -> Array(cols + 1) { col ->
+                    android.graphics.PointF(col * w / cols + (if (col in 1 until cols) (rnd() - .5f) * w / cols * .6f else 0f),
+                        r * h / rows + (if (r in 1 until rows) (rnd() - .5f) * h / rows * .6f else 0f)) } }
+                for (r in 0 until rows) for (col in 0 until cols) {
+                    val a = pts[r][col]; val b = pts[r][col + 1]; val cc = pts[r + 1][col + 1]; val d = pts[r + 1][col]
+                    for (tri in listOf(listOf(a, b, cc), listOf(a, cc, d))) {
+                        val path = Path().apply { moveTo(tri[0].x, tri[0].y); lineTo(tri[1].x, tri[1].y); lineTo(tri[2].x, tri[2].y); close() }
+                        val shade = rnd()
+                        p.shader = LinearGradient(tri[0].x, tri[0].y, tri[2].x, tri[2].y,
+                            Color.argb(170, (60 + shade * 90).toInt(), (90 + shade * 100).toInt(), (130 + shade * 110).toInt()),
+                            Color.argb(150, 20, 34, 58), Shader.TileMode.CLAMP)
+                        c.drawPath(path, p)
+                        p.shader = null; p.style = Paint.Style.STROKE; p.strokeWidth = 1.1f * h / 720f; p.color = Color.argb(70, 220, 236, 255)
+                        c.drawPath(path, p); p.style = Paint.Style.FILL
+                    }
+                }
+            }
+            ClusterTheme.Layout.MAP_PANORAMIC -> {
+                for (top in listOf(true, false)) {
+                    val edge = Path().apply {
+                        if (top) { moveTo(0f, .17f * h); cubicTo(.3f * w, .08f * h, .7f * w, .08f * h, w, .17f * h) }
+                        else { moveTo(0f, .80f * h); cubicTo(.3f * w, .90f * h, .7f * w, .90f * h, w, .80f * h) }
+                    }
+                    val band = Path(edge).apply { if (top) { lineTo(w, 0f); lineTo(0f, 0f) } else { lineTo(w, h); lineTo(0f, h) }; close() }
+                    p.color = Color.argb(240, 3, 6, 14); c.drawPath(band, p)
+                    p.style = Paint.Style.STROKE
+                    p.color = withAlpha(theme.accent, 70); p.strokeWidth = 12f * h / 720f; c.drawPath(edge, p)
+                    p.color = theme.accent; p.strokeWidth = 2.6f * h / 720f; c.drawPath(edge, p)
+                    p.style = Paint.Style.FILL
+                }
+            }
+            ClusterTheme.Layout.MAP_FOCUS -> {
+                p.style = Paint.Style.STROKE; p.strokeCap = Paint.Cap.ROUND
+                for (left in listOf(true, false)) {
+                    val oval = if (left) RectF(.01f * w, .08f * h, .01f * w + .9f * h, .92f * h) else RectF(.99f * w - .9f * h, .08f * h, .99f * w, .92f * h)
+                    val start = if (left) 130f else -50f
+                    p.color = withAlpha(theme.accent, 60); p.strokeWidth = 14f * h / 720f; c.drawArc(oval, start, 100f, false, p)
+                    p.color = theme.accent; p.strokeWidth = 3f * h / 720f; c.drawArc(oval, start, 100f, false, p)
+                }
+                p.style = Paint.Style.FILL
+            }
+            else -> Unit
+        }
+    }
+
+    private fun sigHeader(canvas: Canvas, w: Float, h: Float, colour: Int) {
+        snapshot?.outsideTempC?.let { studioText(canvas, "${it.roundToInt()}°C", .035f * w, .085f * h, .045f * h, colour, 500) }
+        studioText(canvas, SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()), .965f * w, .085f * h, .045f * h, colour, 500,
+            align = Paint.Align.RIGHT)
+    }
+
+    private fun sigFooter(canvas: Canvas, w: Float, h: Float, colour: Int, secondary: Int) {
+        val y = .935f * h
+        studioText(canvas, "ODO", .035f * w, y, .032f * h, secondary, 500)
+        val odo = snapshot?.odometerKm?.let { NumberFormat.getIntegerInstance().format(it.roundToInt()) } ?: "—"
+        studioText(canvas, "$odo km", .075f * w, y, .042f * h, colour, 500)
+        // Fuel: pump, range, a long bar and the percentage, bottom right.
+        drawPump(canvas, .70f * w, y - .045f * h, .045f * h)
+        studioText(canvas, snapshot?.rangeKm?.let { "${it.roundToInt()} km" } ?: "— km", .74f * w, y - .012f * h, .042f * h, colour, 500)
+        studioText(canvas, snapshot?.fuelPercent?.let { "${it.roundToInt()}%" } ?: "—", .965f * w, y - .012f * h, .036f * h, colour, 500,
+            align = Paint.Align.RIGHT)
+        val bar = RectF(.74f * w, y + .008f * h, .965f * w, y + .022f * h)
+        fill.shader = null; fill.color = withAlpha(secondary, 70); canvas.drawRoundRect(bar, bar.height() / 2, bar.height() / 2, fill)
+        snapshot?.fuelPercent?.let { f ->
+            fill.color = theme.charge
+            canvas.drawRoundRect(RectF(bar.left, bar.top, bar.left + bar.width() * (f / 100f).coerceIn(0f, 1f), bar.bottom), bar.height() / 2, bar.height() / 2, fill)
+        }
+    }
+
+    private fun sigSpeed(canvas: Canvas, x: Float, y: Float, size: Float, colour: Int, secondary: Int) {
+        studioText(canvas, snapshot?.speedKph?.roundToInt()?.toString() ?: "—", x, y, size, colour, 600, align = Paint.Align.CENTER)
+        studioText(canvas, "km/h", x, y + size * .32f, size * .2f, secondary, 500, align = Paint.Align.CENTER)
+    }
+
+    /** A dial: dark glass face, a lit rim and a speed or power scale. */
+    private fun sigDial(canvas: Canvas, cx: Float, cy: Float, r: Float, rim: IntArray) {
+        val s = height / 720f
+        fill.shader = RadialGradient(cx, cy, r, intArrayOf(Color.argb(235, 10, 16, 28), Color.argb(250, 3, 6, 12)), null, Shader.TileMode.CLAMP)
+        canvas.drawCircle(cx, cy, r, fill); fill.shader = null
+        line.shader = android.graphics.SweepGradient(cx, cy, rim, null)
+        line.strokeWidth = 12f * s; line.alpha = 80; canvas.drawCircle(cx, cy, r, line)
+        line.alpha = 255; line.strokeWidth = 3f * s; canvas.drawCircle(cx, cy, r, line)
+        line.shader = null
+    }
+
+    private fun drawSignature(canvas: Canvas, w: Float, h: Float, showMusic: Boolean) {
+        signatureArt(width, height)?.let { canvas.drawBitmap(it, 0f, 0f, null) }
+        val nav = nineNav()
+        val showCard = nineShowsMusic(showMusic)
+        val light = theme.layout == ClusterTheme.Layout.SIG_SERENITY
+        val text = theme.text
+        val secondary = theme.secondary
+        val gold = intArrayOf(Color.rgb(120, 84, 30), Color.rgb(250, 210, 140), Color.rgb(160, 110, 40), Color.rgb(255, 230, 170), Color.rgb(120, 84, 30))
+        when (theme.layout) {
+            // Map-first frames: speed on the left, directions top centre, music on the right.
+            ClusterTheme.Layout.MAP_FOCUS, ClusterTheme.Layout.MAP_PANORAMIC, ClusterTheme.Layout.MAP_AURORA -> {
+                sigSpeed(canvas, .15f * w, .43f * h, .22f * h, text, secondary)
+                chargePowerBar(canvas, .06f * w, .24f * w, .62f * h)
+                nav?.let { glassNav(canvas, RectF(.53f * w, .12f * h, .72f * w, .34f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.745f * w, .24f * h, .955f * w, .64f * h))
+            }
+            ClusterTheme.Layout.MAP_GLASS -> {
+                val panel = Path().apply {
+                    moveTo(.02f * w, .22f * h); cubicTo(.02f * w, .14f * h, .05f * w, .12f * h, .12f * w, .12f * h)
+                    lineTo(.27f * w, .12f * h); cubicTo(.34f * w, .30f * h, .36f * w, .55f * h, .40f * w, .78f * h)
+                    lineTo(.06f * w, .80f * h); cubicTo(.03f * w, .80f * h, .02f * w, .76f * h, .02f * w, .70f * h); close()
+                }
+                nineGlass(canvas, panel, .12f * h, .80f * h, withAlpha(theme.accent, 220), glow = true)
+                sigSpeed(canvas, .15f * w, .44f * h, .22f * h, text, secondary)
+                chargePowerBar(canvas, .06f * w, .25f * w, .64f * h)
+                nav?.let { glassNav(canvas, RectF(.45f * w, .13f * h, .64f * w, .34f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.70f * w, .22f * h, .955f * w, .66f * h))
+            }
+            ClusterTheme.Layout.MAP_TRIPLE_DIAL -> {
+                val r = .36f * h
+                sigDial(canvas, .17f * w, .48f * h, r, gold)
+                sigDial(canvas, .83f * w, .48f * h, r, gold)
+                sigSpeed(canvas, .17f * w, .50f * h, .22f * h, text, secondary)
+                nav?.let { glassNav(canvas, RectF(.42f * w, .12f * h, .60f * w, .34f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.83f * w - r * .78f, .48f * h - r * .62f, .83f * w + r * .78f, .48f * h + r * .66f))
+            }
+            ClusterTheme.Layout.MAP_COCKPIT -> {
+                val left = Path().apply {
+                    moveTo(.10f * w, .12f * h); lineTo(.30f * w, .12f * h); lineTo(.36f * w, .45f * h); lineTo(.30f * w, .80f * h)
+                    lineTo(.10f * w, .80f * h); lineTo(.03f * w, .46f * h); close()
+                }
+                nineGlass(canvas, left, .12f * h, .80f * h, withAlpha(theme.accent, 230), glow = true)
+                sigSpeed(canvas, .19f * w, .45f * h, .22f * h, text, secondary)
+                chargePowerBar(canvas, .10f * w, .29f * w, .66f * h)
+                nav?.let { glassNav(canvas, RectF(.44f * w, .13f * h, .63f * w, .34f * h), it) }
+                if (showCard) {
+                    val box = RectF(.70f * w, .26f * h, .955f * w, .68f * h)
+                    val shape = Path().apply {
+                        moveTo(box.left + .02f * w, box.top); lineTo(box.right - .02f * w, box.top); lineTo(box.right, box.centerY())
+                        lineTo(box.right - .02f * w, box.bottom); lineTo(box.left + .02f * w, box.bottom); lineTo(box.left, box.centerY()); close()
+                    }
+                    glassMusic(canvas, box, path = shape)
+                }
+            }
+            // Scene themes: speed in the centre, directions on the left, music on the right.
+            ClusterTheme.Layout.SIG_METRO -> {
+                sigSpeed(canvas, .12f * w, .45f * h, .22f * h, text, secondary)
+                nav?.let { glassNav(canvas, RectF(.24f * w, .12f * h, .46f * w, .34f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.745f * w, .24f * h, .955f * w, .66f * h))
+            }
+            ClusterTheme.Layout.SIG_CLASSIC -> {
+                val r = .40f * h
+                sigDial(canvas, .15f * w, .52f * h, r, intArrayOf(theme.accent, theme.secondary, theme.accent))
+                cockpitScale(canvas, .15f * w, .52f * h, r - .03f * h, 135f, 270f, 220)
+                sigSpeed(canvas, .15f * w, .58f * h, .17f * h, text, secondary)
+                sigDial(canvas, .85f * w, .52f * h, r, intArrayOf(theme.accent, theme.secondary, theme.accent))
+                // Power above, charge below, on the right dial.
+                val oval = RectF(.85f * w - r + .05f * h, .52f * h - r + .05f * h, .85f * w + r - .05f * h, .52f * h + r - .05f * h)
+                val f = kwNow()?.let { (it / GwmAndroidAutoClusterView.BATTERY_FULL_SCALE_KW).coerceIn(-1f, 1f) } ?: 0f
+                line.shader = null; line.strokeCap = Paint.Cap.ROUND; line.strokeWidth = .02f * h
+                line.color = Color.argb(150, 40, 54, 76); canvas.drawArc(oval, 150f, 240f, false, line)
+                line.color = theme.charge; if (kotlin.math.abs(f) > .01f) canvas.drawArc(oval, 270f, 120f * f, false, line)
+                studioText(canvas, "POWER", .85f * w, .40f * h, .034f * h, secondary, 600, align = Paint.Align.CENTER)
+                studioText(canvas, "CHARGE", .85f * w, .66f * h, .034f * h, secondary, 600, align = Paint.Align.CENTER)
+                nav?.let { glassNav(canvas, RectF(.41f * w, .10f * h, .59f * w, .32f * h), it) }
+            }
+            ClusterTheme.Layout.SIG_FLOW -> {
+                sigSpeed(canvas, .50f * w, .24f * h, .19f * h, text, secondary)
+                nav?.let { glassNav(canvas, RectF(.04f * w, .30f * h, .27f * w, .54f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.735f * w, .22f * h, .96f * w, .64f * h))
+            }
+            ClusterTheme.Layout.SIG_GALAXY -> {
+                val r = .33f * h
+                fill.shader = RadialGradient(.17f * w, .46f * h, r * 1.3f, intArrayOf(withAlpha(theme.accent, 110), Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
+                canvas.drawCircle(.17f * w, .46f * h, r * 1.3f, fill); fill.shader = null
+                sigDial(canvas, .17f * w, .46f * h, r, intArrayOf(theme.accent, Color.WHITE, theme.charge, theme.accent))
+                sigSpeed(canvas, .17f * w, .48f * h, .2f * h, text, secondary)
+                nav?.let { glassNav(canvas, RectF(.40f * w, .10f * h, .62f * w, .32f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.735f * w, .20f * h, .96f * w, .64f * h))
+            }
+            ClusterTheme.Layout.SIG_OPEN_ROAD, ClusterTheme.Layout.SIG_VISION, ClusterTheme.Layout.SIG_AERO -> {
+                sigSpeed(canvas, .12f * w, .38f * h, .2f * h, text, secondary)
+                nav?.let { glassNav(canvas, RectF(.38f * w, .10f * h, .62f * w, .32f * h), it) }
+                if (showCard && theme.layout == ClusterTheme.Layout.SIG_VISION) glassMusic(canvas, RectF(.735f * w, .22f * h, .96f * w, .64f * h))
+                if (theme.layout == ClusterTheme.Layout.SIG_AERO) {
+                    // The car from above in a ring, as on the sheet.
+                    val cx = .85f * w; val cy = .45f * h; val r = .17f * h
+                    sigDial(canvas, cx, cy, r, intArrayOf(theme.accent, Color.WHITE, theme.accent))
+                    fill.color = withAlpha(theme.text, 220)
+                    canvas.drawRoundRect(RectF(cx - .045f * h, cy - .10f * h, cx + .045f * h, cy + .10f * h), .04f * h, .04f * h, fill)
+                    fill.color = Color.argb(200, 20, 24, 40)
+                    canvas.drawRoundRect(RectF(cx - .035f * h, cy - .05f * h, cx + .035f * h, cy + .015f * h), .015f * h, .015f * h, fill)
+                } else if (theme.layout == ClusterTheme.Layout.SIG_OPEN_ROAD) {
+                    // Lane guide on the right, in the theme's colour.
+                    fill.shader = LinearGradient(0f, .62f * h, 0f, .30f * h, withAlpha(theme.accent, 170), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+                    canvas.drawPath(Path().apply { moveTo(.84f * w, .32f * h); lineTo(.88f * w, .32f * h); lineTo(.95f * w, .62f * h); lineTo(.77f * w, .62f * h); close() }, fill)
+                    fill.shader = null
+                }
+            }
+            ClusterTheme.Layout.SIG_HYPERDRIVE -> {
+                val cx = .50f * w; val cy = .62f * h; val r = .50f * h
+                line.shader = null; line.color = withAlpha(theme.accent, 70); line.strokeWidth = 14f * h / 720f
+                canvas.drawArc(RectF(cx - r, cy - r, cx + r, cy + r), 180f, 180f, false, line)
+                line.color = withAlpha(theme.text, 200); line.strokeWidth = 2.4f * h / 720f
+                canvas.drawArc(RectF(cx - r, cy - r, cx + r, cy + r), 180f, 180f, false, line)
+                sigSpeed(canvas, cx, .48f * h, .24f * h, text, secondary)
+                if (showCard) glassMusic(canvas, RectF(.035f * w, .22f * h, .25f * w, .64f * h))
+                nav?.let { glassNav(canvas, RectF(.75f * w, .22f * h, .965f * w, .46f * h), it) }
+            }
+            ClusterTheme.Layout.SIG_PLAY -> {
+                sigSpeed(canvas, .13f * w, .42f * h, .22f * h, text, secondary)
+                nav?.let { glassNav(canvas, RectF(.29f * w, .14f * h, .50f * w, .34f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.73f * w, .14f * h, .96f * w, .80f * h))
+            }
+            ClusterTheme.Layout.SIG_ELITE -> {
+                val box = RectF(.035f * w, .22f * h, .24f * w, .70f * h)
+                nineCard(canvas, box, withAlpha(theme.accent, 120))
+                sigSpeed(canvas, box.centerX(), .46f * h, .2f * h, text, secondary)
+                val cx = .50f * w; val cy = .40f * h
+                fill.shader = RadialGradient(cx, cy, .16f * h, intArrayOf(withAlpha(theme.accent, 160), Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
+                canvas.drawCircle(cx, cy, .16f * h, fill); fill.shader = null
+                line.shader = android.graphics.SweepGradient(cx, cy, intArrayOf(theme.accent, Color.WHITE, theme.charge, theme.accent), null)
+                line.strokeWidth = 4f * h / 720f; canvas.drawCircle(cx, cy, .10f * h, line); line.shader = null
+                nav?.let { glassNav(canvas, RectF(.38f * w, .58f * h, .62f * w, .78f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.735f * w, .22f * h, .96f * w, .64f * h))
+            }
+            ClusterTheme.Layout.SIG_FACET -> {
+                sigSpeed(canvas, .13f * w, .44f * h, .22f * h, text, secondary)
+                nav?.let { glassNav(canvas, RectF(.38f * w, .10f * h, .62f * w, .32f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.72f * w, .20f * h, .96f * w, .66f * h))
+            }
+            ClusterTheme.Layout.SIG_TERRAIN -> {
+                sigSpeed(canvas, .50f * w, .36f * h, .20f * h, text, secondary)
+                nav?.let { glassNav(canvas, RectF(.04f * w, .28f * h, .27f * w, .52f * h), it) }
+                // Two compass rings on the right, as on the sheet, marked with the cardinal points.
+                for ((cx, cy, r) in listOf(Triple(.78f * w, .34f * h, .12f * h), Triple(.90f * w, .56f * h, .10f * h))) {
+                    line.shader = null; line.color = withAlpha(theme.accent, 200); line.strokeWidth = 2.4f * h / 720f
+                    canvas.drawCircle(cx, cy, r, line)
+                    for (i in 0 until 36) {
+                        val a = Math.toRadians(i * 10.0)
+                        val r1 = r * (if (i % 9 == 0) .78f else .88f)
+                        line.strokeWidth = (if (i % 9 == 0) 2.2f else 1f) * h / 720f
+                        canvas.drawLine(cx + r * cos(a).toFloat(), cy + r * sin(a).toFloat(), cx + r1 * cos(a).toFloat(), cy + r1 * sin(a).toFloat(), line)
+                    }
+                    studioText(canvas, "N", cx, cy - r * .45f, .03f * h, theme.accent, 700, align = Paint.Align.CENTER)
+                }
+            }
+            else -> {
+                // Onyx, Luxe, Velocity and Nebula ring the speed; the rest leave it bare.
+                val cx = .50f * w; val cy = .42f * h
+                when (theme.layout) {
+                    ClusterTheme.Layout.SIG_ONYX -> nineRing(canvas, cx, cy, .36f * h,
+                        intArrayOf(withAlpha(theme.accent, 40), theme.accent, Color.WHITE, theme.accent, withAlpha(theme.accent, 40)), start = 140f, sweep = 260f)
+                    ClusterTheme.Layout.SIG_LUXE -> {
+                        fill.shader = RadialGradient(cx, cy, .42f * h, intArrayOf(Color.argb(90, 250, 190, 90), Color.TRANSPARENT), null, Shader.TileMode.CLAMP)
+                        canvas.drawCircle(cx, cy, .42f * h, fill); fill.shader = null
+                        sigDial(canvas, cx, cy, .33f * h, gold)
+                    }
+                    ClusterTheme.Layout.SIG_VELOCITY -> {
+                        cockpitScale(canvas, cx, cy + .04f * h, .38f * h, 150f, 240f, 240, labelsInside = true)
+                    }
+                    ClusterTheme.Layout.SIG_NEBULA -> {
+                        line.shader = null; line.color = withAlpha(theme.accent, 60); line.strokeWidth = 14f * h / 720f
+                        canvas.drawCircle(cx, cy + .02f * h, .40f * h, line)
+                        line.color = withAlpha(theme.text, 180); line.strokeWidth = 2f * h / 720f
+                        canvas.drawCircle(cx, cy + .02f * h, .40f * h, line)
+                    }
+                    else -> Unit
+                }
+                sigSpeed(canvas, cx, cy + .05f * h, .21f * h, text, secondary)
+                nav?.let { glassNav(canvas, RectF(.04f * w, .30f * h, .27f * w, .54f * h), it) }
+                if (showCard) glassMusic(canvas, RectF(.735f * w, .22f * h, .96f * w, .64f * h))
+            }
+        }
+        sigHeader(canvas, w, h, text)
+        sigFooter(canvas, w, h, text, secondary)
     }
 
     // ---- Cockpit set: Oval, Dual Dial, Wide Horizon and Elongated (Steve's third sheet) ------
@@ -3557,8 +4138,25 @@ internal class ThemedClusterView(
         return parts
     }
 
+    /**
+     * Moves the turn card by the driver's saved offset, clamped so the whole card stays on the
+     * panel. Only the guidance moves: the music plate, speed, flow and footer keep their places.
+     */
+    private fun placeTurnCard(box: RectF, w: Float, h: Float) {
+        val (xPercent, yPercent) = ClusterThemeStore.guidanceOffset(context, theme.id)
+        if (xPercent == 0 && yPercent == 0) return
+        box.offset(xPercent / 100f * w, yPercent / 100f * h)
+        val marginX = .005f * w
+        val marginY = .005f * h
+        val maxLeft = (w - box.width() - marginX).coerceAtLeast(marginX)
+        val maxTop = (h - box.height() - marginY).coerceAtLeast(marginY)
+        box.offsetTo(box.left.coerceIn(marginX, maxLeft), box.top.coerceIn(marginY, maxTop))
+    }
+
     private fun drawCard(canvas: Canvas, w: Float, h: Float, next: ClusterTurnGuidance,
                          box: RectF = RectF(CARD_LEFT * w, CARD_TOP * h, CARD_RIGHT * w, CARD_BOTTOM * h)) {
+        placeTurnCard(box, w, h)
+        clearOfMusic(box)
         val s = h / 720f
         if (isOpenLayout()) {
             drawOpenDirections(canvas,w,h,next,box)

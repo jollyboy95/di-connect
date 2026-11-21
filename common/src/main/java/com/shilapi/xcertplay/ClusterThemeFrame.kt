@@ -94,14 +94,27 @@ internal class ClusterThemeFrame(context: Context, private val connection: Clust
 
 /** Gallery pictures drawn by the real renderers over a stand-in map, so a preview never lies. */
 internal object ClusterThemePreview {
-    private val cache = mutableMapOf<Pair<String, ClusterConnection>, Bitmap>()
+    /**
+     * Gallery pictures are drawn at 720x270 (two across fill well under that on the head unit) and
+     * kept in a 24 MB LRU, so a long gallery no longer holds every picture it ever drew (58 themes
+     * at 960x360 came to over 150 MB) and a revisit still opens instantly.
+     */
+    private const val GALLERY_WIDTH = 720
+    private const val GALLERY_HEIGHT = 270
+    private val cache = object : android.util.LruCache<Pair<String, ClusterConnection>, Bitmap>(24 * 1024 * 1024) {
+        override fun sizeOf(key: Pair<String, ClusterConnection>, value: Bitmap) = value.byteCount
+    }
 
-    fun bitmap(context: Context, theme: ClusterTheme, connection: ClusterConnection, width: Int = 960, height: Int = 360): Bitmap =
-        cache.getOrPut(theme.id to connection) { render(context, theme, connection, width, height) }
+    fun bitmap(context: Context, theme: ClusterTheme, connection: ClusterConnection,
+               width: Int = GALLERY_WIDTH, height: Int = GALLERY_HEIGHT): Bitmap =
+        cache.get(theme.id to connection) ?: render(context, theme, connection, width, height).also { cache.put(theme.id to connection, it) }
+
+    /** The picture if it is already drawn, so the gallery can show it at once and draw the rest after. */
+    fun cached(theme: ClusterTheme, connection: ClusterConnection): Bitmap? = cache.get(theme.id to connection)
 
     /** Drops a theme's cached pictures, for example after the Co-Pilot photo changes. */
     fun forget(id: String) {
-        cache.keys.removeAll { it.first == id }
+        cache.snapshot().keys.filter { it.first == id }.forEach { cache.remove(it) }
     }
 
     fun render(context: Context, theme: ClusterTheme, connection: ClusterConnection, width: Int, height: Int): Bitmap {
