@@ -1,0 +1,50 @@
+[
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/DiConnectViews.kt",
+    "old": "    @Volatile var hud: ((Context, Int) -> Layer)? = null",
+    "new": "    @Volatile var hud: ((Context, Int) -> Layer)? = null\n    /** Reuse the already-translated parked HUD test label from the CarPlay host. */\n    @Volatile var hudTestLabel: ((Context) -> String)? = null",
+    "count": 1
+  },
+  {
+    "path": "common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt",
+    "old": "        DiConnectViews.hud = { displayContext, anchor -> HudLayer(displayContext, anchor) }",
+    "new": "        DiConnectViews.hud = { displayContext, anchor -> HudLayer(displayContext, anchor) }\n        DiConnectViews.hudTestLabel = { it.getString(com.shilapi.xcertplay.host.R.string.settings_gwm_hud_test) }",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/gwm/GwmOutputs.kt",
+    "old": "    private var testView: View? = null",
+    "new": "    private var testView: View? = null\n    private var testLayer: com.andrerinas.openheadunit.DiConnectViews.Layer? = null\n    private val testTimeout = Runnable { hideTest() }\n    val hudSampleShowing: Boolean get() = testLayer != null && testView != null",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/gwm/GwmOutputs.kt",
+    "old": "            windows.addView(view, overlayParams(opaque = false))\n            testManager = windows\n            testView = view\n            null",
+    "new": "            if (hudGrid != null) view.setBackgroundColor(Color.BLACK)\n            windows.addView(view, overlayParams(opaque = hudGrid != null))\n            testManager = windows\n            testView = view\n            if (hudGrid != null) handler.postDelayed(testTimeout, 60_000L)\n            null",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/gwm/GwmOutputs.kt",
+    "old": "    fun hideTest() {",
+    "new": "    /** Uses the exact live AA HUD factory, target display and opaque window mode; no phone needed. */\n    fun showHudSample(context: Context): String? {\n        hideTest()\n        val app = context.applicationContext\n        val gwm = GwmSettings(app)\n        var problem: String? = null\n        val display = usableDisplay(app, gwm.hudDisplayId) { problem = it } ?: return problem\n        val displayContext = app.createDisplayContext(display)\n        val windows = displayContext.getSystemService(WindowManager::class.java)\n            ?: return \"No window manager for HUD display.\"\n        val sample = com.andrerinas.openheadunit.DiConnectViews.hud?.invoke(displayContext, gwm.hudAnchor)\n            ?: return \"The Android Auto HUD renderer is not registered.\"\n        // Same sample as the working CarPlay test: right arrow, 300 m, arrival ten minutes ahead.\n        sample.setGuidance(com.andrerinas.openheadunit.DiConnectViews.Guidance(\n            icon = 3, roundaboutExit = 0, distanceMeters = 300, road = \"TEST\",\n            remainingMeters = 10000, remainingSeconds = 600,\n        ))\n        sample.view.setBackgroundColor(Color.BLACK)\n        return try {\n            windows.addView(sample.view, overlayParams(opaque = true))\n            testManager = windows\n            testView = sample.view\n            testLayer = sample\n            handler.postDelayed(testTimeout, 10_000L)\n            null\n        } catch (error: RuntimeException) {\n            sample.release()\n            \"${error.javaClass.simpleName}: ${error.message}\"\n        }\n    }\n\n    fun hideTest() {",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/gwm/GwmOutputs.kt",
+    "old": "        testView = null\n        testManager = null",
+    "new": "        handler.removeCallbacks(testTimeout)\n        testView = null\n        testManager = null\n        testLayer?.release()\n        testLayer = null",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/gwm/GwmSettingsActivity.kt",
+    "old": "        note(getString(R.string.aa_gwm_hud_area_note))",
+    "new": "        com.andrerinas.openheadunit.DiConnectViews.hudTestLabel?.invoke(this)?.let { label ->\n            button(if (GwmOutputs.hudSampleShowing) getString(R.string.aa_gwm_test_hide) else label) {\n                if (GwmOutputs.hudSampleShowing) GwmOutputs.hideTest()\n                else GwmOutputs.showHudSample(this)?.let { toast(it) }\n                render()\n            }\n        }\n        note(getString(R.string.aa_gwm_hud_area_note))",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/utils/DiagnosticReport.kt",
+    "old": "            appendLine(\"--- Recent app logs (up to 6000 lines) ---\")",
+    "new": "            appendLine(\"--- GWM HUD guidance at report time ---\")\n            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {\n                appendLine(\"HUD output=${com.andrerinas.openheadunit.gwm.GwmOutputs.hudStatus}\")\n                appendLine(\"HUD test grid=${com.andrerinas.openheadunit.gwm.GwmOutputs.hudGridShowing}; sample=${com.andrerinas.openheadunit.gwm.GwmOutputs.hudSampleShowing}\")\n            }\n            val guidance = com.andrerinas.openheadunit.hud.DashboardGuidance.current()\n            appendLine(\"Live guidance=${guidance != null}; icon=${guidance?.clusterIcon}; turn metres=${guidance?.distanceMeters}\")\n            appendLine(\"Arrival duration seconds=${guidance?.remainingSeconds}; formatted arrival present=${!guidance?.arrivalText.isNullOrBlank()}\")\n            appendLine(\"--- Recent app logs (up to 6000 lines) ---\")",
+    "count": 1
+  }
+]

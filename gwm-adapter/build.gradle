@@ -1,0 +1,31 @@
+// DiPlay GWM Adapter — Android library module.
+// SPDX-License-Identifier: GPL-3.0-or-later
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'org.dplay.gwm'
+    compileSdk 37
+
+    defaultConfig {
+        minSdk 24          // matches the host app; overlay entry points require API 26 at runtime
+        targetSdk 37
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    // Intentionally dependency-free: pure framework APIs so it drops into any host.
+}

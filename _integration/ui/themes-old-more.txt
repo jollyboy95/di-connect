@@ -1,0 +1,7 @@
+        content.addView(row().apply {
+            addView(button(getString(R.string.di_connect_themes_get_more), true) { downloadThemes() },
+                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+            addView(space(CONTROL_GAP_DP), LinearLayout.LayoutParams(dp(CONTROL_GAP_DP), 1))
+            addView(button(getString(R.string.di_connect_themes_import), false) { themeFilePicker.launch("*/*") },
+                LinearLayout.LayoutParams(0, dp(if (compact) 48 else 56), 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(CONTROL_GAP_DP) })

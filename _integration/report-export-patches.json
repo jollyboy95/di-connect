@@ -1,0 +1,44 @@
+[
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/utils/DiagnosticExportStore.kt",
+    "old": "import android.content.ContentResolver",
+    "new": "import android.content.Context\nimport android.content.ContentResolver",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/utils/DiagnosticExportStore.kt",
+    "old": "import java.io.IOException",
+    "new": "import java.io.File\nimport java.io.IOException\nimport androidx.core.content.FileProvider",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/utils/DiagnosticExportStore.kt",
+    "old": "    fun write(resolver: ContentResolver, uri: Uri, report: String) {",
+    "new": "    /** Android 9/OEM fallback: no document picker and no storage permission required. */\n    fun savePrivate(context: Context, fileName: String, report: String): Uri {\n        val file = writePrivateReport(context, fileName, report)\n        return FileProvider.getUriForFile(context, context.packageName + \".aa.fileprovider\", file)\n    }\n\n    internal fun writePrivateReport(context: Context, fileName: String, report: String): File {\n        val directory = File(context.cacheDir, \"diagnostic-reports\")\n        if (!directory.isDirectory && !directory.mkdirs()) throw IOException(\"Could not create report directory\")\n        val file = File(directory, fileName)\n        try {\n            file.bufferedWriter(Charsets.UTF_8).use { it.write(report) }\n        } catch (error: Exception) {\n            file.delete()\n            throw error\n        }\n        return file\n    }\n\n    fun write(resolver: ContentResolver, uri: Uri, report: String) {",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/main/DiagnosticsFragment.kt",
+    "old": "            if (Build.VERSION.SDK_INT >= 29) export() else chooseLocation()",
+    "new": "            export() // Android 9 saves privately instead of launching an OEM picker/interceptor.",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/main/DiagnosticsFragment.kt",
+    "old": "                    } else {\n                        check(Build.VERSION.SDK_INT >= 29)\n                        DiagnosticExportStore.saveToDownloads(context.contentResolver, fileName, report)\n                    }",
+    "new": "                    } else if (Build.VERSION.SDK_INT >= 29) {\n                        DiagnosticExportStore.saveToDownloads(context.contentResolver, fileName, report)\n                    } else {\n                        DiagnosticExportStore.savePrivate(context, fileName, report)\n                    }",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/main/DiagnosticsFragment.kt",
+    "old": "                    .setMessage(if (destination == null) \"Downloads/DiAuto/$fileName\" else getString(R.string.aa_diagnostic_saved_to_your_selected_location))",
+    "new": "                    .setMessage(when {\n                        destination != null -> getString(R.string.aa_diagnostic_saved_to_your_selected_location)\n                        Build.VERSION.SDK_INT >= 29 -> \"Downloads/DiAuto/$fileName\"\n                        else -> null // The saved report is available through the Share button below.\n                    })",
+    "count": 1
+  },
+  {
+    "path": "common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt",
+    "old": "        appendLine(\"DiPlay ${version()} \u00b7 private beta diagnostic report\")",
+    "new": "        appendLine(\"DiPlay ${version()} \u00b7 private beta diagnostic report\")\n        appendLine(\"--- Android Auto and GWM HUD ---\")\n        appendLine(runCatching {\n            com.andrerinas.openheadunit.utils.DiagnosticReport.build(appContext)\n        }.getOrElse { \"Android Auto diagnostics unavailable: ${it.javaClass.simpleName}\" })\n        appendLine(\"--- CarPlay diagnostics ---\")",
+    "count": 1
+  }
+]

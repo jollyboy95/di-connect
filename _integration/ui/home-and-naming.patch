@@ -1,0 +1,250 @@
+diff --git b/common/src/main/java/com/shilapi/xcertplay/CenterMapOverlay.kt a/common/src/main/java/com/shilapi/xcertplay/CenterMapOverlay.kt
+index d6bd038..e9ea351 100644
+--- b/common/src/main/java/com/shilapi/xcertplay/CenterMapOverlay.kt
++++ a/common/src/main/java/com/shilapi/xcertplay/CenterMapOverlay.kt
+@@ -108,7 +108,7 @@ internal object CenterMapOverlay {
+                 .coerceIn(0, (screenWidth - width).coerceAtLeast(0))
+             y = prefs.getInt(KEY_Y, (96 * metrics.density).toInt())
+                 .coerceIn(0, (screenHeight - height).coerceAtLeast(0))
+-            title = "DiPlay centre map"
++            title = "Di-Connect centre map"
+         }
+         var surface: Surface? = null
+         val video = TextureView(context).apply {
+diff --git b/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt a/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
+index 3573583..a9d4f1a 100644
+--- b/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
++++ a/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
+@@ -401,8 +401,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
+             }
+         }, "auth-import").start()
+     }
+-    // Android 9: storage access puts the report in the visible Downloads/DiPlay folder.
+-    // A denial still saves the report, only in DiPlay's own storage.
++    // Android 9: storage access puts the report in the visible Downloads/Di-Connect folder.
++    // A denial still saves the report, only in Di-Connect's own storage.
+     private val reportStoragePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+         exportDiagnostics()
+     }
+@@ -1287,8 +1287,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
+         val left = column()
+         if (!compact) {
+             left.addView(label(getString(R.string.your_phone_your_drive), 12, ACCENT, true).apply { letterSpacing = .16f })
+-            left.addView(label(getString(R.string.a_familiar_drive), if (wide) 42 else 36, TEXT, true).apply { setPadding(0, dp(12), 0, dp(10)) })
+-            left.addView(label(getString(R.string.your_maps_music_and_conversations_carplay_right_here_on_yo), 19, MUTED))
++            left.addView(label("Your drive. Connected.", if (wide) 42 else 36, TEXT, true).apply { setPadding(0, dp(12), 0, dp(10)) })
++            left.addView(label("Your maps, music and calls. Android Auto and Apple CarPlay, together in Di-Connect.", 19, MUTED))
+         }
+         val card = card()
+         homeCardTitle = label(getString(R.string.di_connect_home_title), 12, ACCENT, true).apply { letterSpacing = .12f }
+@@ -1351,8 +1351,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
+             else addView(VehicleHeroView(this@DiPlayActivity, BG, ACCENT), LinearLayout.LayoutParams(-1, dp(if (wide) 240 else 200)))
+         }
+         right.addView(homeButton(getString(R.string.connect_with_usb), false) { connect(false) }, matchButton(height = if (compact) 54 else 68))
+-        if (!compact) right.addView(label(getString(R.string.plug_your_iphone_into_a_usb_data_port_allow_carplay_when_y), 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(dp(8), dp(10), dp(8), dp(24)) })
+-        else right.addView(space(16))
++        if (!compact) right.addView(label("Connect a compatible phone using a USB data port.", 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(dp(8), dp(10), dp(8), dp(16)) })
++        else right.addView(space(12))
+         right.addView(homeButton(getString(R.string.settings), false) { page = "settings"; render() }, matchButton(height = if (compact) 54 else 68))
+         if (!compact) right.addView(label(getString(R.string.make_diplay_feel_right_for_your_car), 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(24)) })
+         else right.addView(space(12))
+@@ -1411,9 +1411,17 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
+                 addView(space(40), LinearLayout.LayoutParams(dp(40), 1))
+                 addView(second, LinearLayout.LayoutParams(0, if (stretchSecond) -1 else -2, 1f))
+             }
+-            body.addView(columns(left, branding, false))
+-            body.addView(space(26))
+-            body.addView(columns(card, right))
++            val leftStack = column().apply {
++                addView(left)
++                addView(space(16))
++                addView(card)
++            }
++            val rightStack = column().apply {
++                addView(branding)
++                addView(space(12))
++                addView(right)
++            }
++            body.addView(columns(leftStack, rightStack))
+         } else {
+             if (!compact) {
+                 body.addView(left)
+@@ -6511,8 +6519,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
+         val running = CarPlayBackgroundSession.hasSession()
+         // A USB session shares this card's status and Disconnect, but not its wireless title or Wi-Fi hint (#742).
+         val wired = HomeCardTransport.wired(running, AirPlayPersistence.loadWirelessEnabled(this))
+-        homeCardTitle?.text = if (running) getString(if (wired) R.string.home_usb_carplay else R.string.wireless_carplay)
+-            else getString(R.string.di_connect_home_title)
++        homeCardTitle?.text = when {
++            running -> getString(if (wired) R.string.home_usb_carplay else R.string.wireless_carplay)
++            // Android Auto owns the same start card while it is connected; CarPlay keeps its own.
++            com.andrerinas.openheadunit.DiConnectAndroidAuto.isConnected(this) -> getString(R.string.di_connect_aa_connected)
++            else -> getString(R.string.di_connect_home_title)
++        }
+         homeConnectionHint?.visibility = if (wired) View.GONE else View.VISIBLE
+         status?.text = when {
+             CarPlayBackgroundSession.active -> getString(R.string.carplay_connected)
+@@ -6533,6 +6545,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
+         refreshReconnectBar()
+         refreshReadiness()
+     }
++
+     private fun authorizeClusterRouting() {
+         val app = applicationContext
+         Thread({
+@@ -6551,7 +6564,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
+         }, "adb-cluster-authorize").start()
+     }
+ 
+-    private fun reportFileName() = "DiPlay-${SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.US).format(Date())}.txt"
++    private fun reportFileName() = "DiConnect-${SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.US).format(Date())}.txt"
+ 
+     private fun saveReportToDownloads() {
+         if (exportInProgress) return
+@@ -6593,7 +6606,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
+                         .setMessage(when {
+                             savedReport.savedInApp -> getString(R.string.diagnostic_report_saved_in_app)
+                             savedReport.savedPath != null -> getString(R.string.diagnostic_report_saved_to_path, savedReport.savedPath)
+-                            uri == null -> "Downloads/DiPlay/$fileName"
++                            uri == null -> "Downloads/Di-Connect/$fileName"
+                             else -> getString(R.string.your_report_was_saved_to_the_selected_location)
+                         })
+                         .setPositiveButton(getString(R.string.view_diagnostic_report)) { _, _ -> showDiagnosticReport(report) }
+@@ -6619,7 +6632,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
+ 
+     /** The text of a diagnostic report. It reads the session logs, so call it off the main thread. */
+     private fun diagnosticReportText(appContext: Context): String = buildString {
+-        appendLine("DiPlay ${version()} · private beta diagnostic report")
++        appendLine("Di-Connect ${version()} · private beta diagnostic report")
+         appendLine("--- Android Auto and GWM HUD ---")
+         appendLine(runCatching {
+             com.andrerinas.openheadunit.utils.DiagnosticReport.build(appContext)
+diff --git b/common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt a/common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt
+index 310d5ee..d88c04f 100644
+--- b/common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt
++++ a/common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt
+@@ -27,10 +27,10 @@ internal object DiagnosticExportStore {
+     )
+ 
+     /**
+-     * Saves to the visible Downloads/DiPlay folder whenever the head unit allows it, so the
++     * Saves to the visible Downloads/Di-Connect folder whenever the head unit allows it, so the
+      * report can be reached from a file manager or USB. Order:
+      *  1. Android 10+: MediaStore Downloads (no permission needed).
+-     *  2. Direct file in public Downloads/DiPlay: Android 11+ allows it without permission;
++     *  2. Direct file in public Downloads/Di-Connect: Android 11+ allows it without permission;
+      *     Android 9 needs WRITE_EXTERNAL_STORAGE. Some DiLink builds lack a working
+      *     MediaStore Downloads provider, so this also covers Android 11+ when step 1 fails.
+      *  3. App-specific external storage (Android/data/<package>, hidden on many head units).
+@@ -102,18 +102,18 @@ internal object DiagnosticExportStore {
+ 
+     @Suppress("DEPRECATION")
+     fun publicDownloadsDirectory(): File =
+-        File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "DiPlay")
++        File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Di-Connect")
+ 
+     internal fun saveToPublicDownloads(context: Context, fileName: String, report: String): SavedReport {
+         val directory = publicDownloadsDirectory()
+-        if (!directory.isDirectory && !directory.mkdirs()) throw IOException("Downloads/DiPlay is unavailable")
++        if (!directory.isDirectory && !directory.mkdirs()) throw IOException("Downloads/Di-Connect is unavailable")
+         val base = fileName.removeSuffix(".txt")
+         var file = File(directory, fileName)
+         var copy = 1
+         while (file.exists()) file = File(directory, "$base-${copy++}.txt")
+         try {
+             file.writeText(report, Charsets.UTF_8)
+-            if (file.length() == 0L && report.isNotEmpty()) throw IOException("Downloads/DiPlay did not keep the report")
++            if (file.length() == 0L && report.isNotEmpty()) throw IOException("Downloads/Di-Connect did not keep the report")
+         } catch (error: Exception) {
+             file.delete()
+             throw error
+@@ -126,8 +126,8 @@ internal object DiagnosticExportStore {
+             FileProvider.getUriForFile(context, "${context.packageName}.diagnostic-reports", file)
+         } catch (error: IllegalArgumentException) {
+             // Some storage layouts resolve Downloads outside the provider's external root.
+-            // Share a private copy instead; the visible file in Downloads/DiPlay stays.
+-            Log.w(TAG, "Downloads/DiPlay is not shareable through the provider; sharing a private copy", error)
++            // Share a private copy instead; the visible file in Downloads/Di-Connect stays.
++            Log.w(TAG, "Downloads/Di-Connect is not shareable through the provider; sharing a private copy", error)
+             privateShareCopy(context, fileName, report)
+         }
+         return SavedReport(uri, savedPath = file.absolutePath)
+@@ -146,7 +146,7 @@ internal object DiagnosticExportStore {
+         val values = ContentValues().apply {
+             put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+             put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+-            put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/DiPlay")
++            put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/Di-Connect")
+             put(MediaStore.Downloads.IS_PENDING, 1)
+         }
+         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+diff --git b/common/src/main/java/com/shilapi/xcertplay/update/UpdateApkExport.kt a/common/src/main/java/com/shilapi/xcertplay/update/UpdateApkExport.kt
+index 4d9ee6a..6b77661 100644
+--- b/common/src/main/java/com/shilapi/xcertplay/update/UpdateApkExport.kt
++++ a/common/src/main/java/com/shilapi/xcertplay/update/UpdateApkExport.kt
+@@ -13,7 +13,7 @@ import java.io.IOException
+ /** Copies a verified APK where a file manager can reach it, for head units that cannot use the system installer. */
+ internal object UpdateApkExport {
+     private const val APK_MIME = "application/vnd.android.package-archive"
+-    private val DOWNLOADS_DIRECTORY = "${Environment.DIRECTORY_DOWNLOADS}/DiPlay"
++    private val DOWNLOADS_DIRECTORY = "${Environment.DIRECTORY_DOWNLOADS}/Di-Connect"
+ 
+     /** [path] is shown to the driver. [uri] is set only for a MediaStore copy that file managers can open. */
+     class Saved(val path: String, val uri: Uri?)
+diff --git b/common/src/main/res/values/strings.xml a/common/src/main/res/values/strings.xml
+index c90ce81..7b84e38 100644
+--- b/common/src/main/res/values/strings.xml
++++ a/common/src/main/res/values/strings.xml
+@@ -307,7 +307,7 @@
+     <string name="preparing_mfi_authentication">Preparing MFi authentication</string>
+     <string name="ready">Ready</string>
+     <string name="ready_when_you_are">Ready when you are</string>
+-    <string name="receiver_based_on_xcertplay_licensed_under_gpl_3_0_diplay">Receiver based on xcertplay, licensed under GPL-3.0. DiPlay’s interface follows DiAuto’s design, licensed under AGPL-3.0.\n\nIncludes AndroidX, Bouncy Castle, JmDNS and SLF4J. Source and license notices accompany this release.\n\nCarPlay and the CarPlay icon belong to Apple Inc. DiPlay is an independent project.</string>
++    <string name="receiver_based_on_xcertplay_licensed_under_gpl_3_0_diplay">Receiver based on xcertplay, licensed under GPL-3.0. Di-Connect’s interface follows DiAuto’s design, licensed under AGPL-3.0.\n\nIncludes AndroidX, Bouncy Castle, JmDNS and SLF4J. Source and license notices accompany this release.\n\nCarPlay and the CarPlay icon belong to Apple Inc. Di-Connect is an independent project.</string>
+     <string name="reconnecting_to_your_iphone">Reconnecting to your iPhone…</string>
+     <string name="remote">Remote</string>
+     <string name="remote_server_address_contains_u_0000">Remote server address contains U+0000</string>
+@@ -317,7 +317,7 @@
+     <string name="report_android_location_to_the_iphone">Report Android location to the iPhone</string>
+     <string name="report_location_to_iphone">Report location to iPhone</string>
+     <string name="report_saved_open_it_from_your_file_manager_to_share_it">Report saved. Open it from your file manager to share it.</string>
+-    <string name="reports_save_to_downloads_diplay">Reports save to Downloads/DiPlay.\u0020</string>
++    <string name="reports_save_to_downloads_diplay">Reports save to Downloads/Di-Connect.\u0020</string>
+     <string name="requesting_iphone_usb_permission">Requesting iPhone USB permission</string>
+     <string name="requesting_mfi_usb_permission">Requesting MFi USB permission</string>
+     <string name="reset">Reset</string>
+diff --git b/common/src/test/java/com/shilapi/xcertplay/DiagnosticExportStoreTest.kt a/common/src/test/java/com/shilapi/xcertplay/DiagnosticExportStoreTest.kt
+index 157590a..828340a 100644
+--- b/common/src/test/java/com/shilapi/xcertplay/DiagnosticExportStoreTest.kt
++++ a/common/src/test/java/com/shilapi/xcertplay/DiagnosticExportStoreTest.kt
+@@ -37,7 +37,7 @@ class DiagnosticExportStoreTest {
+         val uri = DiagnosticExportStore.saveToDownloads(resolver, "DiPlay-test.txt", report)
+         assertEquals(provider.uri, uri)
+         assertEquals(report, provider.file.readText())
+-        assertEquals("Download/DiPlay", provider.insertValues!!.getAsString(MediaStore.Downloads.RELATIVE_PATH))
++        assertEquals("Download/Di-Connect", provider.insertValues!!.getAsString(MediaStore.Downloads.RELATIVE_PATH))
+         assertEquals("text/plain", provider.insertValues!!.getAsString(MediaStore.Downloads.MIME_TYPE))
+         assertEquals(1, provider.insertValues!!.getAsInteger(MediaStore.Downloads.IS_PENDING))
+         assertEquals(0, provider.publishValues!!.getAsInteger(MediaStore.Downloads.IS_PENDING))
+diff --git b/common/src/test/java/com/shilapi/xcertplay/HomeCompactLayoutTest.kt a/common/src/test/java/com/shilapi/xcertplay/HomeCompactLayoutTest.kt
+index 0bd30be..d06725a 100644
+--- b/common/src/test/java/com/shilapi/xcertplay/HomeCompactLayoutTest.kt
++++ a/common/src/test/java/com/shilapi/xcertplay/HomeCompactLayoutTest.kt
+@@ -47,7 +47,7 @@ class HomeCompactLayoutTest {
+         else assertTrue(usbPosition[1] >= connectPosition[1] + connect.height)
+         assertTrue(text(R.string.car_home).visibility == View.VISIBLE)
+         assertFalse(descendants(root).filterIsInstance<TextView>().any {
+-            it.text == activity.getString(R.string.a_familiar_drive) ||
++            it.text == "Your drive. Connected." ||
+                 it.text == activity.getString(R.string.plug_your_iphone_into_a_usb_data_port_allow_carplay_when_y)
+         })
+         controller.pause().stop().destroy()
+@@ -72,7 +72,7 @@ class HomeCompactLayoutTest {
+         val activity = Robolectric.buildActivity(DiPlayActivity::class.java).setup().get()
+         shadowOf(activity).setInMultiWindowMode(multiWindow)
+         ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")
+-        val hero = activity.getString(R.string.a_familiar_drive)
++        val hero = "Your drive. Connected."
+         return descendants(activity.window.decorView).filterIsInstance<TextView>().none { it.text == hero }
+     }
+ 

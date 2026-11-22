@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DiPlay GWM Adapter — library module manifest.
+  Overlay permission is declared because the cluster renderer uses
+  TYPE_APPLICATION_OVERLAY. The host app is responsible for obtaining the grant
+  (Settings.canDrawOverlays / OEM privilege) before calling show().
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.dplay.gwm">
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- No service/activity is declared here: the host app drives the adapter.
+         This module intentionally ships no components, no auth logic, and no
+         exported surfaces. -->
+
+</manifest>

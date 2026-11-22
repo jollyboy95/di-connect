@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/aa_nav_graph"
+    app:startDestination="@id/aa_homeFragment">
+
+    <fragment
+        android:id="@+id/aa_homeFragment"
+        android:name="com.andrerinas.openheadunit.main.HomeFragment"
+        android:label="@string/aa_app_name">
+        <action
+            android:id="@+id/aa_action_homeFragment_to_usbListFragment"
+            app:destination="@id/aa_usbListFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_homeFragment_to_networkListFragment"
+            app:destination="@id/aa_networkListFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+    </fragment>
+
+    <fragment android:id="@+id/aa_diagnosticsFragment" android:name="com.andrerinas.openheadunit.main.DiagnosticsFragment" android:label="Diagnostics" />
+
+    <fragment android:id="@+id/aa_connectionSetupFragment" android:name="com.andrerinas.openheadunit.main.ConnectionSetupFragment" android:label="Connection setup" />
+
+    <fragment android:id="@+id/aa_driveSettingsFragment" android:name="com.andrerinas.openheadunit.main.DriveSettingsFragment" android:label="@string/aa_settings" />
+
+    <fragment
+        android:id="@+id/aa_settingsFragment"
+        android:name="com.andrerinas.openheadunit.main.SettingsFragment"
+        android:label="@string/aa_settings">
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_keymapFragment"
+            app:destination="@id/aa_keymapFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_aboutFragment"
+            app:destination="@id/aa_aboutFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_supportFragment"
+            app:destination="@id/aa_supportFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_autoConnectFragment"
+            app:destination="@id/aa_autoConnectFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_darkModeFragment"
+            app:destination="@id/aa_darkModeFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_dpiSettingsFragment"
+            app:destination="@id/aa_dpiSettingsFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_autoStartFragment"
+            app:destination="@id/aa_autoStartFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_vehicleInfoFragment"
+            app:destination="@id/aa_vehicleInfoFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_loadingScreenFragment"
+            app:destination="@id/aa_loadingScreenFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_micSettingsFragment"
+            app:destination="@id/aa_micSettingsFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_settingsFragment_to_permissionsFragment"
+            app:destination="@id/aa_permissionsFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+    </fragment>
+
+
+
+    <fragment
+        android:id="@+id/aa_keymapFragment"
+        android:name="com.andrerinas.openheadunit.main.KeymapFragment"
+        android:label="@string/aa_keymap" />
+
+    <fragment
+        android:id="@+id/aa_permissionsFragment"
+        android:name="com.andrerinas.openheadunit.main.PermissionsFragment"
+        android:label="@string/aa_permissions" />
+
+    <fragment
+        android:id="@+id/aa_aboutFragment"
+        android:name="com.andrerinas.openheadunit.main.AboutFragment"
+        android:label="@string/aa_about" />
+
+    <fragment
+        android:id="@+id/aa_supportFragment"
+        android:name="com.andrerinas.openheadunit.main.SupportFragment"
+        android:label="@string/aa_support" />
+
+    <fragment
+        android:id="@+id/aa_autoConnectFragment"
+        android:name="com.andrerinas.openheadunit.main.AutoConnectFragment"
+        android:label="@string/aa_auto_connect_settings" />
+
+    <fragment
+        android:id="@+id/aa_dpiSettingsFragment"
+        android:name="com.andrerinas.openheadunit.main.DpiSettingsFragment"
+        android:label="@string/aa_dpi" />
+
+    <fragment
+        android:id="@+id/aa_darkModeFragment"
+        android:name="com.andrerinas.openheadunit.main.DarkModeFragment"
+        android:label="@string/aa_dark_mode_settings">
+        <action
+            android:id="@+id/aa_action_darkModeFragment_to_locationsFragment"
+            app:destination="@id/aa_locationsFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+        <action
+            android:id="@+id/aa_action_darkModeFragment_to_mapPickerFragment"
+            app:destination="@id/aa_mapPickerFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/aa_locationsFragment"
+        android:name="com.andrerinas.openheadunit.main.LocationsFragment"
+        android:label="@string/aa_geofence_locations_title">
+        <action
+            android:id="@+id/aa_action_locationsFragment_to_mapPickerFragment"
+            app:destination="@id/aa_mapPickerFragment"
+            app:enterAnim="@anim/aa_slide_in_right"
+            app:exitAnim="@anim/aa_slide_out_left"
+            app:popEnterAnim="@anim/aa_slide_in_left"
+            app:popExitAnim="@anim/aa_slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/aa_mapPickerFragment"
+        android:name="com.andrerinas.openheadunit.main.MapPickerFragment"
+        android:label="@string/aa_geofence_pick_location">
+        <argument
+            android:name="mode"
+            app:argType="string"
+            android:defaultValue="geofence" />
+        <argument
+            android:name="geofenceId"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/aa_autoStartFragment"
+        android:name="com.andrerinas.openheadunit.main.AutoStartFragment"
+        android:label="@string/aa_auto_start_settings" />
+
+    <fragment
+        android:id="@+id/aa_vehicleInfoFragment"
+        android:name="com.andrerinas.openheadunit.main.VehicleInfoFragment"
+        android:label="@string/aa_vehicle_info_settings" />
+
+    <fragment
+        android:id="@+id/aa_loadingScreenFragment"
+        android:name="com.andrerinas.openheadunit.main.LoadingScreenFragment"
+        android:label="@string/aa_loading_screen" />
+
+    <fragment
+        android:id="@+id/aa_usbListFragment"
+        android:name="com.andrerinas.openheadunit.main.UsbListFragment"
+        android:label="@string/aa_usb" />
+
+    <fragment
+        android:id="@+id/aa_networkListFragment"
+        android:name="com.andrerinas.openheadunit.main.NetworkListFragment"
+        android:label="@string/aa_wifi" />
+
+    <fragment
+        android:id="@+id/aa_micSettingsFragment"
+        android:name="com.andrerinas.openheadunit.main.MicSettingsFragment"
+        android:label="@string/aa_microphone_settings" />
+
+</navigation>

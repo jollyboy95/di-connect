@@ -1,0 +1,45 @@
+[
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/hud/BydGuidance.kt",
+    "old": "    val updatedNs: Long = System.nanoTime(),",
+    "new": "    val updatedNs: Long = System.nanoTime(),\n    val arrivalText: String? = null,",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/hud/BydNavigationMapper.kt",
+    "old": "return BydGuidance(codes.cluster, codes.gaode, codes.arrow, codes.exit, distance, road, remaining, seconds)",
+    "new": "// Some phones send the formatted ETA without a numeric remaining duration.\n        // Preserve it verbatim instead of inventing a duration or dropping arrival from the HUD.\n        val arrivalText = destination?.takeIf { it.hasEstimatedTimeAtArrival() }\n            ?.estimatedTimeAtArrival?.trim()?.takeIf { it.isNotEmpty() }\n        return BydGuidance(codes.cluster, codes.gaode, codes.arrow, codes.exit, distance, road, remaining, seconds,\n            arrivalText = arrivalText)",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/DiConnectViews.kt",
+    "old": "        val remainingSeconds: Int,",
+    "new": "        val remainingSeconds: Int,\n        val arrivalText: String? = null,",
+    "count": 1
+  },
+  {
+    "path": "android-auto/src/main/java/com/andrerinas/openheadunit/DiConnectViews.kt",
+    "old": "it.road, it.remainingMeters, it.remainingSeconds)",
+    "new": "it.road, it.remainingMeters, it.remainingSeconds, it.arrivalText)",
+    "count": 1
+  },
+  {
+    "path": "common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt",
+    "old": "private val hud = GwmHeadUpView(displayContext).apply {",
+    "new": "private val hud = GwmAndroidAutoHeadUpView(displayContext).apply {",
+    "count": 1
+  },
+  {
+    "path": "common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt",
+    "old": "setAnchor(GwmHeadUpView.Anchor.entries.getOrElse(anchor) { GwmHeadUpView.Anchor.CENTRE })",
+    "new": "setAnchor(GwmAndroidAutoHeadUpView.Anchor.entries.getOrElse(anchor) { GwmAndroidAutoHeadUpView.Anchor.LEFT })",
+    "count": 1
+  },
+  {
+    "path": "common/src/main/java/com/shilapi/xcertplay/DiConnectPlayViews.kt",
+    "old": "override fun setGuidance(guidance: DiConnectViews.Guidance?) = hud.setGuidance(guidance(guidance))\n        override fun release() = Unit",
+    "new": "override fun setGuidance(guidance: DiConnectViews.Guidance?) {\n            hud.setArrivalText(guidance?.arrivalText)\n            hud.setGuidance(guidance(guidance))\n        }\n        override fun release() = Unit",
+    "count": 1
+  }
+]
+

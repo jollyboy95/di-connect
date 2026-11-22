@@ -1,0 +1,153 @@
+<resources>
+
+    <style name="aa_AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@drawable/aa_bg</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="colorPrimary">@color/aa_brand_teal</item>
+        <item name="colorSecondary">@color/aa_brand_teal</item>
+        <item name="colorAccent">@color/aa_brand_teal</item>
+        <item name="android:colorAccent">@color/aa_brand_teal</item>
+        <item name="android:dialogTheme">@style/aa_DarkAlertDialog</item>
+        <item name="android:alertDialogTheme">@style/aa_DarkAlertDialog</item>
+        <item name="materialAlertDialogTheme">@style/aa_DarkAlertDialog</item>
+    </style>
+
+    <style name="aa_AppTheme.Translucent" parent="android:Theme.Translucent.NoTitleBar" />
+
+    <style name="aa_AppTheme.Fullscreen" parent="aa_AppTheme">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
+    <style name="aa_SplashTheme" parent="aa_AppTheme">
+        <item name="android:windowBackground">@drawable/aa_splash_background</item>
+        <item name="android:statusBarColor">@color/aa_color_projection_blue</item>
+        <item name="android:navigationBarColor">@color/aa_color_projection_blue</item>
+    </style>
+
+    <style name="aa_SplashTheme.Fullscreen" parent="aa_SplashTheme">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
+    <style name="aa_ThemeOverlay.DiAutoSettings" parent="">
+        <item name="colorPrimary">@color/aa_da_accent</item>
+        <item name="colorOnPrimary">@color/aa_da_background</item>
+        <item name="colorSecondary">@color/aa_da_accent</item>
+        <item name="colorOnSecondary">@color/aa_da_background</item>
+        <item name="colorPrimaryContainer">@color/aa_da_border</item>
+        <item name="colorOnPrimaryContainer">@color/aa_da_text</item>
+        <item name="colorSurface">@color/aa_da_background</item>
+        <item name="colorSurfaceVariant">@color/aa_da_surface</item>
+        <item name="colorOnSurface">@color/aa_da_text</item>
+        <item name="colorOnSurfaceVariant">@color/aa_da_muted</item>
+        <item name="colorOutline">@color/aa_da_border</item>
+        <item name="colorAccent">@color/aa_da_accent</item>
+        <item name="android:colorAccent">@color/aa_da_accent</item>
+        <item name="android:colorBackground">@color/aa_da_background</item>
+        <item name="android:textColorPrimary">@color/aa_da_text</item>
+        <item name="android:textColorSecondary">@color/aa_da_muted</item>
+
+        <item name="android:windowBackground">@color/aa_da_background</item>
+    </style>
+    <style name="aa_DiAutoQuickSettings" parent="aa_AppTheme.Fullscreen">
+        <item name="colorPrimary">@color/aa_da_accent</item>
+        <item name="colorOnPrimary">@color/aa_da_background</item>
+        <item name="colorSecondary">@color/aa_da_accent</item>
+        <item name="colorOnSecondary">@color/aa_da_background</item>
+        <item name="colorPrimaryContainer">@color/aa_da_border</item>
+        <item name="colorOnPrimaryContainer">@color/aa_da_text</item>
+        <item name="colorSurface">@color/aa_da_background</item>
+        <item name="colorSurfaceVariant">@color/aa_da_surface</item>
+        <item name="colorOnSurface">@color/aa_da_text</item>
+        <item name="colorOnSurfaceVariant">@color/aa_da_muted</item>
+        <item name="colorOutline">@color/aa_da_border</item>
+        <item name="colorAccent">@color/aa_da_accent</item>
+        <item name="android:colorAccent">@color/aa_da_accent</item>
+        <item name="android:colorBackground">@color/aa_da_background</item>
+        <item name="android:textColorPrimary">@color/aa_da_text</item>
+        <item name="android:textColorSecondary">@color/aa_da_muted</item>
+
+        <item name="android:windowBackground">@color/aa_da_background</item>
+    </style>
+    <style name="aa_DiAutoDialogStyle" parent="MaterialAlertDialog.Material3">
+        <item name="shapeAppearance">@style/aa_ShapeAppearanceOverlay.App.Dialog.Rounded</item>
+        <item name="backgroundTint">@color/aa_da_surface</item>
+    </style>
+    <style name="aa_DarkAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="alertDialogStyle">@style/aa_DiAutoDialogStyle</item>
+        <item name="elevationOverlayEnabled">false</item>
+        <item name="colorPrimary">@color/aa_da_accent</item>
+        <item name="colorOnPrimary">@color/aa_da_background</item>
+        <item name="colorSecondary">@color/aa_da_accent</item>
+        <item name="colorOnSecondary">@color/aa_da_background</item>
+        <item name="colorPrimaryContainer">@color/aa_da_border</item>
+        <item name="colorOnPrimaryContainer">@color/aa_da_text</item>
+        <item name="colorSurfaceVariant">@color/aa_da_surface</item>
+        <item name="colorOnSurface">@color/aa_da_text</item>
+        <item name="colorOnSurfaceVariant">@color/aa_da_muted</item>
+        <item name="colorOutline">@color/aa_da_border</item>
+        <item name="colorAccent">@color/aa_da_accent</item>
+        <item name="android:colorAccent">@color/aa_da_accent</item>
+        <item name="android:colorBackground">@color/aa_da_background</item>
+        <item name="android:textColorPrimary">@color/aa_da_text</item>
+        <item name="android:textColorSecondary">@color/aa_da_muted</item>
+
+        <item name="colorSurface">@color/aa_da_surface</item>
+        <item name="buttonBarPositiveButtonStyle">@style/aa_DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/aa_DialogButton.Negative</item>
+        <item name="shapeAppearanceOverlay">@style/aa_ShapeAppearanceOverlay.App.Dialog.Rounded</item>
+    </style>
+    <style name="aa_DialogButton.Positive" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/aa_da_accent</item>
+        <item name="android:minHeight">56dp</item>
+    </style>
+    <style name="aa_DialogButton.Negative" parent="aa_DialogButton.Positive" />
+    <style name="aa_DialogWindowTitle" parent="android:Widget.TextView">
+        <item name="android:textColor">@color/aa_text_primary</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+
+    <style name="aa_SafetyDialogTheme" parent="Theme.Material3.DayNight.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
+    <style name="aa_ThemeOverlay.ExtremeDark" parent="">
+        <item name="colorSurface">@color/aa_extreme_dark_background</item>
+        <item name="android:colorBackground">@color/aa_extreme_dark_background</item>
+        <item name="android:windowBackground">@color/aa_extreme_dark_background</item>
+    </style>
+
+    <style name="aa_ThemeOverlay.GradientBackground" parent="">
+        <item name="android:windowBackground">@drawable/aa_bg_gradient</item>
+    </style>
+
+    <!-- Segmented Button Shapes -->
+    <style name="aa_ShapeAppearance.App.Button.Left" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">24dp</item>
+        <item name="cornerSizeBottomLeft">24dp</item>
+        <item name="cornerSizeTopRight">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="aa_ShapeAppearance.App.Button.Middle" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">0dp</item>
+    </style>
+
+    <style name="aa_ShapeAppearance.App.Button.Right" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">0dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeTopRight">24dp</item>
+        <item name="cornerSizeBottomRight">24dp</item>
+    </style>
+    <style name="aa_ShapeAppearanceOverlay.App.Dialog.Rounded" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24dp</item>
+    </style>
+</resources>
