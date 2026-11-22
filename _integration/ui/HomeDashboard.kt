@@ -1748,11 +1748,12 @@ internal object HomeAirflow {
     )
 
     /**
-     * The four modes of the car's own climate screen, in its order. Values are Android's standard
-     * fan-direction flags (face 1, feet 2, windscreen 4, combined by adding), the most likely encoding for the car's key; the report's raw value confirms it. The
-     * first build's guess of 1 to 4 would send the wrong mode for three of the four.
+     * The four modes of the car's own climate screen, in its order. Steve found that the button
+     * sending 1 for Face made the car show Face + feet, so the car counts from 0 in screen order
+     * (Face 0, Face + feet 1, Feet 2, Feet + screen 3) rather than using Android's fan-direction
+     * flags. The report's raw value for each mode confirms it.
      */
-    val MODES = listOf(Mode("Face", 1), Mode("Face + feet", 3), Mode("Feet", 2), Mode("Feet + screen", 6))
+    val MODES = listOf(Mode("Face", 0), Mode("Face + feet", 1), Mode("Feet", 2), Mode("Feet + screen", 3))
 
     @Volatile var last: String = "not read yet"
         private set
