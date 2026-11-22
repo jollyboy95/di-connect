@@ -516,6 +516,23 @@ class AapService : Service(), UsbReceiver.Listener {
     private var screenOffTimestamp = 0L
 
     /**
+     * When the head unit's screen turns off the car's speakers go quiet, but the phone keeps
+     * playing: the music runs on in the background and shows as playing on the phone. Pause it
+     * when the screen goes off, but only if the phone reported that it was playing, so a
+     * paused or silent phone is never sent a stray key.
+     */
+    private fun pausePhoneMusicForScreenOff() {
+        if (isDestroying || !commManager.isConnected) return
+        if (lastAaPlaybackIsPlaying != true) {
+            AppLog.i("ScreenOff: phone is not playing, nothing to pause")
+            return
+        }
+        AppLog.i("ScreenOff: pausing phone music")
+        commManager.sendKey(android.view.KeyEvent.KEYCODE_MEDIA_PAUSE, true, null, "screen-off")
+        commManager.sendKey(android.view.KeyEvent.KEYCODE_MEDIA_PAUSE, false, null, "screen-off")
+    }
+
+    /**
      * Debounce: last time [onHibernateWake] actually ran.
      * Prevents double-triggering when both BootCompleteReceiver and this dynamic
      * receiver fire for the same wake event.
@@ -550,6 +567,7 @@ class AapService : Service(), UsbReceiver.Listener {
                 Intent.ACTION_SCREEN_OFF -> {
                     screenOffTimestamp = SystemClock.elapsedRealtime()
                     AppLog.i("WakeDetect: SCREEN_OFF")
+                    pausePhoneMusicForScreenOff()
                 }
                 Intent.ACTION_SCREEN_ON -> {
                     val now = SystemClock.elapsedRealtime()
