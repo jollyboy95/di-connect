@@ -1049,6 +1049,13 @@ internal class HomeDashboardView(context: Context) : View(context) {
         }
     }
 
+    /** As the car's own climate screen shows it: LO at the bottom of the range, HI at the top. */
+    private fun tempLabel(v: Float): String = when {
+        v <= 16f -> "LO"
+        v >= 32f -> "HI"
+        else -> String.format(Locale.US, "%.1f°", v)
+    }
+
     private fun drawTyrePressure(c: Canvas) {
         val tyres = tyrePressure ?: return
         val cx = dockX
@@ -1196,7 +1203,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val label = if (!driver && sync == true) "$zone · SYNC" else zone
         text(c, label, cx, cy - 7f, 10.5f, quiet, medium, Paint.Align.CENTER)
         if (climateOn == false) text(c, "Off", cx, cy + 17f, 23f, quiet, light, Paint.Align.CENTER)
-        else text(c, String.format(Locale.US, "%.1f°", v), cx, cy + 17f, 25f, tempColor(v), light, Paint.Align.CENTER)
+        else text(c, tempLabel(v), cx, cy + 17f, 25f, tempColor(v), light, Paint.Align.CENTER)
         hit(RectF(r)) {
             val mine = if (driver) Popover.DRIVER_TEMP else Popover.PASSENGER_TEMP
             popover = if (popover == mine) Popover.NONE else mine
@@ -1254,7 +1261,7 @@ internal class HomeDashboardView(context: Context) : View(context) {
         val v = (if (driver) driverTemp else passengerTemp) ?: return
         val f = popoverFrame(c, mx(if (driver) 1140f else 146f), 520f, 170f)
         text(c, if (driver) "Driver temperature" else "Passenger temperature", f.left + 28f, f.top + 40f, 16f, quiet, medium)
-        text(c, String.format(Locale.US, "%.1f°", v), f.left + 28f, f.top + 92f, 44f, tempColor(v), light)
+        text(c, tempLabel(v), f.left + 28f, f.top + 92f, 44f, tempColor(v), light)
         val x0 = f.left + 40f; val x1 = f.right - 40f; val ty = f.top + 128f
         p.shader = LinearGradient(x0, 0f, x1, 0f, intArrayOf(tempColor(16f), tempColor(22f), tempColor(26f), tempColor(32f)),
             floatArrayOf(0f, .375f, .625f, 1f), Shader.TileMode.CLAMP)
@@ -1740,8 +1747,12 @@ internal object HomeAirflow {
         "car.hvac.blow_direction", "car.hvac.air_distribution_mode", "car.hvac.mode",
     )
 
-    /** Assumed order; to be confirmed on the car from the report. */
-    val MODES = listOf(Mode("Face", 1), Mode("Face + feet", 2), Mode("Feet", 3), Mode("Feet + screen", 4))
+    /**
+     * The four modes of the car's own climate screen, in its order. Values are Android's standard
+     * fan-direction flags (face 1, feet 2, windscreen 4, combined by adding), the most likely encoding for the car's key; the report's raw value confirms it. The
+     * first build's guess of 1 to 4 would send the wrong mode for three of the four.
+     */
+    val MODES = listOf(Mode("Face", 1), Mode("Face + feet", 3), Mode("Feet", 2), Mode("Feet + screen", 6))
 
     @Volatile var last: String = "not read yet"
         private set
